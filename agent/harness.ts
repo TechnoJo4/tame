@@ -74,7 +74,8 @@ export class Harness {
             })
             .then(res => {
                 console.debug(res);
-                agent.ctx.messages.push(res);
+                if (res.stopReason !== "error")
+                    agent.ctx.messages.push(res);
                 agent.promise = undefined;
             }, (err) => {
                 console.error(err);
