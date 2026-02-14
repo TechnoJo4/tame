@@ -118,7 +118,7 @@ export class Harness {
             }
 
             promises.push(new Promise(resolve => {
-                Promise.try(tool.run, args, agent).then(res => {
+                Promise.try(tool.run, args, agent, this).then(res => {
                     agent.ctx.messages.push({
                         role: "toolResult",
                         toolCallId: call.id,

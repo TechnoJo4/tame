@@ -1,6 +1,7 @@
 import type { TSchema, Static } from "@sinclair/typebox";
 import type * as pi from "@mariozechner/pi-ai";
 import type { Agent } from "./agent.ts";
+import type { Harness } from "./harness.ts";
 import { importAllInDirFlat, pathJoin } from "./loader.ts";
 
 // Re-export for convenience
@@ -10,7 +11,7 @@ export interface Tool<TParameters extends TSchema> {
     /** Definition of the tool */
     def: pi.Tool<TParameters>;
     /** Implementation of the tool. This must return a string or object compatible with `JSON.stringify`. */
-    run: (args: Static<TParameters>, agent: Agent) => Promise<unknown> | unknown;
+    run: (args: Static<TParameters>, agent: Agent, harness: Harness) => Promise<unknown> | unknown;
     /** Determines whether the tool should be accessible to an agent */
     see: ((agent: Agent) => boolean) | boolean;
 };
