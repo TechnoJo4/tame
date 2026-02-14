@@ -1,0 +1,5 @@
+{
+    "imports": {
+        "discord.js": "npm:discord.js@^14.25.1"
+    }
+}

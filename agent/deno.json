@@ -1,0 +1,11 @@
+{
+    "name": "@tame/agent",
+    "exports": "./mod.ts",
+    "imports": {
+        "@db/sqlite": "jsr:@db/sqlite@^0.13.0",
+        "@mariozechner/pi-ai": "npm:@mariozechner/pi-ai@^0.51.6",
+        "@sinclair/typebox": "npm:@sinclair/typebox@^0.34.48",
+        "@std/path": "jsr:@std/path@^1.1.4",
+        "ajv": "npm:ajv@^8.17.1"
+    }
+}

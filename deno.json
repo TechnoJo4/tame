@@ -1,0 +1,3 @@
+{
+    "workspace": ["./agent", "./discord-poc", "./social"]
+}
