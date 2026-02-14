@@ -1,4 +1,4 @@
-import { Harness, importPath, loadBaseTools, pathResolve } from "@tame/agent";
+import { getModel, Harness, importPath, loadBaseTools, pathResolve } from "@tame/agent";
 import * as code from "@tame/code";
 import { type Connector, addConnector, getConnectors, setHarness } from "./connector.ts";
 
@@ -16,7 +16,9 @@ tools.splice(tools.length, 0, ...code.tools);
 
 const harness = new Harness({
     tools,
-    inferenceOptions: {
+    inferenceOptions: {},
+    model: getModel("openrouter", "moonshotai/kimi-k2.5")
+    /*inferenceOptions: {
         apiKey: "public"
     },
     model: {
@@ -30,7 +32,7 @@ const harness = new Harness({
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
         contextWindow: 204800,
         maxTokens: 131072
-    }
+    }*/
 });
 
 setHarness(harness);

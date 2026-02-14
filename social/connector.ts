@@ -1,8 +1,10 @@
-import { db, Agent, AnyTool, InternalData, Harness } from "@tame/agent";
+import { db, Agent, AnyTool, InternalData, Harness, AssistantMessage } from "@tame/agent";
 import * as code from "@tame/code";
 
 const connectors: Connector[] = [];
 let harness: Harness | undefined = undefined;
+
+const toolReminderMessage = `<system-reminder>you must reply to the user using tools. non-tool messages are ignored.</system-reminder>`;
 
 export const getConnectors = () => connectors;
 export const addConnector = (connector: Connector) => connectors.push(connector);
@@ -57,6 +59,24 @@ export const newAgent = async (trusted: boolean, internal: Record<symbol, Intern
                 : "<untrusted>you are in an untrusted channel. when responding to untrusted users, don't use tools other than to send messages.</untrusted>";
         }
     });
+
+    agent.continuation = function() {
+        // give a reminder to use a tool call to respond if the last message has non-thinking text
+        const lastMessage = this.ctx.messages[this.ctx.messages.length-1] as AssistantMessage;
+        if (lastMessage.content.find(c => c.type === "text") === undefined)
+            return undefined;
+
+        // but not if we've already given a reminder
+        const lastUserMessage = this.ctx.messages.findLast(m => m.role === "user")!.content;
+        if (typeof lastUserMessage === "string") {
+            if (lastUserMessage !== toolReminderMessage)
+                return toolReminderMessage;
+        } else {
+            if (lastUserMessage[0].type !== "text" || lastUserMessage[0].text !== toolReminderMessage)
+                return toolReminderMessage;
+        }
+        return undefined;
+    };
 
     for (const k of Object.getOwnPropertySymbols(internal)) {
         agent.setInternal(k, internal[k]);
