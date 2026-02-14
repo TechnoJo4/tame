@@ -35,11 +35,11 @@ export interface InternalData {
 export class Agent {
     #data: Map<symbol, InternalData> = new Map();
     #options: AgentOptions;
-    
+
     id: number;
-    
+
     tools: Map<string, AnyTool> = new Map();
-    
+
     lastSavedMessage: number = 0;
 
     /** The agent's context */
@@ -68,7 +68,17 @@ export class Agent {
         }
     }
 
+    /** Create a new Agent with the same internal data */
+    async inherit(options: AgentOptions): Promise<Agent> {
+        const agent = new Agent(options);
+        await agent.init();
+        for (const [k,v] of this.#data.entries())
+            agent.setInternal(k, v);
+        return agent;
+    }
+
     selfBlock?: string;
+    /** Initialize the agent (e.g. ID assignment). Should be called immediately after constructing an Agent. */
     async init() {
         if (this.id === 0)
             this.id = await db.agent.new();
@@ -78,6 +88,7 @@ export class Agent {
         await db.memory.attach(this.id, this.selfBlock);
     }
 
+    /** Add reserved context messages for tools, memory, etc. */
     async initCtx() {
         while (this.ctx.messages.length < RESERVED_CTX_SLOTS)
             this.ctx.messages.unshift({ role: "user", content: [], timestamp: Date.now() });
