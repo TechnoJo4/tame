@@ -1,18 +1,12 @@
 import { Client, Events, GatewayIntentBits, Partials } from "discord.js";
-import { pathJoin, importAllInDirFlat, type AnyTool, type Agent, type Message } from "@tame/agent";
+import { db, pathJoin, importAllInDirFlat, type AnyTool, type Agent, type Message } from "@tame/agent";
 import { type Connector, getHarness, newAgent } from "../connector.ts";
 import { key, AgentState } from "./state.ts";
 
 export const agents = new Map<string, Agent>();
 
-// TODO: config
-const trustedUsers = new Set([
-    "169175121037099008"
-]);
-
-const trustedChannels = new Set([
-    "1471666268905017385"
-]);
+const trustedUsers = new Set((await db.config.get("discord.trustedUsers")).split(",").filter(x => x));
+const trustedChannels = new Set((await db.config.get("discord.trustedChannels")).split(",").filter(x => x));
 
 export const client = new Client({
     intents: [
