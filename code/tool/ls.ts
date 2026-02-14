@@ -14,10 +14,10 @@ export const ls = tool({
         const s = state(agent);
         const path = pathResolve(s.cwd, args.path || ".");
         try { await fs.access(path, fs.constants.R_OK) } catch {
-            throw new Error(`${path} does not exist`)
+            throw new Error(`${path}: access denied`)
         }
         if (!(await fs.stat(path)).isDirectory())
-            throw new Error(`${path} is not a directory`)
+            throw new Error(`${path}: is not a directory`)
 
         const entries = await fs.readdir(path, { withFileTypes: true });
         const names = entries.map(e => e.isDirectory() ? e.name + "/" : e.name);
