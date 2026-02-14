@@ -1,0 +1,4 @@
+{
+    "name": "@tame/code",
+    "exports": "./mod.ts"
+}

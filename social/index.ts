@@ -1,4 +1,5 @@
 import { Harness, importPath, loadBaseTools, pathResolve } from "@tame/agent";
+import * as code from "@tame/code";
 import { type Connector, addConnector, getConnectors, setHarness } from "./connector.ts";
 
 const importConnector = (name: string): Promise<Connector> =>
@@ -10,7 +11,8 @@ if (Deno.env.has("DISCORD_TOKEN")) {
 
 const tools = getConnectors().flatMap(c => c.tools);
 
-tools.splice(tools.length, 0, ...await loadBaseTools())
+tools.splice(tools.length, 0, ...await loadBaseTools());
+tools.splice(tools.length, 0, ...code.tools);
 
 const harness = new Harness({
     tools,
@@ -25,12 +27,7 @@ const harness = new Harness({
         baseUrl: "https://opencode.ai/zen/v1",
         reasoning: true,
         input: ["text"],
-        cost: {
-            input: 0,
-            output: 0,
-            cacheRead: 0,
-            cacheWrite: 0
-        },
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
         contextWindow: 204800,
         maxTokens: 131072
     }

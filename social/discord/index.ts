@@ -32,7 +32,7 @@ client.on(Events.MessageCreate, async (m) => {
     const msg: Message = {
         role: "user",
         content: [
-            { type: "text", text: `${m.author.username} (ID ${m.author.id}; ${trustedAuthor ? "trusted" : "untrusted"}) sent message ${m.id}:\n${m.content}` }
+            { type: "text", text: `${m.author.username} (ID ${m.author.id}; ${trustedAuthor ? "trusted" : "untrusted"}) sent message ${m.id}:\n${m.content}\n\n[use the discordSend tool to respond]` }
         ],
         timestamp: Date.now()
     };

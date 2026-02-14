@@ -1640,13 +1640,6 @@
           "npm:ajv@^8.17.1"
         ]
       },
-      "discord-poc": {
-        "dependencies": [
-          "npm:@mariozechner/pi-ai@~0.51.6",
-          "npm:@sinclair/typebox@~0.34.48",
-          "npm:discord.js@^14.25.1"
-        ]
-      },
       "social": {
         "dependencies": [
           "npm:discord.js@^14.25.1"

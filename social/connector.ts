@@ -1,4 +1,5 @@
 import { db, Agent, AnyTool, InternalData, Harness } from "@tame/agent";
+import * as code from "@tame/code";
 
 const connectors: Connector[] = [];
 let harness: Harness | undefined = undefined;
@@ -60,6 +61,9 @@ export const newAgent = async (trusted: boolean, internal: Record<symbol, Intern
     for (const k of Object.getOwnPropertySymbols(internal)) {
         agent.setInternal(k, internal[k]);
     }
+
+    // TODO: generalize
+    code.initAgent(agent, ".");
 
     for (const connector of connectors) {
         await connector.initAgent(agent);

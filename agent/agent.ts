@@ -8,8 +8,6 @@ export const RESERVED_CTX_SLOT_TOOLS = 0;
 export const RESERVED_CTX_SLOT_MEMORY = 1;
 export const RESERVED_CTX_SLOT_STATE = 2;
 
-export const MAX_TOKENS = 100_000; // TODO: config
-
 export interface AgentOptions {
     /** ID to load an existing agent from */
     id?: number;
