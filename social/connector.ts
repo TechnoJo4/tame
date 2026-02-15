@@ -1,10 +1,11 @@
-import { db, Agent, AnyTool, InternalData, Harness, AssistantMessage } from "@tame/agent";
+import { db, Agent, AnyTool, InternalData, Harness, AssistantMessage, AgentOptions } from "@tame/agent";
 import * as code from "@tame/code";
 
 const connectors: Connector[] = [];
 let harness: Harness | undefined = undefined;
 
-const toolReminderMessage = `<system-reminder>you must reply to the user using tools. non-tool messages are ignored.</system-reminder>`;
+// TODO: move to Agent.init?
+const defaultBlocks = new Set((await db.config.get("defaultAttachedMemory")).split(",").filter(x => x));
 
 export const getConnectors = () => connectors;
 export const addConnector = (connector: Connector) => connectors.push(connector);
@@ -30,7 +31,7 @@ export interface Connector {
 }
 
 /** Function a connector should use to create a new "agent" for a communication channel. */
-export const newAgent = async (trusted: boolean, internal: Record<symbol, InternalData>): Promise<Agent> => {
+export const newAgent = async (trusted: boolean, internal: Record<symbol, InternalData> = {}, options: AgentOptions = {}): Promise<Agent> => {
     if (harness === undefined)
         throw new Error("attempt to create agent before harness");
 
@@ -48,7 +49,7 @@ export const newAgent = async (trusted: boolean, internal: Record<symbol, Intern
         ...connectors.map(c => c.system.io).filter(p => p)
     ].join("\n\n");
 
-    const agent = new Agent({ systemPrompt });
+    const agent = new Agent({ systemPrompt, ...options });
     await agent.init();
 
     agent.setInternal<Trust>(trustKey, {
@@ -60,29 +61,15 @@ export const newAgent = async (trusted: boolean, internal: Record<symbol, Intern
         }
     });
 
-    agent.continuation = function() {
-        // give a reminder to use a tool call to respond if the last message has non-thinking text
-        const lastMessage = this.ctx.messages[this.ctx.messages.length-1] as AssistantMessage;
-        if (lastMessage.content.find(c => c.type === "text") === undefined)
-            return undefined;
-
-        // but not if we've already given a reminder
-        const lastUserMessage = this.ctx.messages.findLast(m => m.role === "user")!.content;
-        if (typeof lastUserMessage === "string") {
-            if (lastUserMessage !== toolReminderMessage)
-                return toolReminderMessage;
-        } else {
-            if (lastUserMessage[0].type !== "text" || lastUserMessage[0].text !== toolReminderMessage)
-                return toolReminderMessage;
-        }
-        return undefined;
-    };
-
     // TODO: generalize
     code.initAgent(agent, ".");
 
     for (const connector of connectors) {
         await connector.initAgent(agent);
+    }
+
+    for (const block of defaultBlocks) {
+        await db.memory.attach(agent.id, block);
     }
 
     for (const k of Object.getOwnPropertySymbols(internal)) {

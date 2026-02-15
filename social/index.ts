@@ -5,6 +5,8 @@ import { type Connector, addConnector, getConnectors, setHarness } from "./conne
 const importConnector = (name: string): Promise<Connector> =>
     importPath(pathResolve(import.meta.dirname!, name, "index.ts")).then(mod => mod.default);
 
+addConnector(await importConnector("heartbeat"));
+
 if (Deno.env.has("DISCORD_TOKEN")) {
     addConnector(await importConnector("discord"));
 }
@@ -16,7 +18,9 @@ tools.splice(tools.length, 0, ...code.tools);
 
 const harness = new Harness({
     tools,
-    inferenceOptions: {},
+    inferenceOptions: {
+        maxTokens: 8192
+    },
     model: getModel("openrouter", "moonshotai/kimi-k2.5")
     /*inferenceOptions: {
         apiKey: "public"
