@@ -176,7 +176,7 @@ export class Harness {
                     continue;
                 }
 
-                const lastMessage = agent.ctx.messages[agent.ctx.messages.length-1];
+                let lastMessage = agent.ctx.messages[agent.ctx.messages.length-1];
                 if (lastMessage.role === "assistant") {
                     const calls = lastMessage.content.filter(m => m.type === "toolCall");
 
@@ -203,11 +203,9 @@ export class Harness {
                     }
                 }
 
-                if (lastMessage.role === "user" || lastMessage.role === "toolResult") {
+                lastMessage = agent.ctx.messages[agent.ctx.messages.length-1];
+                if (lastMessage.role === "user" || lastMessage.role === "toolResult")
                     this.#complete(agent);
-                } else {
-                    console.debug(`harness: agent ${agent.id} done? what`, );
-                }
             }
         }
         this.#stop = false;
