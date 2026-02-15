@@ -2,6 +2,7 @@ import { complete, type ToolCall, type Model, type ProviderStreamOptions } from 
 import { Ajv, type ValidateFunction } from "ajv";
 import type { AnyTool } from "./tool.ts";
 import type { Agent } from "./agent.ts";
+import { Ratelimiter } from "./ratelimit.ts";
 
 const bootTime = Date.now();
 
@@ -57,9 +58,10 @@ export class Harness {
         console.debug(`harness: added agent ${agent.id} (tools: ${Array.from(agent.tools.keys()).join(", ")}), now have ${this.agents.size} agents`);
     }
 
+    #ratelimiter = new Ratelimiter();
     #complete(agent: Agent) {
-        console.debug(`harness: sending completion request for agent ${agent.id}`);
-        agent.promise = agent.updateCtx()
+        agent.promise = this.#ratelimiter.wait()
+            .then(() => agent.updateCtx())
             .then(() => {
                 const options: ProviderStreamOptions = {
                     ...this.options.inferenceOptions,
@@ -70,14 +72,20 @@ export class Harness {
                     }
                 };
 
+                console.debug(`harness: sending completion request for agent ${agent.id}`);
                 return complete(this.options.model, agent.ctx, options);
             })
             .then(res => {
                 console.debug(res);
-                if (res.stopReason !== "error")
+                if (res.stopReason !== "error") {
                     agent.ctx.messages.push(res);
+                    this.#ratelimiter.success();
+                } else {
+                    this.#ratelimiter.error();
+                }
                 agent.promise = undefined;
             }, (err) => {
+                this.#ratelimiter.error();
                 console.error(err);
                 agent.promise = undefined;
             });
@@ -198,7 +206,7 @@ export class Harness {
                 if (lastMessage.role === "user" || lastMessage.role === "toolResult") {
                     this.#complete(agent);
                 } else {
-                    console.debug(`harness: agent ${agent.id} done? what`);
+                    console.debug(`harness: agent ${agent.id} done? what`, );
                 }
             }
         }

@@ -105,8 +105,8 @@ export class Agent {
         const now = Date.now()
         const pruneIdx = this.ctx.messages.findLastIndex(m => (now - m.timestamp) > (this.#options.messagePruneTime ?? 300000));
         if (pruneIdx > RESERVED_CTX_SLOTS) {
-            console.debug(`harness: pruning ${pruneIdx - 1 - RESERVED_CTX_SLOTS} messages`)
-            this.ctx.messages.splice(RESERVED_CTX_SLOTS, pruneIdx - 1 - RESERVED_CTX_SLOTS);
+            console.debug(`harness: pruning ${pruneIdx - 2 - RESERVED_CTX_SLOTS} messages`)
+            this.ctx.messages.splice(RESERVED_CTX_SLOTS, pruneIdx - 2 - RESERVED_CTX_SLOTS);
         }
     }
 
