@@ -21,7 +21,7 @@ const harness = new Harness({
     inferenceOptions: {
         maxTokens: 8192
     },
-    model: getModel("openrouter", "moonshotai/kimi-k2.5")
+    model: getModel("openrouter", "deepseek/deepseek-v3.2")
     /*inferenceOptions: {
         apiKey: "public"
     },

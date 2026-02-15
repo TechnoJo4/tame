@@ -7,7 +7,7 @@ export const send = tool({
         description: "send a message on discord",
         parameters: Type.Object({
             reply_to: Type.Optional(Type.String({ description: "numerical ID of the message to mark this as a reply to" })),
-            message: Type.String({ description: "content of the message to send" }),
+            message: Type.String({ description: "content of the message to send", maxLength: 2000 }),
         }),
     },
     run: async (args, agent) => {

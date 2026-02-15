@@ -22,6 +22,7 @@ export default {
             });
             if (!agentId) await db.config.set("heartbeatAgent", agent.id.toString());
 
+            agent.promise = new Promise(() => {});
             agent.continuation = () => {
                 agent.promise = new Promise(() => {});
                 setTimeout(() => {
