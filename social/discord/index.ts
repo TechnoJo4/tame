@@ -1,5 +1,6 @@
 import { Client, Events, GatewayIntentBits, Partials } from "discord.js";
 import { db, pathJoin, importAllInDirFlat, type AnyTool, type Agent, type Message } from "@tame/agent";
+import data from "./db.ts";
 import { type Connector, getHarness, newAgent } from "../connector.ts";
 import { key, AgentState } from "./state.ts";
 
@@ -51,7 +52,10 @@ client.on(Events.MessageCreate, async (m) => {
                     return `<discord><channel><id>${this.channelId}</id></channel></discord>`;
                 }
             }
+        }, {
+            id: data.getChannelAgent(m.channelId)
         });
+        data.setChannelAgent(m.channelId, agent.id);
 
         agents.set(m.channelId, agent);
         agent.ctx.messages.push(msg);

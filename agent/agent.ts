@@ -102,11 +102,12 @@ export class Agent {
         await this.updateMemory();
 
         // TODO: also prune messages when going over max tokens
-        const now = Date.now()
+        const now = Date.now();
         const pruneIdx = this.ctx.messages.findLastIndex(m => (now - m.timestamp) > (this.#options.messagePruneTime ?? 300000));
-        if (pruneIdx > RESERVED_CTX_SLOTS) {
-            console.debug(`harness: pruning ${pruneIdx - 2 - RESERVED_CTX_SLOTS} messages`)
-            this.ctx.messages.splice(RESERVED_CTX_SLOTS, pruneIdx - 2 - RESERVED_CTX_SLOTS);
+        const toDelete = pruneIdx - 5 - RESERVED_CTX_SLOTS;
+        if (pruneIdx > RESERVED_CTX_SLOTS && toDelete > 0) {
+            console.debug(`harness: pruning ${toDelete} messages`);
+            this.ctx.messages.splice(RESERVED_CTX_SLOTS, toDelete);
         }
     }
 

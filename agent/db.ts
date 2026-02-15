@@ -78,7 +78,7 @@ const pushContext = db.prepare("INSERT OR REPLACE INTO context (agent, i, data) 
 export default {
     db,
     config: {
-        get: (k: string) => promise(() => getConfig.value<[string]>(k)).then(v => v[0]),
+        get: (k: string) => promise(() => getConfig.value<[string]>(k) ?? [""]).then(v => v[0]),
         set: (k: string, v: string) => promiseV(() => setConfig.run(k, v)),
     },
     agent: {
