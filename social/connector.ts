@@ -78,15 +78,15 @@ export const newAgent = async (trusted: boolean, internal: Record<symbol, Intern
         return undefined;
     };
 
-    for (const k of Object.getOwnPropertySymbols(internal)) {
-        agent.setInternal(k, internal[k]);
-    }
-
     // TODO: generalize
     code.initAgent(agent, ".");
 
     for (const connector of connectors) {
         await connector.initAgent(agent);
+    }
+
+    for (const k of Object.getOwnPropertySymbols(internal)) {
+        agent.setInternal(k, internal[k]);
     }
 
     await harness.addAgent(agent, false);
