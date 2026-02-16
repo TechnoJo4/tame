@@ -9,7 +9,7 @@ const maxBlockSize = 10000;
 export const create = tool({
     def: {
         name: "memoryCreate",
-        description: "create a new block of memory.",
+        description: "create a new block of memory",
         parameters: Type.Object({
             block: Type.String({ description: "name of the memory block to create" }),
             content: Type.String({
@@ -32,7 +32,7 @@ export const create = tool({
 export const write = tool({
     def: {
         name: "memoryWrite",
-        description: "rewrite a block of memory.",
+        description: "rewrite a block of memory",
         parameters: Type.Object({
             block: Type.String({ description: "name of the memory block to rewrite" }),
             content: Type.String({
@@ -54,7 +54,7 @@ export const write = tool({
 export const replace = tool({
     def: {
         name: "memoryReplace",
-        description: "replace a string in a block of memory.",
+        description: "replace a string in a block of memory",
         parameters: Type.Object({
             block: Type.String({ description: "name of the memory block to edit" }),
             oldString: Type.String({
@@ -71,7 +71,7 @@ export const replace = tool({
             throw new Error(`block "${args.block}" must exist and be attached before it can be modified`);
         const oldBlock = await db.memory.get(args.block);
         const newBlock = oldBlock.replace(args.oldString, args.newString);
-        if (oldBlock.includes(newBlock))
+        if (newBlock.includes(args.oldString))
             throw new Error(`block "${args.block}" contains ${JSON.stringify(args.oldString)} more than once`);
         if (newBlock.length > maxBlockSize)
             throw new Error(`max block size limit (${maxBlockSize}) would be exceeded`);
@@ -84,7 +84,7 @@ export const replace = tool({
 export const attach = tool({
     def: {
         name: "memoryAttach",
-        description: "attach a block of memory.",
+        description: "attach a block of memory",
         parameters: Type.Object({
             block: Type.String({ description: "name of the memory block to attach" })
         })
@@ -104,7 +104,7 @@ export const attach = tool({
 export const detach = tool({
     def: {
         name: "memoryDetach",
-        description: "detach a block of memory.",
+        description: "detach a block of memory",
         parameters: Type.Object({
             block: Type.String({ description: "name of the memory block to detach" })
         })
