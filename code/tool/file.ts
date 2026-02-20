@@ -72,8 +72,8 @@ export const edit = tool({
         const editEnd = editStart + args.newString.length;
         const lineIndices = getLineIndices(newContent);
 
-        const lineStart = lineIndices.findIndex(i => i <= editStart);
-        const lineEnd = lineIndices.findLastIndex(i => i >= editEnd);
+        const lineStart = Math.max(lineIndices.findIndex(i => i <= editStart) - 1, 0);
+        const lineEnd = Math.min(lineIndices.findLastIndex(i => i >= editEnd) + 1, lineIndices.length-1);
 
         const snippet = newContent.substring(lineIndices[lineStart]+1, lineIndices[lineEnd])
         const notice = [
