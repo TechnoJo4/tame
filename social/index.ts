@@ -21,7 +21,7 @@ const harness = new Harness({
     inferenceOptions: {
         maxTokens: 8192
     },
-    model: getModel("openrouter", "deepseek/deepseek-v3.2")
+    model: (await getModel("openrouter", "minimax/minimax-m2.5"))!
     /*inferenceOptions: {
         apiKey: "public"
     },
