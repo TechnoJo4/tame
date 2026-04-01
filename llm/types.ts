@@ -67,7 +67,12 @@ export interface AssistantMessage {
 }
 
 export type Message = UserMessage | AssistantMessage;
-export type InputMessage = Message & { content: InputContent[] };
+
+export interface InputMessage {
+	role: "user" | "assistant";
+	content: InputContent[];
+}
+
 export interface MessageRequest {
 	system: string;
 	model?: string;

@@ -1,7 +1,7 @@
 import { AnthropicMessagesProvider } from "../llm/messages.ts";
 import { InferenceProvider } from "../llm/types.ts";
 import { PriorityProvider } from "../llm/router.ts";
-import { Static, Object, Union, Literal, Array, String, Number, Optional } from "@sinclair/typebox";
+import { Static, Object, Union, Literal, Array, String, Number, Optional, Type } from "@sinclair/typebox";
 import { StringEnum } from "../util/string-enum.ts";
 import { BackoffRatelimiter, Ratelimiter } from "../util/ratelimit.ts";
 
@@ -26,14 +26,17 @@ export const knownProviderConfig = Object({
 	type: Literal("provider"),
 	provider: knownProvider,
 	apiKey: String(),
-	limiter: Optional(ratelimiterConfig)
+	model: String(),
+	headers: Optional(Object({}, { additionalProperties: String() })),
+	limiter: Optional(ratelimiterConfig),
 });
 
 export type KnownProviderConfig = Static<typeof knownProviderConfig>;
 
 export const autoProviderConfig = Object({
-	type: Literal("priority"),
-	providers: Array(knownProviderConfig)
+	type: Type.Literal("priority"),
+	providers: Array(knownProviderConfig),
+	maxDelay: Type.Number()
 });
 
 export const providerConfig = Union([knownProviderConfig, autoProviderConfig]);
@@ -75,7 +78,7 @@ export const parseKnownProvider = (o: KnownProviderConfig): InferenceProvider =>
 	const key = o.apiKey ?? Deno.env.get(p.envKey);
 	switch (p.type) {
 		case "anthropic-messages":
-			return new AnthropicMessagesProvider(p.url, key);
+			return new AnthropicMessagesProvider(p.url, key, o.headers, o.model);
 	}
 };
 
