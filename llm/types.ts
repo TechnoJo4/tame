@@ -1,3 +1,5 @@
+import { TSchema } from "@sinclair/typebox";
+
 export interface CacheControl {
 	type: "ephemeral";
 	ttl: "5m" | "1h";
@@ -73,10 +75,17 @@ export interface InputMessage {
 	content: InputContent[];
 }
 
+export interface Tool {
+	name: string;
+	description: string;
+	input_schema: TSchema;
+};
+
 export interface MessageRequest {
-	system: string;
 	model?: string;
 	max_tokens?: number;
+	system: string;
+	tools?: Tool[];
 	messages: InputMessage[];
 	cache_control?: CacheControl;
 }

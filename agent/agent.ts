@@ -30,7 +30,7 @@ export class Agent {
     #handlers = new Map<keyof AgentEvents, ((e: never) => unknown)[]>();
     #tools = new Map<string, AnyTool>();
     #context: InputMessage[] = [];
-    #completeQueued = false;
+    #completionQueued = false;
     #schemas = new Map<AnyTool, ValidateFunction<unknown>>();
     #ajv = new Ajv({
         allErrors: true,
@@ -59,7 +59,7 @@ export class Agent {
                     for (const call of calls) {
                         const tool = this.#tools.get(call.name);
                         if (tool)
-                            promises.push(this.execTool(tool, call));
+                            promises.push(this.#execTool(tool, call));
                         else
                             this.do("toolResult", {
                                 error: true,
@@ -96,10 +96,19 @@ export class Agent {
         return this.#thread.signal;
     }
 
+    /** Promise that resolves on abort. */
+    get aborted() {
+        return new Promise<void>(r => {
+            this.#thread.signal?.addEventListener("abort", () => r());
+        });
+    }
+
+    /** Abort processing and clear the queue. */
     abort() {
         return this.#thread.abort();
     }
 
+    /** Add an event onto the queue. */
     do<T extends keyof AgentEvents>(event: T, data: AgentEvents[T]) {
         this.#thread.queue(() => {
             let p: Promise<AgentEvents[T]> = Promise.resolve(data);
@@ -110,23 +119,30 @@ export class Agent {
         });
     }
 
+    /** Add a handler at the start of an event's processing. */
     before<T extends keyof AgentEvents>(event: T, f: Handler<T>) {
         this.#handlers.get(event)?.unshift(f);
     }
 
+    /** Add a handler at the end of an event's processing. */
     after<T extends keyof AgentEvents>(event: T, f: Handler<T>) {
         this.#handlers.get(event)?.push(f);
     }
 
     queueCompletion() {
-        if (!this.#completeQueued) {
-            this.#completeQueued = true;
+        if (!this.#completionQueued) {
+            this.#completionQueued = true;
             this.#thread.queue(async () => {
                 const msg = await this.llm.complete({
                     system: this.system,
                     messages: this.#context,
+                    tools: this.#tools.values().map(t => ({
+                        name: t.name,
+                        description: t.desc,
+                        input_schema: t.args
+                    })).toArray()
                 }, this.signal);
-                this.#completeQueued = false;
+                this.#completionQueued = false;
                 this.do("assistantMessage", { msg });
             });
         }
@@ -137,7 +153,7 @@ export class Agent {
         this.#schemas.set(tool, this.#ajv.compile(tool.args));
     }
 
-    async execTool(tool: AnyTool, call: ToolUse) {
+    async #execTool(tool: AnyTool, call: ToolUse) {
         try {
             const args = structuredClone(call.input);
             const val = this.#schemas.get(tool)!;

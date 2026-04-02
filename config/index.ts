@@ -37,3 +37,4 @@ export const parseConfig = (o: Static<typeof configSchema>): Config => {
 };
 
 export const config = parseConfig(configData);
+export const system = readFileSync(resolve(tameDataFolder, "system.txt"), { encoding: "utf-8" });
