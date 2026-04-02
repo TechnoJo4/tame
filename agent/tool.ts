@@ -13,7 +13,7 @@ export interface Tool<TArgs extends TSchema> {
     /** Schema for the tool's parameters */
     args: TArgs;
     /** Implementation of the tool. This must return a string or object compatible with `JSON.stringify`. */
-    exec: (args: Static<TArgs>, signal: AbortSignal, agent: Agent) => Promise<unknown> | unknown;
+    exec: (args: Static<TArgs>, agent: Agent) => Promise<unknown> | unknown;
 };
 
 export type AnyTool = Tool<TSchema>;

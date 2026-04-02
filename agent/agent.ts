@@ -1,4 +1,6 @@
-import { InferenceProvider, InputMessage, UserMessage, AssistantMessage } from "../llm/types.ts";
+import { Ajv, type ValidateFunction } from "ajv";
+import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse } from "../llm/types.ts";
+import type { AnyTool } from "./tool.ts";
 import { Thread } from "./thread.ts";
 
 export interface UserMessageEvent {
@@ -9,9 +11,16 @@ export interface AssistantMessageEvent {
     msg: AssistantMessage
 };
 
+export interface ToolResultEvent {
+	toolUse: string;
+	error: boolean;
+	result: string;
+};
+
 export interface AgentEvents {
     userMessage: UserMessageEvent;
     assistantMessage: AssistantMessageEvent;
+    toolResult: ToolResultEvent;
 };
 
 export type Handler<T extends keyof AgentEvents> = (data: AgentEvents[T]) => Promise<AgentEvents[T]>;
@@ -19,7 +28,15 @@ export type Handler<T extends keyof AgentEvents> = (data: AgentEvents[T]) => Pro
 export class Agent {
     #thread = new Thread();
     #handlers = new Map<keyof AgentEvents, ((e: never) => unknown)[]>();
+    #tools = new Map<string, AnyTool>();
     #context: InputMessage[] = [];
+    #completeQueued = false;
+    #schemas = new Map<AnyTool, ValidateFunction<unknown>>();
+    #ajv = new Ajv({
+        allErrors: true,
+        strict: false,
+        coerceTypes: true,
+    });
 
     llm: InferenceProvider;
     system: string;
@@ -30,6 +47,47 @@ export class Agent {
 
         this.after("userMessage", async (e: UserMessageEvent) => {
             this.#context.push(e.msg);
+            this.queueCompletion();
+            return e;
+        });
+
+        this.after("assistantMessage", async (e: AssistantMessageEvent) => {
+            const calls = e.msg.content.filter(c => c.type === "tool_use");
+            if (calls.length > 0)
+                this.#thread.queue(async () => {
+                    const promises = [];
+                    for (const call of calls) {
+                        const tool = this.#tools.get(call.name);
+                        if (tool)
+                            promises.push(this.execTool(tool, call));
+                        else
+                            this.do("toolResult", {
+                                error: true,
+                                toolUse: call.id,
+                                result: `tool "${call.name}" not found`
+                            });
+                    }
+                    await Promise.all(promises);
+                    this.queueCompletion();
+                });
+            return e;
+        });
+
+        this.after("toolResult", async (e: ToolResultEvent) => {
+            let m = this.#context.at(-1);
+            if (m?.role !== "user") {
+                m = {
+                    role: "user",
+                    content: []
+                };
+                this.#context.push(m);
+            }
+
+            m.content.push({
+                type: "tool_result",
+                tool_use_id: e.toolUse,
+                content: e.result
+            });
             return e;
         });
     }
@@ -60,13 +118,49 @@ export class Agent {
         this.#handlers.get(event)?.push(f);
     }
 
-    complete() {
-        this.#thread.queue(async () => {
-            const msg = await this.llm.complete({
-                system: this.system,
-                messages: this.#context,
-            }, this.signal);
-            this.do("assistantMessage", { msg });
-        });
+    queueCompletion() {
+        if (!this.#completeQueued) {
+            this.#completeQueued = true;
+            this.#thread.queue(async () => {
+                const msg = await this.llm.complete({
+                    system: this.system,
+                    messages: this.#context,
+                }, this.signal);
+                this.#completeQueued = false;
+                this.do("assistantMessage", { msg });
+            });
+        }
+    }
+
+    addTool(tool: AnyTool) {
+        this.#tools.set(tool.name, tool);
+        this.#schemas.set(tool, this.#ajv.compile(tool.args));
+    }
+
+    async execTool(tool: AnyTool, call: ToolUse) {
+        try {
+            const args = structuredClone(call.input);
+            const val = this.#schemas.get(tool)!;
+            if (!val(args)) {
+                const errors = val.errors?.map(err => `- ${err.instancePath || err.params.missingProperty || "root"}: ${err.message}`);
+                throw new Error(`invalid args to "${call.name}":\n${errors?.join("\n")}`);
+            }
+
+            let res = await tool.exec(args, this);
+            if (typeof res !== "string")
+                res = JSON.stringify(res);
+
+            this.do("toolResult", {
+                toolUse: call.id,
+                error: false,
+                result: res as string
+            });
+        } catch (e) {
+            this.do("toolResult", {
+                toolUse: call.id,
+                error: false,
+                result: e instanceof Error ? e.message : e as string
+            });
+        }
     }
 }

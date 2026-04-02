@@ -6,6 +6,11 @@
 		"ajv": "npm:ajv@^8.17.1",
 		"tiktoken": "npm:tiktoken@^1.0.22"
 	},
+	"lint": {
+		"rules": {
+			"exclude": ["require-await"]
+		}
+	},
 	"fmt": {
 		"useTabs": true
 	}
