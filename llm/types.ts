@@ -43,7 +43,7 @@ export interface ToolResult {
 }
 
 export type Content = Text | Thinking | RedactedThinking | ToolUse | ToolResult;
-export type InputContent = Content & { cache_control: CacheControl };
+export type InputContent = Content & { cache_control?: CacheControl };
 
 export type StopReason =
 	| "end_turn"
@@ -76,11 +76,11 @@ export interface InputMessage {
 export interface MessageRequest {
 	system: string;
 	model?: string;
-	max_tokens: number;
+	max_tokens?: number;
 	messages: InputMessage[];
-	cache_control: CacheControl;
+	cache_control?: CacheControl;
 }
 
 export interface InferenceProvider {
-	complete(req: MessageRequest): Promise<AssistantMessage>;
+	complete(req: MessageRequest, signal?: AbortSignal): Promise<AssistantMessage>;
 }
