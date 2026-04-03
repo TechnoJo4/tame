@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { tool, Type } from "../../agent/tool.ts";
 import process from "node:process";
 
-const killTree = (pid: number) => {
+export const killTree = (pid: number) => {
     try {
         process.kill(-pid, "SIGKILL");
     } catch {
@@ -60,3 +60,7 @@ export const exec = tool({
         ].join("\n\n");
     }
 });
+
+export default [
+    exec
+];
