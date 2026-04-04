@@ -121,12 +121,16 @@ export class Agent {
 
     /** Add a handler at the start of an event's processing. */
     before<T extends keyof AgentEvents>(event: T, f: Handler<T>) {
-        this.#handlers.get(event)?.unshift(f);
+        if (!this.#handlers.has(event))
+            this.#handlers.set(event, []);
+        this.#handlers.get(event)!.unshift(f);
     }
 
     /** Add a handler at the end of an event's processing. */
     after<T extends keyof AgentEvents>(event: T, f: Handler<T>) {
-        this.#handlers.get(event)?.push(f);
+        if (!this.#handlers.has(event))
+            this.#handlers.set(event, []);
+        this.#handlers.get(event)!.push(f);
     }
 
     queueCompletion() {
