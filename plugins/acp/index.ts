@@ -116,7 +116,8 @@ export class ACPAdapter implements acp.Agent {
 								toolCallId: block.id,
 								title: block.name,
 								kind: "other",
-								status: "in_progress"
+								status: "in_progress",
+								rawInput: block.input
 							}
 						});
 						break;
@@ -130,7 +131,7 @@ export class ACPAdapter implements acp.Agent {
 				update: {
 					sessionUpdate: "tool_call_update",
 					toolCallId: e.toolUse,
-					status: "completed"
+					status: e.error ? "failed" : "completed"
 				}
 			});
 			return e;
