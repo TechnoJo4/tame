@@ -1,7 +1,8 @@
 import { Ajv, type ValidateFunction } from "ajv";
-import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason } from "../llm/types.ts";
-import type { AnyTool } from "./tool.ts";
+import { TSchema } from "@sinclair/typebox";
 import { Thread } from "../util/thread.ts";
+import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason } from "../llm/types.ts";
+import type { AnyTool, Tool } from "./tool.ts";
 
 export type AgentStopReason = StopReason | "aborted" | "error";
 
@@ -208,7 +209,7 @@ export class Agent {
                 throw new Error(`invalid args to "${call.name}":\n${errors?.join("\n")}`);
             }
 
-            let res = await tool.exec(args, this);
+            let res = await (tool as Tool<TSchema>).exec(args, this);
             if (typeof res !== "string")
                 res = JSON.stringify(res);
 

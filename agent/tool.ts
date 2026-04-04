@@ -1,4 +1,4 @@
-import type { TSchema, Static } from "@sinclair/typebox";
+import type { Static, TSchema } from "@sinclair/typebox";
 
 import type { Agent } from "./agent.ts";
 
@@ -16,7 +16,12 @@ export interface Tool<TArgs extends TSchema> {
     exec: (args: Static<TArgs>, agent: Agent) => Promise<unknown> | unknown;
 };
 
-export type AnyTool = Tool<TSchema>;
+export interface AnyTool {
+    name: string;
+    desc: string;
+    args: TSchema;
+    exec: (args: never, agent: Agent) => Promise<unknown> | unknown;
+};
 
 /** Helper to let typescript infer the schema type */
 export const tool = <T extends TSchema>(tool: Tool<T>): Tool<T> => tool;
