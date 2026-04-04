@@ -20,6 +20,10 @@ export interface ToolResultEvent {
 	result: string;
 };
 
+export interface CompletionEvent {
+    retriesLeft: number
+};
+
 export interface IdleEvent {
     stopReason: AgentStopReason
 };
@@ -28,6 +32,7 @@ export interface AgentEvents {
     userMessage: UserMessageEvent;
     assistantMessage: AssistantMessageEvent;
     toolResult: ToolResultEvent;
+    completion: CompletionEvent;
     idle: IdleEvent;
 };
 
@@ -106,6 +111,28 @@ export class Agent {
 
             return e;
         });
+
+        this.after("completion", async (e) => {
+            try {
+                const msg = await this.llm.complete({
+                    system: this.system,
+                    messages: this.#context,
+                    tools: this.#tools.values().map(t => ({
+                        name: t.name,
+                        description: t.desc,
+                        input_schema: t.args
+                    })).toArray()
+                }, this.signal);
+                this.#completionQueued = false;
+                this.do("assistantMessage", { msg });
+            } catch {
+                if (e.retriesLeft > 0)
+                    this.queueCompletion(e.retriesLeft - 1);
+                else
+                    this.do("idle", { stopReason: "error" });
+            }
+            return e;
+        });
     }
 
     get signal() {
@@ -174,26 +201,7 @@ export class Agent {
     queueCompletion(maxRetries: number = 5) {
         if (!this.#completionQueued && this.#pendingToolCalls.size === 0) {
             this.#completionQueued = true;
-            this.#thread.queue(async () => {
-                try {
-                    const msg = await this.llm.complete({
-                        system: this.system,
-                        messages: this.#context,
-                        tools: this.#tools.values().map(t => ({
-                            name: t.name,
-                            description: t.desc,
-                            input_schema: t.args
-                        })).toArray()
-                    }, this.signal);
-                    this.#completionQueued = false;
-                    this.do("assistantMessage", { msg });
-                } catch {
-                    if (maxRetries > 0)
-                        this.queueCompletion(maxRetries - 1);
-                    else
-                        this.do("idle", { stopReason: "error" });
-                }
-            });
+            this.do("completion", { retriesLeft: maxRetries });
         }
     }
 

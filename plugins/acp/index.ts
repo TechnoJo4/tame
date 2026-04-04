@@ -26,12 +26,11 @@ const stopReasonMap: Record<AgentStopReason, acp.StopReason> = {
 
 export class ACPAdapter implements acp.Agent {
 	#connection: acp.AgentSideConnection;
-	#sessions: Map<string, Agent>;
+	#sessions = new Map<string, Agent>();
 	#clientCaps: acp.ClientCapabilities = {};
 
 	constructor(connection: acp.AgentSideConnection) {
 		this.#connection = connection;
-		this.#sessions = new Map();
 	}
 
 	async initialize(params: acp.InitializeRequest): Promise<acp.InitializeResponse> {
