@@ -27,8 +27,8 @@ export class PriorityProvider implements InferenceProvider {
 
 			try {
 				return await provider.complete(req);
-			} catch {
-				// ignore
+			} catch (e) {
+				console.error("error in inference request:", req, e);
 			}
 		}
 
@@ -36,8 +36,8 @@ export class PriorityProvider implements InferenceProvider {
 		for (const [provider, _] of skipped) {
 			try {
 				return await provider.complete(req);
-			} catch {
-				// ignore
+			} catch (e) {
+				console.error("error in inference request:", req, e);
 			}
 		}
 
