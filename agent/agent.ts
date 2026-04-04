@@ -171,7 +171,7 @@ export class Agent {
         })
     }
 
-    queueCompletion() {
+    queueCompletion(maxRetries: number = 5) {
         if (!this.#completionQueued && this.#pendingToolCalls.size === 0) {
             this.#completionQueued = true;
             this.#thread.queue(async () => {
@@ -188,7 +188,10 @@ export class Agent {
                     this.#completionQueued = false;
                     this.do("assistantMessage", { msg });
                 } catch {
-                    this.do("idle", { stopReason: "error" });
+                    if (maxRetries > 0)
+                        this.queueCompletion(maxRetries - 1);
+                    else
+                        this.do("idle", { stopReason: "error" });
                 }
             });
         }
