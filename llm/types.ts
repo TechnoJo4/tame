@@ -53,7 +53,8 @@ export type StopReason =
 	| "stop_sequence"
 	| "tool_use"
 	| "pause_turn"
-	| "refusal";
+	| "refusal"
+	| "aborted";
 
 export interface UserMessage {
 	role: "user";

@@ -1,5 +1,5 @@
 import { Ajv, type ValidateFunction } from "ajv";
-import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse } from "../llm/types.ts";
+import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason } from "../llm/types.ts";
 import type { AnyTool } from "./tool.ts";
 import { Thread } from "./thread.ts";
 
@@ -17,10 +17,15 @@ export interface ToolResultEvent {
 	result: string;
 };
 
+export interface IdleEvent {
+    stopReason: StopReason
+};
+
 export interface AgentEvents {
     userMessage: UserMessageEvent;
     assistantMessage: AssistantMessageEvent;
     toolResult: ToolResultEvent;
+    idle: IdleEvent;
 };
 
 export type Handler<T extends keyof AgentEvents> = (data: AgentEvents[T]) => Promise<AgentEvents[T]>;
@@ -28,6 +33,7 @@ export type Handler<T extends keyof AgentEvents> = (data: AgentEvents[T]) => Pro
 export class Agent {
     #thread = new Thread();
     #handlers = new Map<keyof AgentEvents, ((e: never) => unknown)[]>();
+    #onceHandlers = new Map<keyof AgentEvents, ((e: never) => unknown)[]>();
     #tools = new Map<string, AnyTool>();
     #context: InputMessage[] = [];
     #completionQueued = false;
@@ -52,6 +58,7 @@ export class Agent {
         });
 
         this.after("assistantMessage", async (e: AssistantMessageEvent) => {
+            this.#context.push(e.msg);
             const calls = e.msg.content.filter(c => c.type === "tool_use");
             if (calls.length > 0)
                 this.#thread.queue(async () => {
@@ -70,6 +77,8 @@ export class Agent {
                     await Promise.all(promises);
                     this.queueCompletion();
                 });
+            else
+                this.do("idle", { stopReason: e.msg.stop_reason });
             return e;
         });
 
@@ -105,14 +114,18 @@ export class Agent {
 
     /** Abort processing and clear the queue. */
     abort() {
-        return this.#thread.abort();
+        this.#thread.abort();
+        this.do("idle", { stopReason: "aborted" });
     }
 
     /** Add an event onto the queue. */
     do<T extends keyof AgentEvents>(event: T, data: AgentEvents[T]) {
         this.#thread.queue(() => {
             let p: Promise<AgentEvents[T]> = Promise.resolve(data);
-            for (const h of this.#handlers.get(event)!) {
+            for (const h of this.#onceHandlers.get(event) ?? []) {
+                p = p.then(h as Handler<T>);
+            }
+            for (const h of this.#handlers.get(event) ?? []) {
                 p = p.then(h as Handler<T>);
             }
             return p;
@@ -131,6 +144,22 @@ export class Agent {
         if (!this.#handlers.has(event))
             this.#handlers.set(event, []);
         this.#handlers.get(event)!.push(f);
+    }
+
+    /** Add a handler for the processing of the single next instance of an event. */
+    once<T extends keyof AgentEvents>(event: T, f: Handler<T>) {
+        if (!this.#onceHandlers.has(event))
+            this.#onceHandlers.set(event, []);
+        this.#onceHandlers.get(event)!.push(f);
+    }
+
+    waitFor<T extends keyof AgentEvents>(event: T): Promise<AgentEvents[T]> {
+        return new Promise(resolve => {
+            this.once(event, async (e) => {
+                resolve(e);
+                return e;
+            })
+        })
     }
 
     queueCompletion() {
