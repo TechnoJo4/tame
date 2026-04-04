@@ -37,6 +37,8 @@ export class Agent {
     #handlers = new Map<keyof AgentEvents, ((e: never) => unknown)[]>();
     #onceHandlers = new Map<keyof AgentEvents, ((e: never) => unknown)[]>();
     #tools = new Map<string, AnyTool>();
+    #pendingToolCalls = new Set<string>();
+    #abortedToolCalls = new Set<string>();
     #context: InputMessage[] = [];
     #completionQueued = false;
     #schemas = new Map<AnyTool, ValidateFunction<unknown>>();
@@ -64,11 +66,10 @@ export class Agent {
             const calls = e.msg.content.filter(c => c.type === "tool_use");
             if (calls.length > 0)
                 this.#thread.queue(async () => {
-                    const promises = [];
                     for (const call of calls) {
                         const tool = this.#tools.get(call.name);
                         if (tool)
-                            promises.push(this.#execTool(tool, call));
+                            this.#execTool(tool, call)
                         else
                             this.do("toolResult", {
                                 error: true,
@@ -76,8 +77,6 @@ export class Agent {
                                 result: `tool "${call.name}" not found`
                             });
                     }
-                    await Promise.all(promises);
-                    this.queueCompletion();
                 });
             else
                 this.do("idle", { stopReason: e.msg.stop_reason });
@@ -99,6 +98,11 @@ export class Agent {
                 tool_use_id: e.toolUse,
                 content: e.result
             });
+
+            this.#pendingToolCalls.delete(e.toolUse);
+            if (this.#pendingToolCalls.size === 0 && !this.#abortedToolCalls.has(e.toolUse))
+                this.queueCompletion();
+
             return e;
         });
     }
@@ -117,6 +121,8 @@ export class Agent {
     /** Abort processing and clear the queue. */
     abort() {
         this.#thread.abort();
+        for (const t of this.#pendingToolCalls)
+            this.#abortedToolCalls.add(t);
         this.do("idle", { stopReason: "aborted" });
     }
 
@@ -165,7 +171,7 @@ export class Agent {
     }
 
     queueCompletion() {
-        if (!this.#completionQueued) {
+        if (!this.#completionQueued && this.#pendingToolCalls.size === 0) {
             this.#completionQueued = true;
             this.#thread.queue(async () => {
                 try {
@@ -193,6 +199,7 @@ export class Agent {
     }
 
     async #execTool(tool: AnyTool, call: ToolUse) {
+        this.#pendingToolCalls.add(call.id);
         try {
             const args = structuredClone(call.input);
             const val = this.#schemas.get(tool)!;
