@@ -1,0 +1,148 @@
+import * as acp from "npm:@agentclientprotocol/sdk";
+import * as harness from "../../agent/harness.ts";
+import type { Agent } from "../../agent/agent.ts";
+import { InputContent, StopReason } from "../../llm/types.ts";
+import { Plugin } from "../../agent/plugin.ts";
+
+const stopReasonMap: Record<StopReason, acp.StopReason> = {
+	end_turn: "end_turn",
+	max_tokens: "max_tokens",
+	stop_sequence: "end_turn",
+	tool_use: "end_turn",
+	pause_turn: "end_turn",
+	refusal: "refusal",
+	aborted: "cancelled"
+};
+
+export class ACPAdapter implements acp.Agent {
+	#connection: acp.AgentSideConnection;
+	#sessions: Map<string, Agent>;
+
+	constructor(connection: acp.AgentSideConnection) {
+		this.#connection = connection;
+		this.#sessions = new Map();
+	}
+
+	async initialize(_params: acp.InitializeRequest): Promise<acp.InitializeResponse> {
+		return {
+			protocolVersion: acp.PROTOCOL_VERSION
+		};
+	}
+
+	async newSession(_params: acp.NewSessionRequest): Promise<acp.NewSessionResponse> {
+		const sessionId = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+		const agent = harness.newAgent();
+		this.#sessions.set(sessionId, agent);
+
+		agent.after("assistantMessage", async (e) => {
+			for (const block of e.msg.content) {
+				switch (block.type) {
+					case "thinking":
+						this.#connection.sessionUpdate({
+							sessionId,
+							update: {
+								sessionUpdate: "agent_thought_chunk",
+								content: {
+									type: "text",
+									text: block.thinking
+								}
+							}
+						});
+						break;
+					case "text":
+						this.#connection.sessionUpdate({
+							sessionId,
+							update: {
+								sessionUpdate: "agent_message_chunk",
+								content: block
+							}
+						});
+						break;
+					case "tool_use":
+						this.#connection.sessionUpdate({
+							sessionId,
+							update: {
+								sessionUpdate: "tool_call",
+								toolCallId: block.id,
+								title: block.name,
+								kind: "other",
+								status: "in_progress"
+							}
+						});
+						break;
+				}
+			}
+			return e;
+		});
+		agent.after("toolResult", async (e) => {
+			this.#connection.sessionUpdate({
+				sessionId,
+				update: {
+					sessionUpdate: "tool_call_update",
+					toolCallId: e.toolUse,
+					status: "completed"
+				}
+			});
+			return e;
+		});
+
+		return { sessionId };
+	}
+
+	async authenticate(_params: acp.AuthenticateRequest): Promise<acp.AuthenticateResponse | void> {
+		return {};
+	}
+
+	async prompt(params: acp.PromptRequest): Promise<acp.PromptResponse> {
+		const agent = this.#sessions.get(params.sessionId);
+		if (!agent) throw new Error(`session ${params.sessionId} not found`);
+
+		agent.do("userMessage", {
+			msg: {
+				role: "user",
+				content: this.#contentFromACP(params.prompt)
+			}
+		});
+		const idle = await agent.waitFor("idle");
+
+		return { stopReason: stopReasonMap[idle.stopReason] };
+	}
+
+	async cancel(params: acp.CancelNotification): Promise<void> {
+		const agent = this.#sessions.get(params.sessionId);
+		if (!agent) throw new Error(`session ${params.sessionId} not found`);
+		agent.abort();
+	}
+
+	#contentFromACP(blocks: acp.ContentBlock[]): InputContent[] {
+		let text = "";
+		for (const block of blocks) {
+			switch (block.type) {
+				case "text":
+					text += block.text;
+					break;
+				case "resource_link":
+					text += `[${block.name}](${block.uri})`;
+					break;
+			}
+		}
+		return [ { type: "text", text } ];
+	}
+};
+
+export default {
+	async init() {
+		const listener = Deno.listen({
+			hostname: "127.0.0.1",
+			port: 3557,
+			transport: "tcp",
+		});
+
+		for await (const conn of listener) {
+			const stream = acp.ndJsonStream(conn.writable, conn.readable);
+			new acp.AgentSideConnection((conn) => new ACPAdapter(conn), stream);
+		}
+	},
+} satisfies Plugin;

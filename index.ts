@@ -8,7 +8,7 @@ if (dir === undefined) throw new Error("couldn't get import.meta.dirname");
 for (const name of config.toolsets) {
     const path = resolve(dir, "toolsets", name, "index.ts");
     const toolset = await import(toFileUrl(path).toString());
-    harness.plugins.push(...toolset.default);
+    harness.tools.push(...toolset.default);
 }
 
 for (const name of config.plugins) {
@@ -18,18 +18,5 @@ for (const name of config.plugins) {
 }
 
 for (const p of harness.plugins) {
-    await p.init?.();
-}
-
-// debug: remove once there's a first interface
-const agent = harness.newAgent();
-while (true) {
-    const text = prompt(">");
-    if (!text) break;
-    agent.do("userMessage", {
-        msg: {
-            role: "user",
-            content: [ { type: "text", text } ]
-        }
-    });
+    p.init?.();
 }
