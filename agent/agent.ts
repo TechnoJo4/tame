@@ -1,7 +1,7 @@
 import { Ajv, type ValidateFunction } from "ajv";
 import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason } from "../llm/types.ts";
 import type { AnyTool } from "./tool.ts";
-import { Thread } from "./thread.ts";
+import { Thread } from "../util/thread.ts";
 
 export type AgentStopReason = StopReason | "aborted" | "error";
 
