@@ -19,11 +19,13 @@ export class AnthropicMessagesProvider implements InferenceProvider {
     }
 
     async complete(req: MessageRequest, signal?: AbortSignal): Promise<AssistantMessage> {
-        req.model ??= this.defaultModel;
     	const res = await fetch(this.#url, {
             method: "POST",
             headers: this.#headers,
-            body: JSON.stringify(req),
+            body: JSON.stringify({
+                model: this.defaultModel,
+                ...req
+            }),
             signal
         });
         const data = await res.json();
