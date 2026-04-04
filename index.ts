@@ -20,3 +20,16 @@ for (const name of config.plugins) {
 for (const p of harness.plugins) {
     await p.init?.();
 }
+
+// debug: remove once there's a first interface
+const agent = harness.newAgent();
+while (true) {
+    const text = prompt();
+    if (!text) break;
+    agent.do("userMessage", {
+        msg: {
+            role: "user",
+            content: [ { type: "text", text } ]
+        }
+    });
+}

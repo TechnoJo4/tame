@@ -5,7 +5,9 @@ import { parseProvider, providerConfig } from "./provider.ts";
 import { InferenceProvider } from "../llm/types.ts";
 import { readConfig } from "./validate.ts";
 
-export const tameDataFolder = resolve(Deno.env.get("TAME_DATA") ?? "~/.tame");
+export const tameDataFolder = Deno.env.has("TAME_DATA")
+	? resolve(Deno.env.get("TAME_DATA")!)
+	: resolve(Deno.env.get("HOME") ?? ".", ".tame");
 
 export const tameConfigFile = resolve(tameDataFolder, "config.json");
 
