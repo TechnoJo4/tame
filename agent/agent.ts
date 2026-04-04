@@ -45,7 +45,6 @@ export class Agent {
     #tools = new Map<string, AnyTool>();
     #pendingToolCalls = new Set<string>();
     #abortedToolCalls = new Set<string>();
-    #context: InputMessage[] = [];
     #completionQueued = false;
     #schemas = new Map<AnyTool, ValidateFunction<unknown>>();
     #ajv = new Ajv({
@@ -53,22 +52,23 @@ export class Agent {
         strict: false,
         coerceTypes: true,
     });
-
+    
     llm: InferenceProvider;
     system: string;
-
+    context: InputMessage[] = [];
+    
     constructor(llm: InferenceProvider, system: string) {
         this.llm = llm;
         this.system = system;
 
         this.after("userMessage", async (e: UserMessageEvent) => {
-            this.#context.push(e.msg);
+            this.context.push(e.msg);
             this.queueCompletion();
             return e;
         });
 
         this.after("assistantMessage", async (e: AssistantMessageEvent) => {
-            this.#context.push(e.msg);
+            this.context.push(e.msg);
             const calls = e.msg.content.filter(c => c.type === "tool_use");
             if (calls.length > 0)
                 this.#thread.queue(async () => {
@@ -90,13 +90,13 @@ export class Agent {
         });
 
         this.after("toolResult", async (e: ToolResultEvent) => {
-            let m = this.#context.at(-1);
+            let m = this.context.at(-1);
             if (m?.role !== "user") {
                 m = {
                     role: "user",
                     content: []
                 };
-                this.#context.push(m);
+                this.context.push(m);
             }
 
             m.content.push({
@@ -116,7 +116,7 @@ export class Agent {
             try {
                 const msg = await this.llm.complete({
                     system: this.system,
-                    messages: this.#context,
+                    messages: this.context,
                     tools: this.#tools.values().map(t => ({
                         name: t.name,
                         description: t.desc,
