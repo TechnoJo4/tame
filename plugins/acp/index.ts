@@ -6,6 +6,7 @@ import * as harness from "../../agent/harness.ts";
 import { Plugin } from "../../agent/plugin.ts";
 import { readTameConfig } from "../../config/index.ts";
 import { InputContent } from "../../llm/types.ts";
+import { tool } from "../../agent/tool.ts";
 
 const stopReasonMap: Record<AgentStopReason, acp.StopReason> = {
 	end_turn: "end_turn",
@@ -21,16 +22,17 @@ const stopReasonMap: Record<AgentStopReason, acp.StopReason> = {
 export class ACPAdapter implements acp.Agent {
 	#connection: acp.AgentSideConnection;
 	#sessions: Map<string, Agent>;
+	#clientCaps: acp.ClientCapabilities = {};
 
 	constructor(connection: acp.AgentSideConnection) {
 		this.#connection = connection;
 		this.#sessions = new Map();
 	}
 
-	async initialize(_params: acp.InitializeRequest): Promise<acp.InitializeResponse> {
-		return {
-			protocolVersion: acp.PROTOCOL_VERSION
-		};
+	async initialize(params: acp.InitializeRequest): Promise<acp.InitializeResponse> {
+		if (params.clientCapabilities)
+			this.#clientCaps = params.clientCapabilities;
+		return { protocolVersion: acp.PROTOCOL_VERSION };
 	}
 
 	async newSession(_params: acp.NewSessionRequest): Promise<acp.NewSessionResponse> {
@@ -39,6 +41,42 @@ export class ACPAdapter implements acp.Agent {
 			.join("");
 		const agent = harness.newAgent();
 		this.#sessions.set(sessionId, agent);
+
+		if (this.#clientCaps.fs?.readTextFile) {
+			agent.addTool(tool({
+				name: "acpRead",
+				desc: "Read a text file from the ACP client's environment.",
+				args: Type.Object({
+					path: Type.String({ description: "Absolute path to the file to read." }),
+					offset: Type.Optional(Type.Number({ description: "Line number to start reading from (1-based)." })),
+					limit: Type.Optional(Type.Number({ description: "Maximum number of lines to read." }))
+				}),
+				exec: async (args) => {
+					const res = await this.#connection.readTextFile({
+						sessionId,
+						path: args.path,
+						line: args.offset,
+						limit: args.limit
+					});
+					return res.content;
+				}
+			}));
+		}
+
+		if (this.#clientCaps.fs?.writeTextFile) {
+			agent.addTool(tool({
+				name: "acpWrite",
+				desc: "Write a text file in the ACP client's environment.",
+				args: Type.Object({
+					path: Type.String({ description: "Absolute path to the file to read." }),
+					content: Type.String({ description: "The text content to write to the file." })
+				}),
+				exec: async (args) => {
+					await this.#connection.writeTextFile({ sessionId, ...args });
+					return "Success.";
+				}
+			}));
+		}
 
 		agent.after("assistantMessage", async (e) => {
 			for (const block of e.msg.content) {
