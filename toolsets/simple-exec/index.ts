@@ -16,7 +16,9 @@ export const killTree = (pid: number) => {
 
 export const exec = tool({
     name: "exec",
-    desc: `Run a shell command and returns its output.`,
+    desc: `Run a shell command and returns its output.
+- The arguments to shell will be passed to execvp(). Most terminal commands should be prefixed with ["bash", "-lc"].
+- Always set the workdir param when using the shell function. Do not cd unless absolutely necessary.`,
     args: Type.Object({
         command: Type.Array(Type.String(), { description: "Command line for the new process", minItems: 1 }),
         workdir: Type.String({ description: "Working directory to execute the command in" }),

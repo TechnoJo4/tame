@@ -1,8 +1,11 @@
 import * as acp from "npm:@agentclientprotocol/sdk";
-import * as harness from "../../agent/harness.ts";
+import { Type } from "@sinclair/typebox";
+
 import type { Agent } from "../../agent/agent.ts";
-import { InputContent, StopReason } from "../../llm/types.ts";
+import * as harness from "../../agent/harness.ts";
 import { Plugin } from "../../agent/plugin.ts";
+import { readTameConfig } from "../../config/index.ts";
+import { InputContent, StopReason } from "../../llm/types.ts";
 
 const stopReasonMap: Record<StopReason, acp.StopReason> = {
 	end_turn: "end_turn",
@@ -132,15 +135,33 @@ export class ACPAdapter implements acp.Agent {
 	}
 };
 
+const tcpListen = Type.Object({
+	transport: Type.Literal("tcp"),
+	hostname: Type.String(),
+	port: Type.Number()
+});
+
+const unixListen = Type.Object({
+	transport: Type.Literal("unix"),
+	path: Type.String(),
+});
+
+export const configSchema = Type.Object({
+	listen: Type.Union([tcpListen, unixListen])
+});
+
 export default {
 	async init() {
-		const listener = Deno.listen({
-			hostname: "127.0.0.1",
-			port: 3557,
-			transport: "tcp",
-		});
+		const config = readTameConfig("acp.json", configSchema);
+		let listener: Deno.TcpListener | Deno.UnixListener;
+		if (config.listen.transport === "unix") { // lol
+			listener = Deno.listen(config.listen);
+		} else {
+			listener = Deno.listen(config.listen);
+		}
 
 		for await (const conn of listener) {
+			if ("setKeepAlive" in conn) conn.setKeepAlive(true);
 			const stream = acp.ndJsonStream(conn.writable, conn.readable);
 			new acp.AgentSideConnection((conn) => new ACPAdapter(conn), stream);
 		}
