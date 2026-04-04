@@ -43,7 +43,6 @@ export const providerConfig = Union([knownProviderConfig, autoProviderConfig]);
 
 export type ProviderConfig = Static<typeof providerConfig>;
 
-
 // Parsing
 type ProviderType = "anthropic-messages";
 

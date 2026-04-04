@@ -61,6 +61,4 @@ export const exec = tool({
     }
 });
 
-export default [
-    exec
-];
+export default [ exec ];
