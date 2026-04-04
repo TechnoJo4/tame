@@ -59,7 +59,7 @@ export const exec = tool({
             proc.exitCode !== 0 ? `exited with code ${proc.exitCode}.` : "",
             stdout.length > 0 ? `stdout:\n${stdout.join("")}` : "",
             stderr.length > 0 ? `stderr:\n${stderr.join("")}` : "",
-        ].join("\n\n");
+        ].filter(s => s !== "").join("\n\n");
     }
 });
 
