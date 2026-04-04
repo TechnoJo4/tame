@@ -1,20 +1,21 @@
 import * as acp from "npm:@agentclientprotocol/sdk";
 import { Type } from "@sinclair/typebox";
 
-import type { Agent } from "../../agent/agent.ts";
+import type { Agent, AgentStopReason } from "../../agent/agent.ts";
 import * as harness from "../../agent/harness.ts";
 import { Plugin } from "../../agent/plugin.ts";
 import { readTameConfig } from "../../config/index.ts";
-import { InputContent, StopReason } from "../../llm/types.ts";
+import { InputContent } from "../../llm/types.ts";
 
-const stopReasonMap: Record<StopReason, acp.StopReason> = {
+const stopReasonMap: Record<AgentStopReason, acp.StopReason> = {
 	end_turn: "end_turn",
 	max_tokens: "max_tokens",
 	stop_sequence: "end_turn",
 	tool_use: "end_turn",
 	pause_turn: "end_turn",
 	refusal: "refusal",
-	aborted: "cancelled"
+	aborted: "cancelled",
+	error: "cancelled"
 };
 
 export class ACPAdapter implements acp.Agent {
@@ -110,6 +111,7 @@ export class ACPAdapter implements acp.Agent {
 		});
 		const idle = await agent.waitFor("idle");
 
+		if (idle.stopReason === "error") throw new Error("llm request failed");
 		return { stopReason: stopReasonMap[idle.stopReason] };
 	}
 

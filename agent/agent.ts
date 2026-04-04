@@ -3,6 +3,8 @@ import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, To
 import type { AnyTool } from "./tool.ts";
 import { Thread } from "./thread.ts";
 
+export type AgentStopReason = StopReason | "aborted" | "error";
+
 export interface UserMessageEvent {
     msg: UserMessage
 };
@@ -18,7 +20,7 @@ export interface ToolResultEvent {
 };
 
 export interface IdleEvent {
-    stopReason: StopReason
+    stopReason: AgentStopReason
 };
 
 export interface AgentEvents {
@@ -166,17 +168,21 @@ export class Agent {
         if (!this.#completionQueued) {
             this.#completionQueued = true;
             this.#thread.queue(async () => {
-                const msg = await this.llm.complete({
-                    system: this.system,
-                    messages: this.#context,
-                    tools: this.#tools.values().map(t => ({
-                        name: t.name,
-                        description: t.desc,
-                        input_schema: t.args
-                    })).toArray()
-                }, this.signal);
-                this.#completionQueued = false;
-                this.do("assistantMessage", { msg });
+                try {
+                    const msg = await this.llm.complete({
+                        system: this.system,
+                        messages: this.#context,
+                        tools: this.#tools.values().map(t => ({
+                            name: t.name,
+                            description: t.desc,
+                            input_schema: t.args
+                        })).toArray()
+                    }, this.signal);
+                    this.#completionQueued = false;
+                    this.do("assistantMessage", { msg });
+                } catch {
+                    this.do("idle", { stopReason: "error" });
+                }
             });
         }
     }
