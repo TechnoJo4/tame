@@ -8,6 +8,11 @@ import { readTameConfig } from "../../config/index.ts";
 import { InputContent } from "../../llm/types.ts";
 import { tool } from "../../agent/tool.ts";
 
+const acpSystem = `\n\nYou are connected to a user through ACP (Agent Client Protocol).
+
+The ACP user's environment has a separate file system, and may run a different operating system.
+Tools which act through ACP may behave differently from your other tools.`;
+
 const stopReasonMap: Record<AgentStopReason, acp.StopReason> = {
 	end_turn: "end_turn",
 	max_tokens: "max_tokens",
@@ -41,6 +46,8 @@ export class ACPAdapter implements acp.Agent {
 			.join("");
 		const agent = harness.newAgent();
 		this.#sessions.set(sessionId, agent);
+
+		agent.system += acpSystem;
 
 		if (this.#clientCaps.fs?.readTextFile) {
 			agent.addTool(tool({
