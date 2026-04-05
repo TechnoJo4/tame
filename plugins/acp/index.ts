@@ -60,7 +60,10 @@ export class ACPAdapter implements acp.Agent {
 		return {
 			protocolVersion: acp.PROTOCOL_VERSION,
 			agentCapabilities: {
-				loadSession: history.loaded
+				loadSession: history.loaded,
+				sessionCapabilities: {
+					list: history.loaded ? {} : undefined
+				}
 			}
 		};
 	}
