@@ -7,6 +7,7 @@ import { StringEnum } from "../../util/string-enum.ts";
 import type { InputMessage, AssistantMessage, ToolUse } from "../../llm/types.ts";
 import * as harness from "../../agent/harness.ts";
 import { Tool, tool } from "../../agent/tool.ts";
+import { automated } from "../../util/symbols.ts";
 
 export const configSchema = Type.Object({
     maxTokens: Type.Number(),
@@ -54,7 +55,7 @@ export const estimateMessageTokens = (m: InputMessage) => {
 const memory = new Map<Agent, string[]>();
 const userMessageHistory = new Map<Agent, string[]>();
 export const summarizeContext = (ctx: InputMessage[], agent: Agent) => {
-    let summary = "Your context window has just been compacted.\n\n<history>\nKey conversation turns:";
+    let summary = "Your context window has been compacted.\n\n<history>\nKey conversation turns:";
 
     const calls: Record<string, ToolUse> = {};
     for (const c of userMessageHistory.get(agent)!)
@@ -64,7 +65,7 @@ export const summarizeContext = (ctx: InputMessage[], agent: Agent) => {
         for (const c of m.content) {
             if (c.type === "tool_use")
                 calls[c.id] = c;
-            if (c.type === "text") {
+            if (c.type === "text" && !c[automated]) {
                 summary += `\n[${m.role}] ${c.text}`;
                 if (m.role === "user")
                     userMessageHistory.get(agent)!.push(c.text);
@@ -131,7 +132,7 @@ export default {
                 agent.context = [
                     {
                         role: "user",
-                        content: [ { type: "text", text: summary } ]
+                        content: [ { type: "text", text: summary, [automated]: true } ]
                     },
                     ...agent.context.slice(-config.keepTail.messages)
                 ];

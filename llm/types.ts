@@ -1,4 +1,5 @@
 import { TSchema } from "@sinclair/typebox";
+import { automated } from "../util/symbols.ts";
 
 export interface CacheControl {
 	type: "ephemeral";
@@ -17,6 +18,8 @@ export interface Usage {
 export interface Text {
 	type: "text";
 	text: string;
+	/** Tame: whether this content block was automatically inserted.  */
+	[automated]?: boolean;
 }
 
 export interface Thinking {
