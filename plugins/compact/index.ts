@@ -27,9 +27,8 @@ export const configSchema = Type.Object({
 
 const config = readTameConfig("compact.json", configSchema);
 
-const rank_req = await import(`npm:js-tiktoken/ranks/${config.estimation.encoding}`);
-const rank_data = await rank_req.json();
-const enc = new Tiktoken(rank_data);
+const rank = await import(`npm:js-tiktoken/ranks/${config.estimation.encoding}`);
+const enc = new Tiktoken(rank.default);
 
 export const estimateMessageTokens = (m: InputMessage) => {
     let n = 4;
