@@ -58,6 +58,7 @@ export class Agent {
     system: string;
     context: InputMessage[] = [];
     tools = new Map<string, AnyTool>();
+    pluginData = new Map<symbol, unknown>();
 
     constructor(llm: InferenceProvider, system: string, id?: string) {
         this.llm = llm;

@@ -7,7 +7,7 @@ import { Plugin } from "../../agent/plugin.ts";
 import { readTameConfig } from "../../config/index.ts";
 import { InputContent, InputMessage } from "../../llm/types.ts";
 import { tool } from "../../agent/tool.ts";
-import { default as history, historyList, historyLoadAgent } from "../history/index.ts";
+import { getAgentHistory, default as history, historyList, historyLoadAgent } from "../history/index.ts";
 
 const tcpListen = Type.Object({
 	transport: Type.Literal("tcp"),
@@ -62,7 +62,7 @@ export class ACPAdapter implements acp.Agent {
 			agentCapabilities: {
 				loadSession: history.loaded,
 				sessionCapabilities: {
-					list: history.loaded ? {} : undefined
+					list: history.loaded ? {} : undefined,
 				}
 			}
 		};
@@ -83,9 +83,24 @@ export class ACPAdapter implements acp.Agent {
 	}
 
 	async listSessions(_params: acp.ListSessionsRequest): Promise<acp.ListSessionsResponse> {
-		return {
-			sessions: (await historyList()).map(id => ({ cwd: "/", sessionId: id }))
-		};
+		const sessions: acp.SessionInfo[] = [];
+		for (const sess of await historyList()) {
+			const agent = this.#sessions.get(sess);
+			if (agent) {
+				const data = getAgentHistory(agent);
+				sessions.push({
+					sessionId: sess,
+					title: data.title,
+					cwd: "/", // required by acp
+				});
+			} else {
+				sessions.push({
+					sessionId: sess,
+					cwd: "/", // required by acp
+				});
+			}
+		}
+		return { sessions };
 	}
 
 	async authenticate(_params: acp.AuthenticateRequest): Promise<acp.AuthenticateResponse | void> {

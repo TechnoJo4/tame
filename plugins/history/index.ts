@@ -10,17 +10,35 @@ const historyFolder = resolve(tameDataFolder, "history");
 
 export interface History {
     id: string;
+    title?: string;
     system: string;
     context: InputMessage[];
-    //history: InputMessage[];
+    history: InputMessage[];
+}
+
+export interface HistoryAgentData {
+    title?: string;
+    history: InputMessage[];
+};
+
+const dataKey = Symbol("tame:history:plugin-data-key");
+
+export const getAgentHistory = (agent: Agent): HistoryAgentData => {
+    if (!agent.pluginData.has(dataKey))
+        agent.pluginData.set(dataKey, {
+            history: []
+        });
+    return agent.pluginData.get(dataKey) as HistoryAgentData;
 }
 
 export const saveAgent = async (agent: Agent) => {
+    const data = getAgentHistory(agent);
     const path = resolve(historyFolder, agent.id);
     const history: History = {
         id: agent.id,
         system: agent.system,
-        context: agent.context
+        context: agent.context,
+        history: data.history
     };
     await fs.writeFile(path, JSON.stringify(history), { encoding: "utf-8" })
 };
@@ -42,6 +60,9 @@ export const historyLoad = async (id: string): Promise<History> => {
 export const historyToAgent = async (history: History): Promise<Agent> => {
     const agent = newAgent(undefined, history.system, history.id);
     agent.context = history.context;
+    Object.assign(getAgentHistory(agent), {
+        history: history.history
+    } as HistoryAgentData);
     return agent;
 };
 
@@ -60,9 +81,17 @@ export default {
     newAgent(agent) {
         agent.after("userMessage", async (e) => {
             saveAgent(agent);
+
+            const hist = getAgentHistory(agent);
+            if (!hist.title) {
+                const text = e.msg.content.filter(c => c.type === "text").map(c => c.text).join("");
+                if (text.length > 0) {
+                    const nl = text.indexOf("\n");
+                    hist.title = nl !== -1 ? text.substring(0, nl) : text;
+                }
+            }
             return e;
         });
-
         agent.after("assistantMessage", async (e) => {
             saveAgent(agent);
             return e;
