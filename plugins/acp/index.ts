@@ -1,5 +1,5 @@
 import * as acp from "npm:@agentclientprotocol/sdk";
-import { Type } from "@sinclair/typebox";
+import { Static, Type } from "@sinclair/typebox";
 
 import type { Agent, AgentStopReason } from "../../agent/agent.ts";
 import * as harness from "../../agent/harness.ts";
@@ -7,6 +7,24 @@ import { Plugin } from "../../agent/plugin.ts";
 import { readTameConfig } from "../../config/index.ts";
 import { InputContent } from "../../llm/types.ts";
 import { tool } from "../../agent/tool.ts";
+
+const tcpListen = Type.Object({
+	transport: Type.Literal("tcp"),
+	hostname: Type.String(),
+	port: Type.Number()
+});
+
+const unixListen = Type.Object({
+	transport: Type.Literal("unix"),
+	path: Type.String(),
+});
+
+export const configSchema = Type.Object({
+	listen: Type.Union([tcpListen, unixListen]),
+	tools: Type.Boolean({ default: true })
+});
+
+export type Config = Static<typeof configSchema>;
 
 const acpSystem = `\n\nYou are connected to a user through ACP (Agent Client Protocol).
 
@@ -25,12 +43,14 @@ const stopReasonMap: Record<AgentStopReason, acp.StopReason> = {
 };
 
 export class ACPAdapter implements acp.Agent {
+	#config: Config;
 	#connection: acp.AgentSideConnection;
 	#sessions = new Map<string, Agent>();
 	#clientCaps: acp.ClientCapabilities = {};
 
-	constructor(connection: acp.AgentSideConnection) {
+	constructor(connection: acp.AgentSideConnection, config: Config) {
 		this.#connection = connection;
+		this.#config = config;
 	}
 
 	async initialize(params: acp.InitializeRequest): Promise<acp.InitializeResponse> {
@@ -46,42 +66,44 @@ export class ACPAdapter implements acp.Agent {
 		const agent = harness.newAgent();
 		this.#sessions.set(sessionId, agent);
 
-		agent.system += acpSystem;
+		if (this.#config.tools) {
+			agent.system += acpSystem;
 
-		if (this.#clientCaps.fs?.readTextFile) {
-			agent.addTool(tool({
-				name: "acpRead",
-				desc: "Read a text file from the ACP client's environment.",
-				args: Type.Object({
-					path: Type.String({ description: "Absolute path to the file to read." }),
-					offset: Type.Optional(Type.Number({ description: "Line number to start reading from (1-based)." })),
-					limit: Type.Optional(Type.Number({ description: "Maximum number of lines to read." }))
-				}),
-				exec: async (args) => {
-					const res = await this.#connection.readTextFile({
-						sessionId,
-						path: args.path,
-						line: args.offset,
-						limit: args.limit
-					});
-					return res.content;
-				}
-			}));
-		}
+			if (this.#clientCaps.fs?.readTextFile) {
+				agent.addTool(tool({
+					name: "acpRead",
+					desc: "Read a text file from the ACP client's environment.",
+					args: Type.Object({
+						path: Type.String({ description: "Absolute path to the file to read." }),
+						offset: Type.Optional(Type.Number({ description: "Line number to start reading from (1-based)." })),
+						limit: Type.Optional(Type.Number({ description: "Maximum number of lines to read." }))
+					}),
+					exec: async (args) => {
+						const res = await this.#connection.readTextFile({
+							sessionId,
+							path: args.path,
+							line: args.offset,
+							limit: args.limit
+						});
+						return res.content;
+					}
+				}));
+			}
 
-		if (this.#clientCaps.fs?.writeTextFile) {
-			agent.addTool(tool({
-				name: "acpWrite",
-				desc: "Write a text file in the ACP client's environment.",
-				args: Type.Object({
-					path: Type.String({ description: "Absolute path to the file to read." }),
-					content: Type.String({ description: "The text content to write to the file." })
-				}),
-				exec: async (args) => {
-					await this.#connection.writeTextFile({ sessionId, ...args });
-					return "Success.";
-				}
-			}));
+			if (this.#clientCaps.fs?.writeTextFile) {
+				agent.addTool(tool({
+					name: "acpWrite",
+					desc: "Write a text file in the ACP client's environment.",
+					args: Type.Object({
+						path: Type.String({ description: "Absolute path to the file to read." }),
+						content: Type.String({ description: "The text content to write to the file." })
+					}),
+					exec: async (args) => {
+						await this.#connection.writeTextFile({ sessionId, ...args });
+						return "Success.";
+					}
+				}));
+			}
 		}
 
 		agent.after("assistantMessage", async (e) => {
@@ -182,21 +204,6 @@ export class ACPAdapter implements acp.Agent {
 	}
 };
 
-const tcpListen = Type.Object({
-	transport: Type.Literal("tcp"),
-	hostname: Type.String(),
-	port: Type.Number()
-});
-
-const unixListen = Type.Object({
-	transport: Type.Literal("unix"),
-	path: Type.String(),
-});
-
-export const configSchema = Type.Object({
-	listen: Type.Union([tcpListen, unixListen])
-});
-
 export default {
 	async init() {
 		const config = readTameConfig("acp.json", configSchema);
@@ -210,7 +217,7 @@ export default {
 		for await (const conn of listener) {
 			if ("setKeepAlive" in conn) conn.setKeepAlive(true);
 			const stream = acp.ndJsonStream(conn.writable, conn.readable);
-			new acp.AgentSideConnection((conn) => new ACPAdapter(conn), stream);
+			new acp.AgentSideConnection((conn) => new ACPAdapter(conn, config), stream);
 		}
 	},
 } satisfies Plugin;
