@@ -5,4 +5,4 @@ export default {
     newAgent(agent: Agent) {
         agent.system += `\nLocal working directory: ${Deno.cwd()}\n`;
     }
-} satisfies Plugin;
+} as Plugin;

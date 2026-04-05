@@ -5,8 +5,9 @@ import type { Agent, AgentStopReason } from "../../agent/agent.ts";
 import * as harness from "../../agent/harness.ts";
 import { Plugin } from "../../agent/plugin.ts";
 import { readTameConfig } from "../../config/index.ts";
-import { InputContent } from "../../llm/types.ts";
+import { InputContent, InputMessage } from "../../llm/types.ts";
 import { tool } from "../../agent/tool.ts";
+import { default as history } from "../history/index.ts";
 
 const tcpListen = Type.Object({
 	transport: Type.Literal("tcp"),
@@ -56,7 +57,12 @@ export class ACPAdapter implements acp.Agent {
 	async initialize(params: acp.InitializeRequest): Promise<acp.InitializeResponse> {
 		if (params.clientCapabilities)
 			this.#clientCaps = params.clientCapabilities;
-		return { protocolVersion: acp.PROTOCOL_VERSION };
+		return {
+			protocolVersion: acp.PROTOCOL_VERSION,
+			agentCapabilities: {
+				loadSession: history.loaded
+			}
+		};
 	}
 
 	async newSession(_params: acp.NewSessionRequest): Promise<acp.NewSessionResponse> {
@@ -64,6 +70,41 @@ export class ACPAdapter implements acp.Agent {
 			.map((b) => b.toString(16).padStart(2, "0"))
 			.join("");
 		const agent = harness.newAgent();
+		this.#setupAgent(agent, sessionId);
+		return { sessionId };
+	}
+
+	async loadSession(params: acp.LoadSessionRequest): Promise<acp.LoadSessionResponse> {
+		return { };
+	}
+
+	async authenticate(_params: acp.AuthenticateRequest): Promise<acp.AuthenticateResponse | void> {
+		return {};
+	}
+
+	async prompt(params: acp.PromptRequest): Promise<acp.PromptResponse> {
+		const agent = this.#sessions.get(params.sessionId);
+		if (!agent) throw new Error(`session ${params.sessionId} not found`);
+
+		agent.do("userMessage", {
+			msg: {
+				role: "user",
+				content: this.#contentFromACP(params.prompt)
+			}
+		});
+		const idle = await agent.waitFor("idle");
+
+		if (idle.stopReason === "error") throw new Error("llm request failed");
+		return { stopReason: stopReasonMap[idle.stopReason] };
+	}
+
+	async cancel(params: acp.CancelNotification): Promise<void> {
+		const agent = this.#sessions.get(params.sessionId);
+		if (!agent) throw new Error(`session ${params.sessionId} not found`);
+		agent.abort();
+	}
+
+	#setupAgent(agent: Agent, sessionId: string) {
 		this.#sessions.set(sessionId, agent);
 
 		if (this.#config.tools) {
@@ -107,44 +148,7 @@ export class ACPAdapter implements acp.Agent {
 		}
 
 		agent.after("assistantMessage", async (e) => {
-			for (const block of e.msg.content) {
-				switch (block.type) {
-					case "thinking":
-						this.#connection.sessionUpdate({
-							sessionId,
-							update: {
-								sessionUpdate: "agent_thought_chunk",
-								content: {
-									type: "text",
-									text: block.thinking
-								}
-							}
-						});
-						break;
-					case "text":
-						this.#connection.sessionUpdate({
-							sessionId,
-							update: {
-								sessionUpdate: "agent_message_chunk",
-								content: block
-							}
-						});
-						break;
-					case "tool_use":
-						this.#connection.sessionUpdate({
-							sessionId,
-							update: {
-								sessionUpdate: "tool_call",
-								toolCallId: block.id,
-								title: block.name,
-								kind: "other",
-								status: "in_progress",
-								rawInput: block.input
-							}
-						});
-						break;
-				}
-			}
+			this.#sendMessage(sessionId, e.msg);
 			return e;
 		});
 		agent.after("toolResult", async (e) => {
@@ -158,34 +162,56 @@ export class ACPAdapter implements acp.Agent {
 			});
 			return e;
 		});
-
-		return { sessionId };
 	}
 
-	async authenticate(_params: acp.AuthenticateRequest): Promise<acp.AuthenticateResponse | void> {
-		return {};
-	}
-
-	async prompt(params: acp.PromptRequest): Promise<acp.PromptResponse> {
-		const agent = this.#sessions.get(params.sessionId);
-		if (!agent) throw new Error(`session ${params.sessionId} not found`);
-
-		agent.do("userMessage", {
-			msg: {
-				role: "user",
-				content: this.#contentFromACP(params.prompt)
+	#sendMessage(sessionId: string, msg: InputMessage) {
+		for (const block of msg.content) {
+			switch (block.type) {
+				case "thinking":
+					this.#connection.sessionUpdate({
+						sessionId,
+						update: {
+							sessionUpdate: "agent_thought_chunk",
+							content: {
+								type: "text",
+								text: block.thinking
+							}
+						}
+					});
+					break;
+				case "text":
+					this.#connection.sessionUpdate({
+						sessionId,
+						update: {
+							sessionUpdate: msg.role === "assistant" ? "agent_message_chunk" : "user_message_chunk",
+							content: block
+						}
+					});
+					break;
+				case "tool_use":
+					this.#connection.sessionUpdate({
+						sessionId,
+						update: {
+							sessionUpdate: "tool_call",
+							toolCallId: block.id,
+							title: block.name,
+							kind: "other",
+							status: "in_progress",
+							rawInput: block.input
+						}
+					});
+					break;
+				case "tool_result":
+					this.#connection.sessionUpdate({
+						sessionId,
+						update: {
+							sessionUpdate: "tool_call_update",
+							toolCallId: block.tool_use_id,
+							status: block.is_error ? "failed" : "completed"
+						}
+					});
 			}
-		});
-		const idle = await agent.waitFor("idle");
-
-		if (idle.stopReason === "error") throw new Error("llm request failed");
-		return { stopReason: stopReasonMap[idle.stopReason] };
-	}
-
-	async cancel(params: acp.CancelNotification): Promise<void> {
-		const agent = this.#sessions.get(params.sessionId);
-		if (!agent) throw new Error(`session ${params.sessionId} not found`);
-		agent.abort();
+		}
 	}
 
 	#contentFromACP(blocks: acp.ContentBlock[]): InputContent[] {
@@ -220,4 +246,4 @@ export default {
 			new acp.AgentSideConnection((conn) => new ACPAdapter(conn, config), stream);
 		}
 	},
-} satisfies Plugin;
+} as Plugin;

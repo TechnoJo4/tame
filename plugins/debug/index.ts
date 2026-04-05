@@ -12,4 +12,4 @@ export default {
             return e;
         });
     }
-} satisfies Plugin;
+} as Plugin;

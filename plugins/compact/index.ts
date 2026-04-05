@@ -141,4 +141,4 @@ export default {
             return { ...e, req: { ...e.req, messages: agent.context } };
         });
     }
-} satisfies Plugin;
+} as Plugin;
