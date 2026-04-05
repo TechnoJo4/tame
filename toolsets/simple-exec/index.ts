@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { promises as fs } from "node:fs";
 import { tool, Type } from "../../agent/tool.ts";
 import process from "node:process";
 
@@ -25,6 +26,12 @@ export const exec = tool({
         timeout: Type.Number({ description: "Timeout for the command in milliseconds" })
     }),
     exec: async (args, agent) => {
+        if (args.workdir) {
+            try { await fs.access(args.workdir, fs.constants.R_OK) } catch {
+                throw new Error(`${args.workdir}: access failed`)
+            }
+        }
+
         const name = args.command.shift()!;
         const proc = spawn(name, args.command, {
             detached: true,

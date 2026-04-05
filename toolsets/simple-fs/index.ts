@@ -24,7 +24,7 @@ export const read = tool({
     exec: async (args) => {
         const path = resolve(args.path);
         try { await fs.access(path, fs.constants.R_OK) } catch {
-            throw new Error(`${path}: access denied`)
+            throw new Error(`${path}: access failed`)
         }
 
         const content = await fs.readFile(path, { encoding: "utf-8" });
@@ -54,7 +54,7 @@ export const edit = tool({
     exec: async (args) => {
         const path = resolve(args.path);
         try { await fs.access(path, fs.constants.R_OK | fs.constants.W_OK) } catch {
-            throw new Error(`${path}: access denied`)
+            throw new Error(`${path}: access failed`)
         }
 
         const content = await fs.readFile(path, { encoding: "utf-8" });
