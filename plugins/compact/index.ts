@@ -51,16 +51,24 @@ export const estimateMessageTokens = (m: InputMessage) => {
     return n;
 }
 
+const memory = new Map<Agent, string[]>();
+const userMessageHistory = new Map<Agent, string[]>();
 export const summarizeContext = (ctx: InputMessage[], agent: Agent) => {
-    let summary = "<compacted>\nConversation turns:";
+    let summary = "Your context window has just been compacted.\n\n<history>\nKey conversation turns:";
 
     const calls: Record<string, ToolUse> = {};
+    for (const c of userMessageHistory.get(agent)!)
+        summary += `\n[user] ${c}`;
+
     for (const m of ctx) {
         for (const c of m.content) {
             if (c.type === "tool_use")
                 calls[c.id] = c;
-            if (c.type === "text")
-                summary += `[${m.role}] ${c.text}\n`;
+            if (c.type === "text") {
+                summary += `\n[${m.role}] ${c.text}`;
+                if (m.role === "user")
+                    userMessageHistory.get(agent)!.push(c.text);
+            }
         }
     }
 
@@ -77,9 +85,13 @@ export const summarizeContext = (ctx: InputMessage[], agent: Agent) => {
     }
 
     if (calls_text !== "")
-        summary += "Tool calls:" + calls_text;
+        summary += "\n\nTool calls:" + calls_text;
 
-    return summary + "\n</compacted>";
+    const mem = memory.get(agent)!;
+    if (mem.length > 0)
+        summary += "\n\nSession memory (calls to `remember`):" + mem.map(s => `\n- ${s}`).join("");
+
+    return summary + "\n</history>";
 };
 
 export default {
@@ -87,15 +99,20 @@ export default {
         if (config.tools.remember)
             harness.tools.push(tool({
                 name: "remember",
-                desc: `Add a thought to session memory. It will be persisted after compaction.`,
-                args: Type.Object({ thought: Type.String() }),
-                exec: async () => {},
+                desc: `Add a thought to session memory. It will be persisted after compaction`,
+                args: Type.Object({ thought: Type.String({ description: "Text to persist" }) }),
+                exec: async ({ thought }, agent) => {
+                    memory.get(agent)!.push(thought);
+                    return "done";
+                },
                 view: {
                     compact: ({ thought }) => "Remember: "+thought
                 }
             }));
     },
     newAgent(agent: Agent) {
+        memory.set(agent, []);
+        userMessageHistory.set(agent, []);
         agent.before("completion", async (e) => {
             const lastUsageIdx = agent.context.findLastIndex(m => "usage" in m);
             if (lastUsageIdx === -1) return e;
@@ -120,7 +137,7 @@ export default {
                 ];
             }
 
-            return e;
+            return { ...e, req: { ...e.req, messages: agent.context } };
         });
     }
 } satisfies Plugin;
