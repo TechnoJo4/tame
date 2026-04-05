@@ -19,4 +19,5 @@ for (const name of config.plugins) {
 
 for (const p of harness.plugins) {
     p.init?.();
+    p.loaded = true;
 }
