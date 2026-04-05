@@ -60,6 +60,9 @@ export const exec = tool({
             stdout.length > 0 ? `stdout:\n${stdout.join("")}` : "",
             stderr.length > 0 ? `stderr:\n${stderr.join("")}` : "",
         ].filter(s => s !== "").join("\n\n");
+    },
+    view: {
+        compact: (args) => "exec " + args.command.join(" ")
     }
 });
 
