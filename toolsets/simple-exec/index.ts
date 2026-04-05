@@ -21,7 +21,7 @@ export const exec = tool({
 - Always set the workdir param when using the shell function. Do not cd unless absolutely necessary.`,
     args: Type.Object({
         command: Type.Array(Type.String(), { description: "Command line for the new process", minItems: 1 }),
-        workdir: Type.String({ description: "Working directory to execute the command in" }),
+        workdir: Type.Optional(Type.String({ description: "Working directory to execute the command in" })),
         timeout: Type.Number({ description: "Timeout for the command in milliseconds" })
     }),
     exec: async (args, agent) => {

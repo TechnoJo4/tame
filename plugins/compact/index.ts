@@ -7,7 +7,6 @@ import { StringEnum } from "../../util/string-enum.ts";
 import type { InputMessage, AssistantMessage, ToolUse } from "../../llm/types.ts";
 import * as harness from "../../agent/harness.ts";
 import { Tool, tool } from "../../agent/tool.ts";
-import { text } from "node:stream/consumers";
 
 export const configSchema = Type.Object({
     maxTokens: Type.Number(),
