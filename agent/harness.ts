@@ -7,8 +7,8 @@ import { config, system as configSystem } from "../config/index.ts";
 export const plugins: Plugin[] = [];
 export const tools: AnyTool[] = [];
 
-export const newAgent = (llm?: InferenceProvider, system?: string): Agent => {
-    const agent = new Agent(llm ?? config.llm, system ?? configSystem);
+export const newAgent = (llm?: InferenceProvider, system?: string, id?: string): Agent => {
+    const agent = new Agent(llm ?? config.llm, system ?? configSystem, id);
 
     for (const t of tools)
         agent.addTool(t);

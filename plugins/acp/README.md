@@ -2,6 +2,8 @@
 
 Agent Client Protocol
 
+session loading is supported if `history` is also loaded
+
 ## example acp.json
 
 ```json

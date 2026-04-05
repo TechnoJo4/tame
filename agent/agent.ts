@@ -40,6 +40,7 @@ export interface AgentEvents {
 export type Handler<T extends keyof AgentEvents> = (data: AgentEvents[T]) => Promise<AgentEvents[T]>;
 
 export class Agent {
+    #id: string;
     #thread = new Thread();
     #handlers = new Map<keyof AgentEvents, ((e: never) => unknown)[]>();
     #onceHandlers = new Map<keyof AgentEvents, ((e: never) => unknown)[]>();
@@ -52,15 +53,18 @@ export class Agent {
         strict: false,
         coerceTypes: true,
     });
-    
+
     llm: InferenceProvider;
     system: string;
     context: InputMessage[] = [];
     tools = new Map<string, AnyTool>();
-    
-    constructor(llm: InferenceProvider, system: string) {
+
+    constructor(llm: InferenceProvider, system: string, id?: string) {
         this.llm = llm;
         this.system = system;
+        this.#id = id ?? Array.from(crypto.getRandomValues(new Uint8Array(16)))
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
 
         this.after("userMessage", async (e: UserMessageEvent) => {
             this.context.push(e.msg);
@@ -126,6 +130,10 @@ export class Agent {
             }
             return e;
         });
+    }
+
+    get id() {
+        return this.#id;
     }
 
     get signal() {

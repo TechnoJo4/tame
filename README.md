@@ -10,6 +10,7 @@ features:
 plugins:
 - `acp`: [ACP](https://agentclientprotocol.com/) (over tcp/unix socket)
 - `compact`: basic compaction
+- `history`: save session history
 
 config goes in `$TAME_DATA` or `~/.tame`:
 - `system.txt`

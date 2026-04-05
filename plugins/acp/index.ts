@@ -7,7 +7,7 @@ import { Plugin } from "../../agent/plugin.ts";
 import { readTameConfig } from "../../config/index.ts";
 import { InputContent, InputMessage } from "../../llm/types.ts";
 import { tool } from "../../agent/tool.ts";
-import { default as history } from "../history/index.ts";
+import { default as history, historyList, historyLoadAgent } from "../history/index.ts";
 
 const tcpListen = Type.Object({
 	transport: Type.Literal("tcp"),
@@ -66,16 +66,23 @@ export class ACPAdapter implements acp.Agent {
 	}
 
 	async newSession(_params: acp.NewSessionRequest): Promise<acp.NewSessionResponse> {
-		const sessionId = Array.from(crypto.getRandomValues(new Uint8Array(16)))
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("");
 		const agent = harness.newAgent();
-		this.#setupAgent(agent, sessionId);
-		return { sessionId };
+		this.#setupAgent(agent);
+		return { sessionId: agent.id };
 	}
 
 	async loadSession(params: acp.LoadSessionRequest): Promise<acp.LoadSessionResponse> {
-		return { };
+		const agent = await historyLoadAgent(params.sessionId);
+		this.#setupAgent(agent);
+		for (const m of agent.context)
+			this.#sendMessage(agent.id, m);
+		return {};
+	}
+
+	async listSessions(_params: acp.ListSessionsRequest): Promise<acp.ListSessionsResponse> {
+		return {
+			sessions: (await historyList()).map(id => ({ cwd: "/", sessionId: id }))
+		};
 	}
 
 	async authenticate(_params: acp.AuthenticateRequest): Promise<acp.AuthenticateResponse | void> {
@@ -104,8 +111,8 @@ export class ACPAdapter implements acp.Agent {
 		agent.abort();
 	}
 
-	#setupAgent(agent: Agent, sessionId: string) {
-		this.#sessions.set(sessionId, agent);
+	#setupAgent(agent: Agent) {
+		this.#sessions.set(agent.id, agent);
 
 		if (this.#config.tools) {
 			agent.system += acpSystem;
@@ -121,7 +128,7 @@ export class ACPAdapter implements acp.Agent {
 					}),
 					exec: async (args) => {
 						const res = await this.#connection.readTextFile({
-							sessionId,
+							sessionId: agent.id,
 							path: args.path,
 							line: args.offset,
 							limit: args.limit
@@ -140,7 +147,7 @@ export class ACPAdapter implements acp.Agent {
 						content: Type.String({ description: "The text content to write to the file." })
 					}),
 					exec: async (args) => {
-						await this.#connection.writeTextFile({ sessionId, ...args });
+						await this.#connection.writeTextFile({ sessionId: agent.id, ...args });
 						return "Success.";
 					}
 				}));
@@ -148,12 +155,12 @@ export class ACPAdapter implements acp.Agent {
 		}
 
 		agent.after("assistantMessage", async (e) => {
-			this.#sendMessage(sessionId, e.msg);
+			this.#sendMessage(agent.id, e.msg);
 			return e;
 		});
 		agent.after("toolResult", async (e) => {
 			this.#connection.sessionUpdate({
-				sessionId,
+				sessionId: agent.id,
 				update: {
 					sessionUpdate: "tool_call_update",
 					toolCallId: e.toolUse,
