@@ -1,7 +1,7 @@
 import { Ajv, type ValidateFunction } from "ajv";
 import { TSchema } from "@sinclair/typebox";
 import { Thread } from "../util/thread.ts";
-import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason } from "../llm/types.ts";
+import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason, MessageRequest } from "../llm/types.ts";
 import type { AnyTool, Tool } from "./tool.ts";
 
 export type AgentStopReason = StopReason | "aborted" | "error";
@@ -21,7 +21,8 @@ export interface ToolResultEvent {
 };
 
 export interface CompletionEvent {
-    retriesLeft: number
+    retriesLeft: number;
+    req: MessageRequest;
 };
 
 export interface IdleEvent {
@@ -42,7 +43,6 @@ export class Agent {
     #thread = new Thread();
     #handlers = new Map<keyof AgentEvents, ((e: never) => unknown)[]>();
     #onceHandlers = new Map<keyof AgentEvents, ((e: never) => unknown)[]>();
-    #tools = new Map<string, AnyTool>();
     #pendingToolCalls = new Set<string>();
     #abortedToolCalls = new Set<string>();
     #completionQueued = false;
@@ -56,6 +56,7 @@ export class Agent {
     llm: InferenceProvider;
     system: string;
     context: InputMessage[] = [];
+    tools = new Map<string, AnyTool>();
     
     constructor(llm: InferenceProvider, system: string) {
         this.llm = llm;
@@ -73,7 +74,7 @@ export class Agent {
             if (calls.length > 0)
                 this.#thread.queue(async () => {
                     for (const call of calls) {
-                        const tool = this.#tools.get(call.name);
+                        const tool = this.tools.get(call.name);
                         if (tool)
                             this.#execTool(tool, call)
                         else
@@ -114,15 +115,7 @@ export class Agent {
 
         this.after("completion", async (e) => {
             try {
-                const msg = await this.llm.complete({
-                    system: this.system,
-                    messages: this.context,
-                    tools: this.#tools.values().map(t => ({
-                        name: t.name,
-                        description: t.desc,
-                        input_schema: t.args
-                    })).toArray()
-                }, this.signal);
+                const msg = await this.llm.complete(e.req, this.signal);
                 this.#completionQueued = false;
                 this.do("assistantMessage", { msg });
             } catch {
@@ -201,12 +194,25 @@ export class Agent {
     queueCompletion(maxRetries: number = 5) {
         if (!this.#completionQueued && this.#pendingToolCalls.size === 0) {
             this.#completionQueued = true;
-            this.do("completion", { retriesLeft: maxRetries });
+            this.#thread.queue(async () => {
+                this.do("completion", {
+                    retriesLeft: maxRetries,
+                    req: {
+                        system: this.system,
+                        messages: this.context,
+                        tools: this.tools.values().map(t => ({
+                            name: t.name,
+                            description: t.desc,
+                            input_schema: t.args
+                        })).toArray()
+                    }
+                });
+            });
         }
     }
 
     addTool(tool: AnyTool) {
-        this.#tools.set(tool.name, tool);
+        this.tools.set(tool.name, tool);
         this.#schemas.set(tool, this.#ajv.compile(tool.args));
     }
 
