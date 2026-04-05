@@ -51,7 +51,11 @@ export const historyLoadAgent = async (id: string): Promise<Agent> => {
 
 export default {
     async init() {
-        fs.mkdir(historyFolder);
+        try {
+            fs.access(historyFolder);
+        } catch {
+            fs.mkdir(historyFolder);
+        }
     },
     newAgent(agent) {
         agent.after("userMessage", async (e) => {
