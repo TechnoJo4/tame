@@ -11,7 +11,9 @@ export const readConfig = <T extends TSchema>(path: string, schema: T): Static<T
     } catch {
         // ignore
     }
-    if (!ajv.validate(schema, data))
-        throw new Error(`invalid config ${path}:\n${ajv.errors?.join("\n")}`);
+    if (!ajv.validate(schema, data)) {
+        const errors = ajv.errors?.map(err => `- ${err.instancePath || err.params.missingProperty || "root"}: ${err.message}`);
+        throw new Error(`invalid config ${path}:\n${errors?.join("\n")}`);
+    }
     return data;
 };
