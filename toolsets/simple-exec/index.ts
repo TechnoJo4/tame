@@ -23,7 +23,7 @@ export const exec = tool({
     args: Type.Object({
         command: Type.Array(Type.String(), { description: "Command line for the new process", minItems: 1 }),
         workdir: Type.Optional(Type.String({ description: "Working directory to execute the command in" })),
-        timeout: Type.Number({ description: "Timeout for the command in milliseconds" })
+        timeout: Type.Number({ description: "Timeout for the command in milliseconds" }) // TODO: implement
     }),
     exec: async (args, agent) => {
         if (args.workdir) {
@@ -50,6 +50,7 @@ export const exec = tool({
             stdout.push(decoder.decode(data, { stream: true }));
         });
 
+        // TODO: report
         const onAbort = () => {
             if (proc.pid) killTree(proc.pid);
         };

@@ -113,6 +113,9 @@ export default {
     newAgent(agent: Agent) {
         memory.set(agent, []);
         userMessageHistory.set(agent, []);
+
+        // TODO: per-turn compaction
+
         agent.before("completion", async (e) => {
             const lastUsageIdx = agent.context.findLastIndex(m => "usage" in m);
             if (lastUsageIdx === -1) return e;

@@ -27,7 +27,7 @@ export const configSchema = Type.Object({
 
 export type Config = Static<typeof configSchema>;
 
-const acpSystem = `\n\nYou are connected to a user through ACP (Agent Client Protocol).
+const acpToolSystem = `\n\nYou are connected to a user through ACP (Agent Client Protocol).
 
 The ACP user's environment has a separate file system, and may run a different operating system.
 Tools which act through ACP may behave differently from your other tools.`;
@@ -133,16 +133,16 @@ export class ACPAdapter implements acp.Agent {
 		this.#sessions.set(agent.id, agent);
 
 		if (this.#config.tools) {
-			agent.system += acpSystem;
+			agent.system += acpToolSystem;
 
 			if (this.#clientCaps.fs?.readTextFile) {
 				agent.addTool(tool({
 					name: "acpRead",
-					desc: "Read a text file from the ACP client's environment.",
+					desc: "Read a text file from the ACP client's environment",
 					args: Type.Object({
-						path: Type.String({ description: "Absolute path to the file to read." }),
-						offset: Type.Optional(Type.Number({ description: "Line number to start reading from (1-based)." })),
-						limit: Type.Optional(Type.Number({ description: "Maximum number of lines to read." }))
+						path: Type.String({ description: "Absolute path to the file to read" }),
+						offset: Type.Optional(Type.Number({ description: "Line number to start reading from (1-based)" })),
+						limit: Type.Optional(Type.Number({ description: "Maximum number of lines to read" }))
 					}),
 					exec: async (args) => {
 						const res = await this.#connection.readTextFile({
@@ -159,10 +159,10 @@ export class ACPAdapter implements acp.Agent {
 			if (this.#clientCaps.fs?.writeTextFile) {
 				agent.addTool(tool({
 					name: "acpWrite",
-					desc: "Write a text file in the ACP client's environment.",
+					desc: "Write a text file in the ACP client's environment",
 					args: Type.Object({
-						path: Type.String({ description: "Absolute path to the file to read." }),
-						content: Type.String({ description: "The text content to write to the file." })
+						path: Type.String({ description: "Absolute path to the file to read" }),
+						content: Type.String({ description: "The text content to write to the file" })
 					}),
 					exec: async (args) => {
 						await this.#connection.writeTextFile({ sessionId: agent.id, ...args });
