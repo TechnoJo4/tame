@@ -63,7 +63,7 @@ export class ACPAdapter implements acp.Agent {
 				loadSession: history.loaded,
 				sessionCapabilities: {
 					list: history.loaded ? {} : undefined,
-				}
+				},
 			}
 		};
 	}
@@ -75,8 +75,11 @@ export class ACPAdapter implements acp.Agent {
 	}
 
 	async loadSession(params: acp.LoadSessionRequest): Promise<acp.LoadSessionResponse> {
-		const agent = await historyLoadAgent(params.sessionId);
-		this.#setupAgent(agent);
+		let agent = this.#sessions.get(params.sessionId);
+		if (!agent) {
+			agent = await historyLoadAgent(params.sessionId);
+			this.#setupAgent(agent);
+		}
 		for (const m of agent.context)
 			this.#sendMessage(agent.id, m);
 		return {};
