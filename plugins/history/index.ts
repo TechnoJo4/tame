@@ -4,7 +4,8 @@ import { promises as fs } from "node:fs";
 import { resolve } from "@std/path";
 import { tameDataFolder } from "../../config/index.ts";
 import { newAgent } from "../../agent/harness.ts";
-import { InputMessage } from "../../llm/types.ts";
+import { InputMessage, TameMessageMeta } from "../../llm/types.ts";
+import { tameMsgMeta } from "../../util/symbols.ts";
 
 const historyFolder = resolve(tameDataFolder, "history");
 
@@ -16,12 +17,33 @@ export interface History {
     history: InputMessage[];
 }
 
+export type PersistedMessage = InputMessage & {
+    [tameMsgMeta]: undefined;
+    _tame?: TameMessageMeta;
+};
+
+export type PersistedHistory = History & {
+    context: PersistedMessage[];
+    history: PersistedMessage[];
+}
+
 export interface HistoryAgentData {
     title?: string;
     history: InputMessage[];
 };
 
 const dataKey = Symbol("tame:history:plugin-data-key");
+
+export const messageToPersisted = (msg: InputMessage): PersistedMessage => ({
+    ...msg,
+    [tameMsgMeta]: undefined,
+    _tame: msg?.[tameMsgMeta]
+});
+
+export const messageFromPersisted = (msg: PersistedMessage): InputMessage => ({
+    ...msg,
+    [tameMsgMeta]: msg?._tame
+});
 
 export const getAgentHistory = (agent: Agent): HistoryAgentData => {
     if (!agent.pluginData.has(dataKey))
@@ -37,8 +59,8 @@ export const saveAgent = async (agent: Agent) => {
     const history: History = {
         id: agent.id,
         system: agent.system,
-        context: agent.context,
-        history: data.history
+        context: agent.context.map(messageToPersisted),
+        history: data.history.map(messageToPersisted)
     };
     await fs.writeFile(path, JSON.stringify(history), { encoding: "utf-8" })
 };
@@ -53,8 +75,13 @@ export const historyList = async (): Promise<string[]> => {
 };
 
 export const historyLoad = async (id: string): Promise<History> => {
-    const data = await fs.readFile(resolve(historyFolder, id), { encoding: "utf-8" });
-    return JSON.parse(data);
+    const json = await fs.readFile(resolve(historyFolder, id), { encoding: "utf-8" });
+    const data: PersistedHistory = JSON.parse(json);
+    return {
+        ...data,
+        context: data.context.map(messageFromPersisted),
+        history: data.history.map(messageFromPersisted),
+    };
 };
 
 export const historyToAgent = async (history: History): Promise<Agent> => {
