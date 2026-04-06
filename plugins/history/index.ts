@@ -73,9 +73,9 @@ export const historyLoadAgent = async (id: string): Promise<Agent> => {
 export default {
     async init() {
         try {
-            fs.access(historyFolder);
+            await fs.access(historyFolder);
         } catch {
-            fs.mkdir(historyFolder);
+            await fs.mkdir(historyFolder);
         }
     },
     newAgent(agent) {
