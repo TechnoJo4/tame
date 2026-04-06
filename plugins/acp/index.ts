@@ -259,7 +259,8 @@ export default {
 	async init() {
 		const config = readTameConfig("acp.json", configSchema);
 		let listener: Deno.TcpListener | Deno.UnixListener;
-		if (config.listen.transport === "unix") { // lol
+		if (config.listen.transport === "unix") {
+			await Deno.remove(config.listen.path);
 			listener = Deno.listen(config.listen);
 		} else {
 			listener = Deno.listen(config.listen);
