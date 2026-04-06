@@ -7,7 +7,7 @@ import { StringEnum } from "../../util/string-enum.ts";
 import type { InputMessage, AssistantMessage, ToolUse } from "../../llm/types.ts";
 import * as harness from "../../agent/harness.ts";
 import { Tool, tool } from "../../agent/tool.ts";
-import { automated } from "../../util/symbols.ts";
+import { tameMsgMeta } from "../../util/symbols.ts";
 
 export const configSchema = Type.Object({
     maxTokens: Type.Number(),
@@ -61,13 +61,15 @@ export const summarizeContext = (ctx: InputMessage[], agent: Agent) => {
         summary += `\n[user] ${c}`;
 
     for (const m of ctx) {
-        for (const c of m.content) {
-            if (c.type === "tool_use")
-                calls[c.id] = c;
-            if (c.type === "text" && !c[automated]) {
-                summary += `\n[${m.role}] ${c.text}`;
-                if (m.role === "user")
-                    userMessageHistory.get(agent)!.push(c.text);
+        if (!m[tameMsgMeta]?.automated) {
+            for (const c of m.content) {
+                if (c.type === "tool_use")
+                    calls[c.id] = c;
+                if (c.type === "text") {
+                    summary += `\n[${m.role}] ${c.text}`;
+                    if (m.role === "user")
+                        userMessageHistory.get(agent)!.push(c.text);
+                }
             }
         }
     }
@@ -134,7 +136,8 @@ export default {
                 agent.context = [
                     {
                         role: "user",
-                        content: [ { type: "text", text: summary, [automated]: true } ]
+                        content: [ { type: "text", text: summary } ],
+                        [tameMsgMeta]: { automated: true }
                     },
                     ...agent.context.slice(-config.keepTail.messages)
                 ];

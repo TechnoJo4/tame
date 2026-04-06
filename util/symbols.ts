@@ -1,1 +1,1 @@
-export const automated = Symbol("tame:message.automated");
+export const tameMsgMeta = Symbol("tame:message_meta");

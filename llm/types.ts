@@ -1,5 +1,5 @@
 import { TSchema } from "@sinclair/typebox";
-import { automated } from "../util/symbols.ts";
+import { tameMsgMeta } from "../util/symbols.ts";
 
 export interface CacheControl {
 	type: "ephemeral";
@@ -18,8 +18,6 @@ export interface Usage {
 export interface Text {
 	type: "text";
 	text: string;
-	/** Tame: whether this content block was automatically inserted.  */
-	[automated]?: boolean;
 }
 
 export interface Thinking {
@@ -58,9 +56,15 @@ export type StopReason =
 	| "pause_turn"
 	| "refusal";
 
+export interface TameMessageMeta {
+	/** Whether this message was automatically inserted.  */
+	automated?: true
+}
+
 export interface UserMessage {
 	role: "user";
 	content: Content[];
+	[tameMsgMeta]?: TameMessageMeta;
 }
 
 export interface AssistantMessage {
@@ -69,6 +73,7 @@ export interface AssistantMessage {
 	stop_reason: StopReason;
 	model: string;
 	usage: Usage;
+	[tameMsgMeta]?: TameMessageMeta;
 }
 
 export type Message = UserMessage | AssistantMessage;
@@ -76,6 +81,7 @@ export type Message = UserMessage | AssistantMessage;
 export interface InputMessage {
 	role: "user" | "assistant";
 	content: InputContent[];
+	[tameMsgMeta]?: TameMessageMeta;
 }
 
 export interface Tool {
