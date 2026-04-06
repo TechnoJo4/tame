@@ -208,6 +208,7 @@ export class Agent {
                     retriesLeft: maxRetries,
                     req: {
                         system: this.system,
+                        session_id: this.id,
                         messages: this.context,
                         tools: this.tools.values().map(t => ({
                             name: t.name,

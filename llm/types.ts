@@ -97,6 +97,7 @@ export interface MessageRequest {
 	tools?: Tool[];
 	messages: InputMessage[];
 	cache_control?: CacheControl;
+	session_id?: string;
 }
 
 export interface InferenceProvider {
