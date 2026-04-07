@@ -240,7 +240,7 @@ export class ACPAdapter implements acp.Agent {
 							title: block.name,
 							status: "in_progress",
 							rawInput: block.input,
-							...(view ?? {})
+							...(typeof view === "object" ? view : {})
 						}
 					});
 					break;
@@ -256,7 +256,7 @@ export class ACPAdapter implements acp.Agent {
 							sessionUpdate: "tool_call_update",
 							toolCallId: block.tool_use_id,
 							status: block.is_error ? "failed" : "completed",
-							...(view ?? {})
+							...(typeof view === "object" ? view : {})
 						}
 					});
 				}
