@@ -17,6 +17,7 @@ export interface History {
     system: string;
     context: InputMessage[];
     history: InputMessage[];
+    extra: Record<string, unknown>;
 }
 
 export type PersistedMessage = InputMessage & {
@@ -104,12 +105,13 @@ export class HistoryPlugin implements Plugin {
             id: agent.id,
             system: agent.system,
             context: agent.context.map(messageToPersisted),
-            history: data.history.map(messageToPersisted)
+            history: data.history.map(messageToPersisted),
+            extra: Object.fromEntries(this.#hooks.entries().map(([k,v]) => [k, v.save(agent)]))
         };
         await fs.writeFile(path, JSON.stringify(history), { encoding: "utf-8" })
     };
 
-    async historyList(): Promise<string[]> {
+    async list(): Promise<string[]> {
         const files = await fs.readdir(historyFolder, { withFileTypes: true });
         const agents = [];
         for (const file of files)
@@ -118,7 +120,7 @@ export class HistoryPlugin implements Plugin {
         return agents;
     };
 
-    async historyLoad(id: string): Promise<History> {
+    async load(id: string): Promise<History> {
         const json = await fs.readFile(resolve(historyFolder, id), { encoding: "utf-8" });
         const data: PersistedHistory = JSON.parse(json);
         return {
@@ -128,17 +130,28 @@ export class HistoryPlugin implements Plugin {
         };
     };
 
+    async loadAgent(id: string): Promise<Agent> {
+        return await this.historyToAgent(await this.load(id));
+    };
+
     async historyToAgent(history: History): Promise<Agent> {
         const agent = newAgent(undefined, history.system, history.id);
         agent.context = history.context;
         Object.assign(getAgentHistory(agent), {
+            title: history.title,
             history: history.history
         } as HistoryAgentData);
-        return agent;
-    };
 
-    async historyLoadAgent(id: string): Promise<Agent> {
-        return await this.historyToAgent(await this.historyLoad(id));
+        for (const [k,v] of Object.entries(history.extra)) {
+            const hook = this.#hooks.get(k);
+            if (!hook) {
+                console.warn(`extra data '${k}' in history for agent but hook not found`)
+                continue;
+            }
+            hook.load(agent, v);
+        }
+
+        return agent;
     };
 }
 
