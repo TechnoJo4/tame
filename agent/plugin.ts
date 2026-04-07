@@ -1,7 +1,7 @@
 import { Agent } from "./agent.ts";
 
 export interface Plugin {
-    loaded?: true;
+    enabled?: true;
     init?: () => void;
     newAgent?: (agent: Agent) => void;
 };

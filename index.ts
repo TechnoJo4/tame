@@ -17,7 +17,5 @@ for (const name of config.plugins) {
     harness.plugins.push(plugin.default);
 }
 
-for (const p of harness.plugins) {
-    p.init?.();
-    p.loaded = true;
-}
+for (const p of harness.plugins) p.enabled = true;
+for (const p of harness.plugins) p.init?.();

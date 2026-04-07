@@ -62,7 +62,7 @@ export interface HistoryHook<T> {
 export class HistoryPlugin implements Plugin {
     #hooks = new Map<string, HistoryHook<unknown>>();
     
-    loaded?: true;
+    enabled?: true;
 
     async init() {
         try {
@@ -90,6 +90,10 @@ export class HistoryPlugin implements Plugin {
             await this.saveAgent(agent);
             return e;
         });
+        agent.after("toolResult", async (e) => {
+            await this.saveAgent(agent);
+            return e;
+        });
     }
 
     addHook<T>(key: string, hook: HistoryHook<T>): void {
@@ -98,7 +102,7 @@ export class HistoryPlugin implements Plugin {
         this.#hooks.set(key, hook);
     }
 
-    async saveAgent(agent: Agent) {
+    async saveAgent(agent: Agent) { // TODO: debounce (use own thread?)
         const data = getAgentHistory(agent);
         const path = resolve(historyFolder, agent.id);
         const history: History = {
