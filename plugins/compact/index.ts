@@ -7,6 +7,7 @@ import { StringEnum } from "../../util/string-enum.ts";
 import type { InputMessage, AssistantMessage, ToolUse } from "../../llm/types.ts";
 import { Tool } from "../../agent/tool.ts";
 import { tameMsgMeta } from "../../util/symbols.ts";
+import { default as memory } from "../memory/index.ts";
 
 export const configSchema = Type.Object({
     maxTokens: Type.Number(),
@@ -84,9 +85,15 @@ export const summarizeContext = (ctx: InputMessage[], agent: Agent) => {
     if (calls_text !== "")
         summary += "\n\nTool calls:" + calls_text;
 
-    /*const mem = memory.get(agent)!;
-    if (mem.length > 0)
-        summary += "\n\nSession memory (calls to `remember`):" + mem.map(s => `\n- ${s}`).join("");*/
+    if (memory.enabled) {
+        const mem = memory.getAgentMemory(agent);
+        if (mem.length > 0) {
+            summary += "\n\nSession memory (calls to `remember`):"
+            for (const [i,m] of mem.entries())
+                if (!m.forgotten)
+                    summary += `\n- #${i+1}: ${m.text}`;
+        }
+    }
 
     return summary + "\n</history>";
 };

@@ -62,3 +62,5 @@ export class MemoryPlugin implements Plugin {
         return this.memory.get(agent)!;
     }
 }
+
+export default new MemoryPlugin();
