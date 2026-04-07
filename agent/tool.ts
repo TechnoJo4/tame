@@ -14,7 +14,7 @@ export interface Tool<TArgs extends TSchema> {
     /** Implementation of the tool. This must return a string or object compatible with `JSON.stringify`. */
     exec: (args: Static<TArgs>, agent: Agent) => Promise<unknown> | unknown;
     /** View functions. */
-    view?: Record<string, (args: Static<TArgs>, result: ToolResult) => unknown>;
+    view?: Record<string, (args: Static<TArgs>, result?: ToolResult) => unknown>;
 };
 
 export interface AnyTool {
@@ -22,7 +22,7 @@ export interface AnyTool {
     desc: string;
     args: TSchema;
     exec: (args: never, agent: Agent) => Promise<unknown> | unknown;
-    view?: Record<string, (args: never, result: ToolResult) => unknown>;
+    view?: Record<string, (args: never, result?: ToolResult) => unknown>;
 };
 
 /** Helper to let typescript infer the schema type */
