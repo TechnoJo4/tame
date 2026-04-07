@@ -7,7 +7,7 @@ import { Plugin } from "../../agent/plugin.ts";
 import { readTameConfig } from "../../config/index.ts";
 import { InputContent, InputMessage } from "../../llm/types.ts";
 import { tool } from "../../agent/tool.ts";
-import { getAgentHistory, default as history, historyList, historyLoadAgent } from "../history/index.ts";
+import { getAgentHistory, default as history } from "../history/index.ts";
 
 const tcpListen = Type.Object({
 	transport: Type.Literal("tcp"),
@@ -77,7 +77,7 @@ export class ACPAdapter implements acp.Agent {
 	async loadSession(params: acp.LoadSessionRequest): Promise<acp.LoadSessionResponse> {
 		let agent = this.#sessions.get(params.sessionId);
 		if (!agent) {
-			agent = await historyLoadAgent(params.sessionId);
+			agent = await history.loadAgent(params.sessionId);
 			this.#setupAgent(agent);
 		}
 		for (const m of agent.context)
@@ -87,7 +87,7 @@ export class ACPAdapter implements acp.Agent {
 
 	async listSessions(_params: acp.ListSessionsRequest): Promise<acp.ListSessionsResponse> {
 		const sessions: acp.SessionInfo[] = [];
-		for (const sess of await historyList()) {
+		for (const sess of await history.list()) {
 			const agent = this.#sessions.get(sess);
 			if (agent) {
 				const data = getAgentHistory(agent);
