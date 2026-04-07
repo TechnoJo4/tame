@@ -14,7 +14,7 @@ export const getLineIndices = (str: string) => {
 };
 
 export const read = tool({
-    name: "fileRead",
+    name: "read",
     desc: "Read a file",
     args: Type.Object({
         path: Type.String({ description: "Path to the file (relative or absolute)" }),
@@ -44,7 +44,7 @@ export const read = tool({
 });
 
 export const edit = tool({
-    name: "fileEdit",
+    name: "edit",
     desc: "Replace a string in an existing file (use for precise, surgical edits)",
     args: Type.Object({
         path: Type.String({ description: "Path to the file (relative or absolute)" }),
@@ -85,8 +85,8 @@ export const edit = tool({
 });
 
 export const write = tool({
-    name: "fileWrite",
-    desc: "Write a file. creates a file if it does not exist, overwrites if it does. automatically creates parent directories.",
+    name: "write",
+    desc: "Write a file. Creates a file if it does not exist, overwrites if it does. Automatically creates parent directories.",
     args: Type.Object({
         path: Type.String({ description: "Path to the file (relative or absolute)" }),
         content: Type.String({ description: "Text to write into the file" }),

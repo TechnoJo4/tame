@@ -107,8 +107,6 @@ export default {
     },
     newAgent(agent) {
         agent.after("userMessage", async (e) => {
-            saveAgent(agent);
-
             const hist = getAgentHistory(agent);
             if (!hist.title) {
                 const text = e.msg.content.filter(c => c.type === "text").map(c => c.text).join("");
@@ -117,6 +115,8 @@ export default {
                     hist.title = nl !== -1 ? text.substring(0, nl) : text;
                 }
             }
+
+            saveAgent(agent);
             return e;
         });
         agent.after("assistantMessage", async (e) => {

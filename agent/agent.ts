@@ -39,6 +39,17 @@ export interface AgentEvents {
 
 export type Handler<T extends keyof AgentEvents> = (data: AgentEvents[T]) => Promise<AgentEvents[T]>;
 
+const wrapHandler = <T>(f: (x: T) => Promise<T>): ((x: T) => Promise<T>) => {
+    return async x => {
+        try {
+            return await f(x);
+        } catch (e) {
+            console.error(e);
+            return x;
+        }
+    };
+}
+
 export class Agent {
     #id: string;
     #thread = new Thread();
@@ -174,21 +185,21 @@ export class Agent {
     before<T extends keyof AgentEvents>(event: T, f: Handler<T>) {
         if (!this.#handlers.has(event))
             this.#handlers.set(event, []);
-        this.#handlers.get(event)!.unshift(f);
+        this.#handlers.get(event)!.unshift(wrapHandler(f));
     }
 
     /** Add a handler at the end of an event's processing. */
     after<T extends keyof AgentEvents>(event: T, f: Handler<T>) {
         if (!this.#handlers.has(event))
             this.#handlers.set(event, []);
-        this.#handlers.get(event)!.push(f);
+        this.#handlers.get(event)!.push(wrapHandler(f));
     }
 
     /** Add a handler for the processing of the single next instance of an event. */
     once<T extends keyof AgentEvents>(event: T, f: Handler<T>) {
         if (!this.#onceHandlers.has(event))
             this.#onceHandlers.set(event, []);
-        this.#onceHandlers.get(event)!.push(f);
+        this.#onceHandlers.get(event)!.push(wrapHandler(f));
     }
 
     waitFor<T extends keyof AgentEvents>(event: T): Promise<AgentEvents[T]> {
