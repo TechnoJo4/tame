@@ -5,8 +5,7 @@ import { Plugin } from "../../agent/plugin.ts";
 import { readTameConfig } from "../../config/index.ts";
 import { StringEnum } from "../../util/string-enum.ts";
 import type { InputMessage, AssistantMessage, ToolUse } from "../../llm/types.ts";
-import * as harness from "../../agent/harness.ts";
-import { Tool, tool } from "../../agent/tool.ts";
+import { Tool } from "../../agent/tool.ts";
 import { tameMsgMeta } from "../../util/symbols.ts";
 
 export const configSchema = Type.Object({
@@ -14,9 +13,6 @@ export const configSchema = Type.Object({
     estimation: Type.Object({
         // tiktoken ranks
         encoding: StringEnum([ "gpt2", "r50k_base", "p50k_base", "p50k_edit", "cl100k_base", "o200k_base" ] as const)
-    }),
-    tools: Type.Object({
-        remember: Type.Boolean()
     }),
     keepTail: Type.Union([
         //Type.Object({ type: Type.Literal("tokens"), tokens: Type.Number() }),
@@ -51,8 +47,7 @@ export const estimateMessageTokens = (m: InputMessage) => {
     return n;
 }
 
-const memory = new Map<Agent, string[]>();
-const userMessageHistory = new Map<Agent, string[]>();
+const userMessageHistory = new Map<Agent, string[]>(); // TODO: get from history instead
 export const summarizeContext = (ctx: InputMessage[], agent: Agent) => {
     let summary = "Your context window has been compacted.\n\n<history>\nKey conversation turns:";
 
@@ -89,31 +84,17 @@ export const summarizeContext = (ctx: InputMessage[], agent: Agent) => {
     if (calls_text !== "")
         summary += "\n\nTool calls:" + calls_text;
 
-    const mem = memory.get(agent)!;
+    /*const mem = memory.get(agent)!;
     if (mem.length > 0)
-        summary += "\n\nSession memory (calls to `remember`):" + mem.map(s => `\n- ${s}`).join("");
+        summary += "\n\nSession memory (calls to `remember`):" + mem.map(s => `\n- ${s}`).join("");*/
 
     return summary + "\n</history>";
 };
 
 export default {
     async init() {
-        if (config.tools.remember)
-            harness.tools.push(tool({
-                name: "remember",
-                desc: `Add a thought to session memory. It will be persisted after compaction`,
-                args: Type.Object({ thought: Type.String({ description: "Text to persist" }) }),
-                exec: async ({ thought }, agent) => {
-                    memory.get(agent)!.push(thought);
-                    return "done";
-                },
-                view: {
-                    compact: ({ thought }) => "Remember: "+thought
-                }
-            }));
     },
     newAgent(agent: Agent) {
-        memory.set(agent, []);
         userMessageHistory.set(agent, []);
 
         // TODO: per-turn compaction

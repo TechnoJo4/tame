@@ -13,9 +13,6 @@ basic compaction
     "keepTail": {
         "type": "messages",
         "messages": 5
-    },
-    "tools": {
-        "remember": true
     }
 }
 ```
