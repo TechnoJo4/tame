@@ -98,7 +98,6 @@ export const edit = tool({
         acp: (args) => ({
             //kind: "edit",
             title: `Edit ${args.path}`
-            // TODO: diff
         })
     }
 });
@@ -133,8 +132,13 @@ export const write = tool({
     view: {
         compact: (args) => `Write ${args.path}`,
         acp: (args) => ({
-            //kind: "edit",
-            title: `Write ${args.path}`
+            kind: "edit",
+            title: `Write ${args.path}`,
+            content: [ {
+                type: "diff",
+                oldText: null,
+                newText: args.content
+            } ]
         })
     }
 });

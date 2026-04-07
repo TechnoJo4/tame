@@ -47,7 +47,7 @@ export class MemoryPlugin implements Plugin {
                 const mem  = this.memory.get(agent)!;
                 for (const n of numbers) {
                     if (!(n-1 in mem) || mem[n-1].forgotten)
-                        throw new Error(`memory #${n} does not exist or was already forgotten.`);
+                        throw new Error(`Memory #${n} does not exist or was already forgotten`);
                     mem[n-1].forgotten = true;
                 }
                 return "Done";

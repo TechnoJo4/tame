@@ -109,7 +109,7 @@ export const exec = tool({
                 });
 
             return {
-                //kind: "execute",
+                // N.B. Not setting kind: execute because zed can't render it right
                 title: getExecName(args),
                 content
             };
