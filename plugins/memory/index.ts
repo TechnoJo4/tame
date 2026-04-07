@@ -24,7 +24,18 @@ export class MemoryPlugin implements Plugin {
                 return `Added memory #${n}`;
             },
             view: {
-                compact: (_, { content }) => content
+                compact: (_, result) => result?.content ?? "Add memory",
+                acp: ({ thought }, result) => ({
+                    kind: "think",
+                    title: result?.content ?? "Remember",
+                    content: [ {
+                        "type": "content",
+                        "content": {
+                            "type": "text",
+                            "text": thought
+                        }
+                    } ]
+                })
             }
         }));
 
@@ -42,7 +53,11 @@ export class MemoryPlugin implements Plugin {
                 return "Done";
             },
             view: {
-                compact: ({ numbers }) => `Forget ${numbers.map(n => "#"+n).join(", ")}`
+                compact: ({ numbers }) => `Forget ${numbers.map(n => "#"+n).join(", ")}`,
+                acp: ({ numbers }) => ({
+                    kind: "think",
+                    title: `Forget ${numbers.map(n => "#"+n).join(", ")}`
+                })
             }
         }));
 
