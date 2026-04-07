@@ -1,12 +1,12 @@
 import * as acp from "npm:@agentclientprotocol/sdk";
-import { Static, Type } from "@sinclair/typebox";
+import { Static, TSchema, Type } from "@sinclair/typebox";
 
 import type { Agent, AgentStopReason } from "../../agent/agent.ts";
 import * as harness from "../../agent/harness.ts";
 import { Plugin } from "../../agent/plugin.ts";
 import { readTameConfig } from "../../config/index.ts";
-import { InputContent, InputMessage } from "../../llm/types.ts";
-import { tool } from "../../agent/tool.ts";
+import { InputContent, InputMessage, ToolUse } from "../../llm/types.ts";
+import { Tool, tool } from "../../agent/tool.ts";
 import { getAgentHistory, default as history } from "../history/index.ts";
 
 const tcpListen = Type.Object({
@@ -155,6 +155,12 @@ export class ACPAdapter implements acp.Agent {
 							limit: args.limit
 						});
 						return res.content;
+					},
+					view: {
+						acp: (args) => ({
+							kind: "read",
+							title: `Read ${args.path} (ACP)`
+						})
 					}
 				}));
 			}
@@ -170,6 +176,12 @@ export class ACPAdapter implements acp.Agent {
 					exec: async (args) => {
 						await this.#connection.writeTextFile({ sessionId: agent.id, ...args });
 						return "Success.";
+					},
+					view: {
+						acp: (args) => ({
+							kind: "edit",
+							title: `Write ${args.path} (ACP)`
+						})
 					}
 				}));
 			}
@@ -216,28 +228,38 @@ export class ACPAdapter implements acp.Agent {
 						}
 					});
 					break;
-				case "tool_use":
+				case "tool_use": {
+					const agent = this.#sessions.get(sessionId)!;
+					const tool = agent.tools.get(block.name) as Tool<TSchema>;
+					const view = tool?.view?.acp?.(block.input);
 					this.#connection.sessionUpdate({
 						sessionId,
 						update: {
 							sessionUpdate: "tool_call",
 							toolCallId: block.id,
 							title: block.name,
-							kind: "other",
 							status: "in_progress",
-							rawInput: block.input
+							rawInput: block.input,
+							...(view ?? {})
 						}
 					});
 					break;
-				case "tool_result":
+				}
+				case "tool_result": {
+					const agent = this.#sessions.get(sessionId)!;
+					const call = agent.context.flatMap(m => m.content).find(c => c.type === "tool_use" && c.id === block.tool_use_id) as ToolUse;
+					const tool = agent.tools.get(call.name) as Tool<TSchema>;
+					const view = tool?.view?.acp?.(call.input, block);
 					this.#connection.sessionUpdate({
 						sessionId,
 						update: {
 							sessionUpdate: "tool_call_update",
 							toolCallId: block.tool_use_id,
-							status: block.is_error ? "failed" : "completed"
+							status: block.is_error ? "failed" : "completed",
+							...(view ?? {})
 						}
 					});
+				}
 			}
 		}
 	}
