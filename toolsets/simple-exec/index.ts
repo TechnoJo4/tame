@@ -15,6 +15,21 @@ export const killTree = (pid: number) => {
     }
 };
 
+export const stripShell = (args: string[]) => {
+    let i = 0;
+    while (args[i].endsWith("sh")) {
+        ++i;
+        while (args[i].startsWith("-")) ++i;
+    }
+    return args.slice(i);
+};
+
+export const getExecName = (args: string[]) => {
+    args = stripShell(args);
+    const s = args[0].indexOf(" ");
+    return s === -1 ? args[0] : args[0].slice(0, s);
+};
+
 export const exec = tool({
     name: "exec",
     desc: `Run a shell command and returns its output.
@@ -70,7 +85,32 @@ export const exec = tool({
         ].filter(s => s !== "").join("\n\n");
     },
     view: {
-        compact: (args) => "exec " + args.command.join(" ")
+        compact: ({ command }) => `exec ${getExecName(command)}`,
+        acp: ({ command }, result) => {
+            const args = stripShell(command);
+            const content = [ {
+                "type": "content",
+                "content": {
+                    "type": "text",
+                    "text": "```\n"+args.join(" ")+"\n```\n"
+                }
+            } ];
+
+            if (result)
+                content.push({
+                    "type": "content",
+                    "content": {
+                        "type": "text",
+                        "text": "\n```\n"+result.content+"\n```"
+                    }
+                });
+
+            return {
+                kind: "execute",
+                title: `exec ${getExecName(args)}`,
+                content
+            };
+        }
     }
 });
 

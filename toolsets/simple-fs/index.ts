@@ -40,6 +40,13 @@ export const read = tool({
         ];
 
         return `${selected.join("\n")}\n\n[${notice.join(". ")}]`;
+    },
+    view: {
+        compact: (args) => `Read ${args.path}`,
+        acp: (args) => ({
+            kind: "read",
+            title: `Read ${args.path}`
+        })
     }
 });
 
@@ -85,6 +92,14 @@ export const edit = tool({
         ];
 
         return `${snippet}\n\n[${notice.join(". ")}]`;
+    },
+    view: {
+        compact: (args) => `Edit ${args.path}`,
+        acp: (args) => ({
+            kind: "edit",
+            title: `Edit ${args.path}`
+            // TODO: diff
+        })
     }
 });
 
@@ -114,6 +129,13 @@ export const write = tool({
         // TODO: hooks
 
         return `${path}: successfully created.`;
+    },
+    view: {
+        compact: (args) => `Write ${args.path}`,
+        acp: (args) => ({
+            kind: "edit",
+            title: `Write ${args.path}`
+        })
     }
 });
 
