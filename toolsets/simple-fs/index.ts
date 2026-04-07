@@ -58,6 +58,10 @@ export const edit = tool({
         }
 
         const content = await fs.readFile(path, { encoding: "utf-8" });
+
+        if (!content.includes(args.oldString))
+            throw new Error(`${path} does not contain ${JSON.stringify(args.oldString)}`);
+
         const newContent = content.replace(args.oldString, args.newString);
 
         if (newContent.includes(args.oldString))

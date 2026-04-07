@@ -116,11 +116,11 @@ export default {
                 }
             }
 
-            saveAgent(agent);
+            await saveAgent(agent);
             return e;
         });
         agent.after("assistantMessage", async (e) => {
-            saveAgent(agent);
+            await saveAgent(agent);
             return e;
         });
     }
