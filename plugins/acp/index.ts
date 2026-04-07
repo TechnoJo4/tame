@@ -5,7 +5,7 @@ import type { Agent, AgentStopReason } from "../../agent/agent.ts";
 import * as harness from "../../agent/harness.ts";
 import { Plugin } from "../../agent/plugin.ts";
 import { readTameConfig } from "../../config/index.ts";
-import { InputContent, InputMessage, ToolUse } from "../../llm/types.ts";
+import { InputContent, InputMessage, ToolResult, ToolUse } from "../../llm/types.ts";
 import { Tool, tool } from "../../agent/tool.ts";
 import { getAgentHistory, default as history } from "../history/index.ts";
 
@@ -81,7 +81,7 @@ export class ACPAdapter implements acp.Agent {
 			this.#setupAgent(agent);
 		}
 		for (const m of agent.context)
-			this.#sendMessage(agent.id, m);
+			this.#sendMessage(agent.id, m, true);
 		return {};
 	}
 
@@ -204,7 +204,7 @@ export class ACPAdapter implements acp.Agent {
 		});
 	}
 
-	#sendMessage(sessionId: string, msg: InputMessage) {
+	#sendMessage(sessionId: string, msg: InputMessage, noToolResult: boolean = false) {
 		for (const block of msg.content) {
 			switch (block.type) {
 				case "thinking":
@@ -230,15 +230,16 @@ export class ACPAdapter implements acp.Agent {
 					break;
 				case "tool_use": {
 					const agent = this.#sessions.get(sessionId)!;
+					const result = agent.context.flatMap(m => m.content).find(c => c.type === "tool_result" && c.tool_use_id === block.id) as ToolResult | undefined;
 					const tool = agent.tools.get(block.name) as Tool<TSchema>;
-					const view = tool?.view?.acp?.(block.input);
+					const view = tool?.view?.acp?.(block.input, result);
 					this.#connection.sessionUpdate({
 						sessionId,
 						update: {
 							sessionUpdate: "tool_call",
 							toolCallId: block.id,
 							title: block.name,
-							status: "in_progress",
+							status: result ? result.is_error ? "failed" : "completed" : "in_progress",
 							rawInput: block.input,
 							...(typeof view === "object" ? view : {})
 						}
@@ -246,6 +247,7 @@ export class ACPAdapter implements acp.Agent {
 					break;
 				}
 				case "tool_result": {
+					if (noToolResult) break;
 					const agent = this.#sessions.get(sessionId)!;
 					const call = agent.context.flatMap(m => m.content).find(c => c.type === "tool_use" && c.id === block.tool_use_id) as ToolUse;
 					const tool = agent.tools.get(call.name) as Tool<TSchema>;
@@ -259,6 +261,7 @@ export class ACPAdapter implements acp.Agent {
 							...(typeof view === "object" ? view : {})
 						}
 					});
+					break;
 				}
 			}
 		}

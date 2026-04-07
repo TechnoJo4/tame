@@ -107,7 +107,7 @@ export const exec = tool({
 
             return {
                 kind: "execute",
-                title: `exec ${getExecName(args)}`,
+                title: getExecName(args),
                 content
             };
         }
