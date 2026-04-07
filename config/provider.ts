@@ -25,7 +25,7 @@ export type RatelimiterConfig = Static<typeof ratelimiterConfig>;
 export const knownProviderConfig = Object({
 	type: Literal("provider"),
 	provider: knownProvider,
-	apiKey: String(),
+	apiKey: Optional(String()),
 	model: String(),
 	headers: Optional(Object({}, { additionalProperties: String() })),
 	limiter: Optional(ratelimiterConfig),
@@ -75,6 +75,9 @@ export const parseLimiter = (o: RatelimiterConfig): Ratelimiter => {
 export const parseKnownProvider = (o: KnownProviderConfig): InferenceProvider => {
 	const p = knownProviders[o.provider];
 	const key = o.apiKey ?? Deno.env.get(p.envKey);
+	if (!key)
+		throw new Error(`no api key for provider ${o.provider}`);
+
 	switch (p.type) {
 		case "anthropic-messages":
 			return new AnthropicMessagesProvider(p.url, key, o.headers, o.model);
@@ -86,6 +89,6 @@ export const parseProvider = (o: ProviderConfig): InferenceProvider => {
 		case "provider":
 			return parseKnownProvider(o);
 		case "priority":
-			return new PriorityProvider(o.providers.map(parseProvider), )
+			return new PriorityProvider(o.providers.map(parseProvider), o.maxDelay)
 	}
 };

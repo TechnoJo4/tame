@@ -118,6 +118,7 @@ export class Agent {
 
             m.content.push({
                 type: "tool_result",
+                is_error: e.error,
                 tool_use_id: e.toolUse,
                 content: e.result
             });
@@ -135,6 +136,7 @@ export class Agent {
                 this.#completionQueued = false;
                 this.do("assistantMessage", { msg });
             } catch {
+                this.#completionQueued = false;
                 if (e.retriesLeft > 0)
                     this.queueCompletion(e.retriesLeft - 1);
                 else
@@ -174,6 +176,7 @@ export class Agent {
             for (const h of this.#onceHandlers.get(event) ?? []) {
                 p = p.then(h as Handler<T>);
             }
+            this.#onceHandlers.delete(event);
             for (const h of this.#handlers.get(event) ?? []) {
                 p = p.then(h as Handler<T>);
             }
