@@ -146,7 +146,7 @@ export class HistoryPlugin implements Plugin {
             history: history.history
         } as HistoryAgentData);
 
-        for (const [k,v] of Object.entries(history.extra)) {
+        for (const [k,v] of Object.entries(history.extra ?? {})) {
             const hook = this.#hooks.get(k);
             if (!hook) {
                 console.warn(`extra data '${k}' in history for agent but hook not found`)
