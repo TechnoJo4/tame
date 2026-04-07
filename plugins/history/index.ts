@@ -9,6 +9,8 @@ import { tameMsgMeta } from "../../util/symbols.ts";
 
 const historyFolder = resolve(tameDataFolder, "history");
 
+const dataKey = Symbol("tame:history:plugin-data-key");
+
 export interface History {
     id: string;
     title?: string;
@@ -32,8 +34,6 @@ export interface HistoryAgentData {
     history: InputMessage[];
 };
 
-const dataKey = Symbol("tame:history:plugin-data-key");
-
 export const messageToPersisted = (msg: InputMessage): PersistedMessage => ({
     ...msg,
     [tameMsgMeta]: undefined,
@@ -53,59 +53,25 @@ export const getAgentHistory = (agent: Agent): HistoryAgentData => {
     return agent.pluginData.get(dataKey) as HistoryAgentData;
 }
 
-export const saveAgent = async (agent: Agent) => {
-    const data = getAgentHistory(agent);
-    const path = resolve(historyFolder, agent.id);
-    const history: History = {
-        id: agent.id,
-        system: agent.system,
-        context: agent.context.map(messageToPersisted),
-        history: data.history.map(messageToPersisted)
-    };
-    await fs.writeFile(path, JSON.stringify(history), { encoding: "utf-8" })
+export interface HistoryHook<T> {
+    save(agent: Agent): T;
+    load(agent: Agent, t: T): void;
 };
 
-export const historyList = async (): Promise<string[]> => {
-    const files = await fs.readdir(historyFolder, { withFileTypes: true });
-    const agents = [];
-    for (const file of files)
-        if (file.isFile())
-            agents.push(file.name);
-    return agents;
-};
+export class HistoryPlugin implements Plugin {
+    #hooks = new Map<string, HistoryHook<unknown>>();
+    
+    loaded?: true;
 
-export const historyLoad = async (id: string): Promise<History> => {
-    const json = await fs.readFile(resolve(historyFolder, id), { encoding: "utf-8" });
-    const data: PersistedHistory = JSON.parse(json);
-    return {
-        ...data,
-        context: data.context.map(messageFromPersisted),
-        history: data.history.map(messageFromPersisted),
-    };
-};
-
-export const historyToAgent = async (history: History): Promise<Agent> => {
-    const agent = newAgent(undefined, history.system, history.id);
-    agent.context = history.context;
-    Object.assign(getAgentHistory(agent), {
-        history: history.history
-    } as HistoryAgentData);
-    return agent;
-};
-
-export const historyLoadAgent = async (id: string): Promise<Agent> => {
-    return await historyToAgent(await historyLoad(id));
-};
-
-export default {
     async init() {
         try {
             await fs.access(historyFolder);
         } catch {
             await fs.mkdir(historyFolder);
         }
-    },
-    newAgent(agent) {
+    }
+
+    newAgent(agent: Agent) {
         agent.after("userMessage", async (e) => {
             const hist = getAgentHistory(agent);
             if (!hist.title) {
@@ -116,12 +82,64 @@ export default {
                 }
             }
 
-            await saveAgent(agent);
+            await this.saveAgent(agent);
             return e;
         });
         agent.after("assistantMessage", async (e) => {
-            await saveAgent(agent);
+            await this.saveAgent(agent);
             return e;
         });
     }
-} as Plugin;
+
+    addHook<T>(key: string, hook: HistoryHook<T>): void {
+        if (this.#hooks.has(key))
+            throw new Error(`duplicate history hook key '${key}'`);
+        this.#hooks.set(key, hook);
+    }
+
+    async saveAgent(agent: Agent) {
+        const data = getAgentHistory(agent);
+        const path = resolve(historyFolder, agent.id);
+        const history: History = {
+            id: agent.id,
+            system: agent.system,
+            context: agent.context.map(messageToPersisted),
+            history: data.history.map(messageToPersisted)
+        };
+        await fs.writeFile(path, JSON.stringify(history), { encoding: "utf-8" })
+    };
+
+    async historyList(): Promise<string[]> {
+        const files = await fs.readdir(historyFolder, { withFileTypes: true });
+        const agents = [];
+        for (const file of files)
+            if (file.isFile())
+                agents.push(file.name);
+        return agents;
+    };
+
+    async historyLoad(id: string): Promise<History> {
+        const json = await fs.readFile(resolve(historyFolder, id), { encoding: "utf-8" });
+        const data: PersistedHistory = JSON.parse(json);
+        return {
+            ...data,
+            context: data.context.map(messageFromPersisted),
+            history: data.history.map(messageFromPersisted),
+        };
+    };
+
+    async historyToAgent(history: History): Promise<Agent> {
+        const agent = newAgent(undefined, history.system, history.id);
+        agent.context = history.context;
+        Object.assign(getAgentHistory(agent), {
+            history: history.history
+        } as HistoryAgentData);
+        return agent;
+    };
+
+    async historyLoadAgent(id: string): Promise<Agent> {
+        return await this.historyToAgent(await this.historyLoad(id));
+    };
+}
+
+export default new HistoryPlugin();
