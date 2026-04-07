@@ -26,6 +26,9 @@ export const stripShell = (args: string[]) => {
 
 export const getExecName = (args: string[]) => {
     args = stripShell(args);
+    let arg = args[0];
+    if (arg.startsWith("cd"))
+        arg = arg.replace(/cd [^ ]+(&&|;|\s)*/, "");
     const s = args[0].indexOf(" ");
     return s === -1 ? args[0] : args[0].slice(0, s);
 };

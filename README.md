@@ -4,6 +4,7 @@ minimal harness for people who don't care to larp as terminal users
 
 features:
 - an agent loop
+- plugin system
 - multi-provider routing
 - nothing else
 
@@ -11,6 +12,7 @@ plugins:
 - `acp`: [ACP](https://agentclientprotocol.com/) (over tcp/unix socket)
 - `compact`: basic compaction
 - `history`: save session history
+- `memory`: per-session memory
 
 config goes in `$TAME_DATA` or `~/.tame`:
 - `system.txt`
