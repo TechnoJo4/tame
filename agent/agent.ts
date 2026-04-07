@@ -1,6 +1,7 @@
 import { Ajv, type ValidateFunction } from "ajv";
 import { TSchema } from "@sinclair/typebox";
 import { Thread } from "../util/thread.ts";
+import { Emitter } from "../util/emitter.ts";
 import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason, MessageRequest } from "../llm/types.ts";
 import type { AnyTool, Tool } from "./tool.ts";
 
@@ -37,24 +38,9 @@ export interface AgentEvents {
     idle: IdleEvent;
 };
 
-export type Handler<T extends keyof AgentEvents> = (data: AgentEvents[T]) => Promise<AgentEvents[T]>;
-
-const wrapHandler = <T>(f: (x: T) => Promise<T>): ((x: T) => Promise<T>) => {
-    return async x => {
-        try {
-            return await f(x);
-        } catch (e) {
-            console.error(e);
-            return x;
-        }
-    };
-}
-
-export class Agent {
+export class Agent extends Emitter<AgentEvents> {
     #id: string;
     #thread = new Thread();
-    #handlers = new Map<keyof AgentEvents, ((e: never) => unknown)[]>();
-    #onceHandlers = new Map<keyof AgentEvents, ((e: never) => unknown)[]>();
     #pendingToolCalls = new Set<string>();
     #abortedToolCalls = new Set<string>();
     #completionQueued = false;
@@ -72,6 +58,7 @@ export class Agent {
     pluginData = new Map<symbol, unknown>();
 
     constructor(llm: InferenceProvider, system: string, id?: string) {
+		super();
         this.llm = llm;
         this.system = system;
         this.#id = id ?? Array.from(crypto.getRandomValues(new Uint8Array(16)))
@@ -150,68 +137,11 @@ export class Agent {
         return this.#id;
     }
 
-    get signal() {
-        return this.#thread.signal;
-    }
-
-    /** Promise that resolves on abort. */
-    get aborted() {
-        return new Promise<void>(r => {
-            this.#thread.signal?.addEventListener("abort", () => r());
-        });
-    }
-
-    /** Abort processing and clear the queue. */
-    abort() {
-        this.#thread.abort();
+    override abort(): void {
+        super.abort();
         for (const t of this.#pendingToolCalls)
             this.#abortedToolCalls.add(t);
         this.do("idle", { stopReason: "aborted" });
-    }
-
-    /** Add an event onto the queue. */
-    do<T extends keyof AgentEvents>(event: T, data: AgentEvents[T]) {
-        this.#thread.queue(() => {
-            let p: Promise<AgentEvents[T]> = Promise.resolve(data);
-            for (const h of this.#onceHandlers.get(event) ?? []) {
-                p = p.then(h as Handler<T>);
-            }
-            this.#onceHandlers.delete(event);
-            for (const h of this.#handlers.get(event) ?? []) {
-                p = p.then(h as Handler<T>);
-            }
-            return p;
-        });
-    }
-
-    /** Add a handler at the start of an event's processing. */
-    before<T extends keyof AgentEvents>(event: T, f: Handler<T>) {
-        if (!this.#handlers.has(event))
-            this.#handlers.set(event, []);
-        this.#handlers.get(event)!.unshift(wrapHandler(f));
-    }
-
-    /** Add a handler at the end of an event's processing. */
-    after<T extends keyof AgentEvents>(event: T, f: Handler<T>) {
-        if (!this.#handlers.has(event))
-            this.#handlers.set(event, []);
-        this.#handlers.get(event)!.push(wrapHandler(f));
-    }
-
-    /** Add a handler for the processing of the single next instance of an event. */
-    once<T extends keyof AgentEvents>(event: T, f: Handler<T>) {
-        if (!this.#onceHandlers.has(event))
-            this.#onceHandlers.set(event, []);
-        this.#onceHandlers.get(event)!.push(wrapHandler(f));
-    }
-
-    waitFor<T extends keyof AgentEvents>(event: T): Promise<AgentEvents[T]> {
-        return new Promise(resolve => {
-            this.once(event, async (e) => {
-                resolve(e);
-                return e;
-            })
-        })
     }
 
     queueCompletion(maxRetries: number = 5) {
