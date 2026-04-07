@@ -44,7 +44,7 @@ export const read = tool({
     view: {
         compact: (args) => `Read ${args.path}`,
         acp: (args) => ({
-            kind: "read",
+            //kind: "read",
             title: `Read ${args.path}`
         })
     }
@@ -96,7 +96,7 @@ export const edit = tool({
     view: {
         compact: (args) => `Edit ${args.path}`,
         acp: (args) => ({
-            kind: "edit",
+            //kind: "edit",
             title: `Edit ${args.path}`
             // TODO: diff
         })
@@ -133,7 +133,7 @@ export const write = tool({
     view: {
         compact: (args) => `Write ${args.path}`,
         acp: (args) => ({
-            kind: "edit",
+            //kind: "edit",
             title: `Write ${args.path}`
         })
     }

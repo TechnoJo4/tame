@@ -192,13 +192,13 @@ export class ACPAdapter implements acp.Agent {
 			return e;
 		});
 		agent.after("toolResult", async (e) => {
-			this.#connection.sessionUpdate({
-				sessionId: agent.id,
-				update: {
-					sessionUpdate: "tool_call_update",
-					toolCallId: e.toolUse,
-					status: e.error ? "failed" : "completed"
-				}
+			this.#sendMessage(agent.id, {
+				role: "user",
+				content: [ {
+					type: "tool_result",
+					tool_use_id: e.toolUse,
+					content: e.result
+				} ]
 			});
 			return e;
 		});
@@ -239,7 +239,11 @@ export class ACPAdapter implements acp.Agent {
 							sessionUpdate: "tool_call",
 							toolCallId: block.id,
 							title: block.name,
-							status: result ? result.is_error ? "failed" : "completed" : "in_progress",
+							status: result
+								? result.is_error
+									? "failed"
+									: "completed"
+								: "in_progress",
 							rawInput: block.input,
 							...(typeof view === "object" ? view : {})
 						}

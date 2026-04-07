@@ -62,7 +62,7 @@ export const exec = tool({
             stdout.push(decoder.decode(data, { stream: true }));
         });
         proc.stderr.on("data", (data) => {
-            stdout.push(decoder.decode(data, { stream: true }));
+            stderr.push(decoder.decode(data, { stream: true }));
         });
 
         // TODO: report
@@ -106,7 +106,7 @@ export const exec = tool({
                 });
 
             return {
-                kind: "execute",
+                //kind: "execute",
                 title: getExecName(args),
                 content
             };

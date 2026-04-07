@@ -259,7 +259,7 @@ export class Agent {
         } catch (e) {
             this.do("toolResult", {
                 toolUse: call.id,
-                error: false,
+                error: true,
                 result: e instanceof Error ? e.message : e as string
             });
         }
