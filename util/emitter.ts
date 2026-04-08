@@ -49,6 +49,21 @@ export class Emitter<Events> {
         });
     }
 
+    /** Run an event and get the processed event data. */
+    do<K extends keyof Events>(event: K, data: Events[K]): Promise<Events[K]> {
+        return new Promise(resolve => this.thread.queue(() => {
+            let p: Promise<Events[K]> = Promise.resolve(structuredClone(data));
+            for (const h of this.onceHandlers.get(event) ?? []) {
+                p = p.then(h as Handler<Events, K>);
+            }
+            this.onceHandlers.delete(event);
+            for (const h of this.handlers.get(event) ?? []) {
+                p = p.then(h as Handler<Events, K>);
+            }
+            return p.then(e => resolve(e));
+        }));
+    }
+
     /** Add a handler at the start of an event's processing. */
     before<K extends keyof Events>(event: K, f: Handler<Events, K>) {
         if (!this.handlers.has(event))
