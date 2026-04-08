@@ -80,8 +80,13 @@ export class ACPAdapter implements acp.Agent {
 			agent = await history.loadAgent(params.sessionId);
 			this.#setupAgent(agent);
 		}
+
+		const hist = getAgentHistory(agent);
+		if (hist.title) this.#sendTitle(agent.id, hist.title);
+
 		for (const m of agent.context)
 			this.#sendMessage(agent.id, m, true);
+
 		return {};
 	}
 
@@ -122,6 +127,9 @@ export class ACPAdapter implements acp.Agent {
 			}
 		});
 		const idle = await agent.waitFor("idle");
+
+		const hist = getAgentHistory(agent);
+		if (hist.title) this.#sendTitle(agent.id, hist.title);
 
 		if (idle.stopReason === "error") throw new Error("llm request failed");
 		return { stopReason: stopReasonMap[idle.stopReason] };
@@ -203,6 +211,16 @@ export class ACPAdapter implements acp.Agent {
 			});
 			return e;
 		});
+	}
+
+	#sendTitle(sessionId: string, title: string) {
+		this.#connection.sessionUpdate({
+			sessionId,
+			update: {
+				sessionUpdate: "session_info_update",
+				title
+			}
+		})
 	}
 
 	#sendMessage(sessionId: string, msg: InputMessage, noToolResult: boolean = false) {

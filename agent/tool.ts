@@ -2,7 +2,7 @@ import type { Static, TSchema } from "@sinclair/typebox";
 export { Type } from "@sinclair/typebox";
 export { StringEnum } from "../util/string-enum.ts";
 import type { Agent } from "./agent.ts";
-import { ToolResult, ToolUse } from "../llm/types.ts";
+import { ToolResult } from "../llm/types.ts";
 
 export interface Tool<TArgs extends TSchema> {
     /** Name for the tool */
