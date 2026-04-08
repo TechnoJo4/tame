@@ -8,6 +8,7 @@ import { InputMessage, TameMessageMeta } from "../../llm/types.ts";
 import { tameMsgMeta } from "../../util/symbols.ts";
 
 const historyFolder = resolve(tameDataFolder, "history");
+const indexFile = resolve(historyFolder, "index.json");
 
 const dataKey = Symbol("tame:history:plugin-data-key");
 
@@ -18,6 +19,11 @@ export interface History {
     context: InputMessage[];
     history: InputMessage[];
     extra: Record<string, unknown>;
+}
+
+export interface SessionInfo {
+    id: string;
+    title?: string;
 }
 
 export type PersistedMessage = InputMessage & {
@@ -61,7 +67,7 @@ export interface HistoryHook<T> {
 
 export class HistoryPlugin implements Plugin {
     #hooks = new Map<string, HistoryHook<unknown>>();
-    
+
     enabled?: true;
 
     async init() {
@@ -81,6 +87,7 @@ export class HistoryPlugin implements Plugin {
                     const nl = text.indexOf("\n");
                     hist.title = nl !== -1 ? text.substring(0, nl) : text;
                 }
+                await this.updateIndex(agent);
             }
 
             await this.saveAgent(agent);
@@ -115,13 +122,27 @@ export class HistoryPlugin implements Plugin {
         await fs.writeFile(path, JSON.stringify(history), { encoding: "utf-8" })
     };
 
-    async list(): Promise<string[]> {
+    async updateIndex(...agents: Agent[]) {
+        const data = await fs.readFile(indexFile, { encoding: "utf-8" });
+        const index: SessionInfo[] = JSON.parse(data);
+        for (const agent of agents) {
+            const s = index.find(s => s.id === agent.id);
+            if (s)
+                s.title = getAgentHistory(agent).title;
+            else
+                index.push({ id: agent.id, title: getAgentHistory(agent).title });
+        }
+        await fs.writeFile(indexFile, JSON.stringify(index), { encoding: "utf-8" })
+    };
+
+    async list(): Promise<SessionInfo[]> {
+        const data = await fs.readFile(indexFile, { encoding: "utf-8" });
+        const index: SessionInfo[] = JSON.parse(data);
         const files = await fs.readdir(historyFolder, { withFileTypes: true });
-        const agents = [];
         for (const file of files)
-            if (file.isFile())
-                agents.push(file.name);
-        return agents;
+            if (file.isFile() && file.name != "index.json" && !index.find(s => s.id === file.name))
+                index.push({ id: file.name });
+        return index;
     };
 
     async load(id: string): Promise<History> {
@@ -155,6 +176,7 @@ export class HistoryPlugin implements Plugin {
             hook.load(agent, v);
         }
 
+        await this.updateIndex(agent);
         return agent;
     };
 }
