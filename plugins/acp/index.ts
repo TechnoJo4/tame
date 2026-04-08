@@ -88,17 +88,18 @@ export class ACPAdapter implements acp.Agent {
 	async listSessions(_params: acp.ListSessionsRequest): Promise<acp.ListSessionsResponse> {
 		const sessions: acp.SessionInfo[] = [];
 		for (const sess of await history.list()) {
-			const agent = this.#sessions.get(sess);
+			const agent = this.#sessions.get(sess.id);
 			if (agent) {
 				const data = getAgentHistory(agent);
 				sessions.push({
-					sessionId: sess,
+					sessionId: sess.id,
 					title: data.title,
 					cwd: "/", // required by acp
 				});
 			} else {
 				sessions.push({
-					sessionId: sess,
+					sessionId: sess.id,
+					title: sess.title,
 					cwd: "/", // required by acp
 				});
 			}

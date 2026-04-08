@@ -75,6 +75,7 @@ export class HistoryPlugin implements Plugin {
             await fs.access(historyFolder);
         } catch {
             await fs.mkdir(historyFolder);
+            await fs.writeFile(indexFile, JSON.stringify([]));
         }
     }
 
@@ -140,7 +141,7 @@ export class HistoryPlugin implements Plugin {
         const index: SessionInfo[] = JSON.parse(data);
         const files = await fs.readdir(historyFolder, { withFileTypes: true });
         for (const file of files)
-            if (file.isFile() && file.name != "index.json" && !index.find(s => s.id === file.name))
+            if (file.isFile() && file.name !== "index.json" && !index.find(s => s.id === file.name))
                 index.push({ id: file.name });
         return index;
     };
