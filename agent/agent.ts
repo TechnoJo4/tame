@@ -81,7 +81,7 @@ export class Agent extends Emitter<AgentEvents> {
                         if (tool)
                             this.#execTool(tool, call)
                         else
-                            this.do("toolResult", {
+                            this.fire("toolResult", {
                                 error: true,
                                 toolUse: call.id,
                                 result: `tool "${call.name}" not found`
@@ -89,7 +89,7 @@ export class Agent extends Emitter<AgentEvents> {
                     }
                 });
             else
-                this.do("idle", { stopReason: e.msg.stop_reason });
+                this.fire("idle", { stopReason: e.msg.stop_reason });
             return e;
         });
 
@@ -121,13 +121,13 @@ export class Agent extends Emitter<AgentEvents> {
             try {
                 const msg = await this.llm.complete(e.req, this.signal);
                 this.#completionQueued = false;
-                this.do("assistantMessage", { msg });
+                this.fire("assistantMessage", { msg });
             } catch {
                 this.#completionQueued = false;
                 if (e.retriesLeft > 0)
                     this.queueCompletion(e.retriesLeft - 1);
                 else
-                    this.do("idle", { stopReason: "error" });
+                    this.fire("idle", { stopReason: "error" });
             }
             return e;
         });
@@ -141,14 +141,14 @@ export class Agent extends Emitter<AgentEvents> {
         super.abort();
         for (const t of this.#pendingToolCalls)
             this.#abortedToolCalls.add(t);
-        this.do("idle", { stopReason: "aborted" });
+        this.fire("idle", { stopReason: "aborted" });
     }
 
     queueCompletion(maxRetries: number = 5) {
         if (!this.#completionQueued && this.#pendingToolCalls.size === 0) {
             this.#completionQueued = true;
             this.#thread.queue(async () => {
-                this.do("completion", {
+                this.fire("completion", {
                     retriesLeft: maxRetries,
                     req: {
                         system: this.system,
@@ -184,13 +184,13 @@ export class Agent extends Emitter<AgentEvents> {
             if (typeof res !== "string")
                 res = JSON.stringify(res);
 
-            this.do("toolResult", {
+            this.fire("toolResult", {
                 toolUse: call.id,
                 error: false,
                 result: res as string
             });
         } catch (e) {
-            this.do("toolResult", {
+            this.fire("toolResult", {
                 toolUse: call.id,
                 error: true,
                 result: e instanceof Error ? e.message : e as string

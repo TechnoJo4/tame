@@ -35,7 +35,7 @@ export class Emitter<Events> {
     }
 
     /** Add an event onto the queue. */
-    do<K extends keyof Events>(event: K, data: Events[K]) {
+    fire<K extends keyof Events>(event: K, data: Events[K]) {
         this.thread.queue(() => {
             let p: Promise<Events[K]> = Promise.resolve(structuredClone(data));
             for (const h of this.onceHandlers.get(event) ?? []) {

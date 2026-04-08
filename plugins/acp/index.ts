@@ -115,7 +115,7 @@ export class ACPAdapter implements acp.Agent {
 		const agent = this.#sessions.get(params.sessionId);
 		if (!agent) throw new Error(`session ${params.sessionId} not found`);
 
-		agent.do("userMessage", {
+		agent.fire("userMessage", {
 			msg: {
 				role: "user",
 				content: this.#contentFromACP(params.prompt)
