@@ -9,11 +9,10 @@ session loading is supported if `history` is also loaded
 ```json
 {
     "listen": {
-        "transport": "tcp",
-        "hostname": "0.0.0.0",
-        "port": 1234
+        "transport": "unix",
+        "path": "/path/to/tame.sock"
     }
 }
 ```
 
-on the client side, set the command to e.g. `nc 127.0.0.1 1234` to connect.
+on the client side, set the command to e.g. `socat - /path/to/tame.sock` to connect.
