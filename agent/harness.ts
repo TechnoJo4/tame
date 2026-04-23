@@ -8,14 +8,14 @@ export const plugins: Plugin[] = [];
 export const tools: AnyTool[] = [];
 
 export const newAgent = (llm?: InferenceProvider, system?: string, id?: string): Agent => {
-    const agent = new Agent(llm ?? config.llm, system ?? configSystem, id);
+	const agent = new Agent(llm ?? config.llm, system ?? configSystem, id);
 
-    for (const t of tools)
-        agent.addTool(t);
+	for (const t of tools)
+		agent.addTool(t);
 
-    for (const p of plugins)
-        if (p.newAgent)
-            p.newAgent(agent);
+	for (const p of plugins)
+		if (p.newAgent)
+			p.newAgent(agent);
 
-    return agent;
+	return agent;
 };

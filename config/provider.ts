@@ -80,7 +80,7 @@ export const parseKnownProvider = (o: KnownProviderConfig): InferenceProvider =>
 
 	switch (p.type) {
 		case "anthropic-messages":
-			return new AnthropicMessagesProvider(p.url, key, o.headers, o.model);
+			return new AnthropicMessagesProvider(p.url, key, o.headers as Record<string, string>, o.model);
 	}
 };
 
