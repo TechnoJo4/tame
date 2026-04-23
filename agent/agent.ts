@@ -1,9 +1,10 @@
-import { Ajv, type ValidateFunction } from "ajv";
+import { Compile, Validator } from "typebox/compile";
 import { TSchema } from "typebox";
 import { Thread } from "../util/thread.ts";
 import { Emitter } from "../util/emitter.ts";
 import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason, MessageRequest } from "../llm/types.ts";
 import type { AnyTool, Tool } from "./tool.ts";
+import { assertSchema } from "../util/validate.ts";
 
 export type AgentStopReason = StopReason | "aborted" | "error";
 
@@ -44,12 +45,7 @@ export class Agent extends Emitter<AgentEvents> {
     #pendingToolCalls = new Set<string>();
     #abortedToolCalls = new Set<string>();
     #completionQueued = false;
-    #schemas = new Map<AnyTool, ValidateFunction<unknown>>();
-    #ajv = new Ajv({
-        allErrors: true,
-        strict: false,
-        coerceTypes: true,
-    });
+    #validators = new Map<AnyTool, Validator<any>>();
 
     llm: InferenceProvider;
     system: string;
@@ -167,18 +163,13 @@ export class Agent extends Emitter<AgentEvents> {
 
     addTool(tool: AnyTool) {
         this.tools.set(tool.name, tool);
-        this.#schemas.set(tool, this.#ajv.compile(tool.args));
+        this.#validators.set(tool, Compile(tool.args));
     }
 
     async #execTool(tool: AnyTool, call: ToolUse) {
         this.#pendingToolCalls.add(call.id);
         try {
-            const args = structuredClone(call.input);
-            const val = this.#schemas.get(tool)!;
-            if (!val(args)) {
-                const errors = val.errors?.map(err => `- ${err.instancePath || err.params.missingProperty || "root"}: ${err.message}`);
-                throw new Error(`invalid args to "${call.name}":\n${errors?.join("\n")}`);
-            }
+            const args = assertSchema(call.input, tool.args, `invalid args to "${call.name}":`, this.#validators.get(tool)!)
 
             let res = await (tool as Tool<TSchema>).exec(args, this);
             if (typeof res !== "string")
