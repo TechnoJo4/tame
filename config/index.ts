@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
-import { Static, TSchema, Type } from "@sinclair/typebox";
+import { Static, TSchema, Type } from "typebox";
 import { parseProvider, providerConfig } from "./provider.ts";
 import { InferenceProvider } from "../llm/types.ts";
 import { readConfig } from "./validate.ts";

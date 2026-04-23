@@ -1,4 +1,4 @@
-import { TSchema } from "@sinclair/typebox";
+import { TSchema } from "typebox";
 import { tameMsgMeta } from "../util/symbols.ts";
 
 export interface CacheControl {

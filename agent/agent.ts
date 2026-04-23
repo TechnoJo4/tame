@@ -1,5 +1,5 @@
 import { Ajv, type ValidateFunction } from "ajv";
-import { TSchema } from "@sinclair/typebox";
+import { TSchema } from "typebox";
 import { Thread } from "../util/thread.ts";
 import { Emitter } from "../util/emitter.ts";
 import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason, MessageRequest } from "../llm/types.ts";

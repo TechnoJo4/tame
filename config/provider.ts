@@ -1,7 +1,7 @@
 import { AnthropicMessagesProvider } from "../llm/messages.ts";
 import { InferenceProvider } from "../llm/types.ts";
 import { PriorityProvider } from "../llm/router.ts";
-import { Static, Object, Union, Literal, Array, String, Number, Optional, Type } from "@sinclair/typebox";
+import { Static, Object, Union, Literal, Array, String, Number, Optional, Type } from "typebox";
 import { StringEnum } from "../util/string-enum.ts";
 import { BackoffRatelimiter, Ratelimiter } from "../util/ratelimit.ts";
 

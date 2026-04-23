@@ -10,9 +10,9 @@
     "jsr:@std/path@1": "1.1.4",
     "jsr:@std/path@1.0": "1.0.9",
     "jsr:@std/path@^1.1.4": "1.1.4",
-    "npm:@sinclair/typebox@~0.34.49": "0.34.49",
     "npm:ajv@^8.18.0": "8.18.0",
-    "npm:tiktoken@^1.0.22": "1.0.22"
+    "npm:tiktoken@^1.0.22": "1.0.22",
+    "npm:typebox@^1.1.32": "1.1.32"
   },
   "jsr": {
     "@db/sqlite@0.13.0": {
@@ -58,9 +58,6 @@
     }
   },
   "npm": {
-    "@sinclair/typebox@0.34.49": {
-      "integrity": "sha512-brySQQs7Jtn0joV8Xh9ZV/hZb9Ozb0pmazDIASBkYKCjXrXU3mpcFahmK/z4YDhGkQvP9mWJbVyahdtU5wQA+A=="
-    },
     "ajv@8.18.0": {
       "integrity": "sha512-PlXPeEWMXMZ7sPYOHqmDyCJzcfNrUr3fGNKtezX14ykXOEIvyK81d+qydx89KY5O71FKMPaQ2vBfBFI5NHR63A==",
       "dependencies": [
@@ -84,15 +81,18 @@
     },
     "tiktoken@1.0.22": {
       "integrity": "sha512-PKvy1rVF1RibfF3JlXBSP0Jrcw2uq3yXdgcEXtKTYn3QJ/cBRBHDnrJ5jHky+MENZ6DIPwNUGWpkVx+7joCpNA=="
+    },
+    "typebox@1.1.32": {
+      "integrity": "sha512-cbGoj7BCxGcFDJ/RR7wbyMe9IkO2SeNhwLdZWQ+xRtun9+ze9iM1pBND4SoFAxgonuJYrCIWnEQ7sE4bMVDYHA=="
     }
   },
   "workspace": {
     "dependencies": [
       "jsr:@db/sqlite@0.13",
       "jsr:@std/path@^1.1.4",
-      "npm:@sinclair/typebox@~0.34.49",
       "npm:ajv@^8.18.0",
-      "npm:tiktoken@^1.0.22"
+      "npm:tiktoken@^1.0.22",
+      "npm:typebox@^1.1.32"
     ]
   }
 }

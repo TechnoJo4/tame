@@ -1,10 +1,10 @@
 {
 	"imports": {
 		"@db/sqlite": "jsr:@db/sqlite@^0.13.0",
-		"@sinclair/typebox": "npm:@sinclair/typebox@^0.34.49",
 		"@std/path": "jsr:@std/path@^1.1.4",
 		"ajv": "npm:ajv@^8.18.0",
-		"tiktoken": "npm:tiktoken@^1.0.22"
+		"tiktoken": "npm:tiktoken@^1.0.22",
+		"typebox": "npm:typebox@^1.1.32"
 	},
 	"lint": {
 		"rules": {

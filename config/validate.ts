@@ -1,6 +1,6 @@
 import { Ajv } from "ajv";
 import { readFileSync } from "node:fs";
-import { Static, TSchema } from "@sinclair/typebox";
+import { Static, TSchema } from "typebox";
 
 const ajv = new Ajv();
 
@@ -15,5 +15,5 @@ export const readConfig = <T extends TSchema>(path: string, schema: T): Static<T
         const errors = ajv.errors?.map(err => `- ${err.instancePath || err.params.missingProperty || "root"}: ${err.message}`);
         throw new Error(`invalid config ${path}:\n${errors?.join("\n")}`);
     }
-    return data;
+    return data as Static<T>;
 };

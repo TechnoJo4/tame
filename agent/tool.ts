@@ -1,5 +1,5 @@
-import type { Static, TSchema } from "@sinclair/typebox";
-export { Type } from "@sinclair/typebox";
+import type { Static, TSchema } from "typebox";
+export { Type } from "typebox";
 export { StringEnum } from "../util/string-enum.ts";
 import type { Agent } from "./agent.ts";
 import { ToolResult } from "../llm/types.ts";

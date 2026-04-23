@@ -1,5 +1,5 @@
 import * as acp from "npm:@agentclientprotocol/sdk";
-import { Static, TSchema, Type } from "@sinclair/typebox";
+import { Static, TSchema, Type } from "typebox";
 
 import type { Agent, AgentStopReason } from "../../agent/agent.ts";
 import * as harness from "../../agent/harness.ts";

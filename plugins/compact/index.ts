@@ -1,5 +1,5 @@
 import { Tiktoken } from "npm:js-tiktoken/lite";
-import { TSchema, Type } from "@sinclair/typebox";
+import { TSchema, Type } from "typebox";
 import { Agent } from "../../agent/agent.ts";
 import { Plugin } from "../../agent/plugin.ts";
 import { readTameConfig } from "../../config/index.ts";
