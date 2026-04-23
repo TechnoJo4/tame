@@ -4,6 +4,7 @@ import { PriorityProvider } from "../llm/router.ts";
 import { Static, Object, Union, Literal, Array, String, Number, Optional, Type } from "typebox";
 import { StringEnum } from "../util/string-enum.ts";
 import { BackoffRatelimiter, Ratelimiter } from "../util/ratelimit.ts";
+import { RatelimitedProvider } from "../llm/ratelimited.ts";
 
 // Schema
 export const knownProvider = StringEnum(["openrouter", "opencode"] as const);
@@ -27,11 +28,30 @@ export const knownProviderConfig = Object({
 	provider: knownProvider,
 	apiKey: Optional(String()),
 	model: String(),
+});
+
+export type KnownProviderConfig = Static<typeof knownProviderConfig>;
+
+export const messagesProviderConfig = Object({
+	type: Literal("anthropic-messages"),
+	apiUrl: knownProvider,
+	apiKey: Optional(String()),
+	model: String(),
+});
+
+export type MessagesProviderConfig = Static<typeof messagesProviderConfig>;
+
+export const providerExtraConfig = Type.Object({
 	headers: Optional(Object({}, { additionalProperties: String() })),
 	limiter: Optional(ratelimiterConfig),
 });
 
-export type KnownProviderConfig = Static<typeof knownProviderConfig>;
+export type ProviderExtraConfig = Static<typeof providerExtraConfig>;
+
+export const anyProviderConfig = Type.Intersect([
+	Type.Union([ knownProviderConfig, messagesProviderConfig ]),
+	providerExtraConfig
+]);
 
 export const autoProviderConfig = Object({
 	type: Type.Literal("priority"),
@@ -39,11 +59,10 @@ export const autoProviderConfig = Object({
 	maxDelay: Type.Number()
 });
 
-export const providerConfig = Union([knownProviderConfig, autoProviderConfig]);
+export const providerConfig = Union([ anyProviderConfig, autoProviderConfig ]);
 
 export type ProviderConfig = Static<typeof providerConfig>;
 
-// Parsing
 type ProviderType = "anthropic-messages";
 
 type ProviderInfo = {
@@ -72,7 +91,13 @@ export const parseLimiter = (o: RatelimiterConfig): Ratelimiter => {
 	}
 }
 
-export const parseKnownProvider = (o: KnownProviderConfig): InferenceProvider => {
+export const parseExtra = (provider: InferenceProvider, extra: ProviderExtraConfig): InferenceProvider => {
+	if (extra.limiter)
+		provider = new RatelimitedProvider(provider, parseLimiter(extra.limiter));
+	return provider;
+}
+
+export const parseKnownProvider = (o: KnownProviderConfig & ProviderExtraConfig): InferenceProvider => {
 	const p = knownProviders[o.provider];
 	const key = o.apiKey ?? Deno.env.get(p.envKey);
 	if (!key)
@@ -84,11 +109,17 @@ export const parseKnownProvider = (o: KnownProviderConfig): InferenceProvider =>
 	}
 };
 
+export const parseMessagesProvider = (o: MessagesProviderConfig & ProviderExtraConfig): InferenceProvider => {
+	return new AnthropicMessagesProvider(o.apiUrl, o.apiKey, o.headers as Record<string, string>, o.model);
+};
+
 export const parseProvider = (o: ProviderConfig): InferenceProvider => {
 	switch (o.type) {
 		case "provider":
-			return parseKnownProvider(o);
+			return parseExtra(parseKnownProvider(o), o);
+		case "anthropic-messages":
+			return parseExtra(parseMessagesProvider(o), o);
 		case "priority":
-			return new PriorityProvider(o.providers.map(parseProvider), o.maxDelay)
+			return new PriorityProvider(o.providers.map(parseProvider), o.maxDelay);
 	}
 };

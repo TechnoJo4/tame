@@ -6,15 +6,17 @@ export class AnthropicMessagesProvider implements InferenceProvider {
     #headers: Record<string, string>;
     defaultModel?: string;
 
-    constructor(url: string, key: string, headers?: Record<string, string>, defaultModel?: string) {
+    constructor(url: string, key?: string, headers?: Record<string, string>, defaultModel?: string) {
         this.#url = url;
         this.#headers = {
             "Content-Type": "application/json",
             "anthropic-version": "2023-06-01",
-            "x-api-key": key,
-            "Authorization": `Bearer ${key}`,
             ...headers
         };
+        if (key) {
+            this.#headers["x-api-key"] ??= key;
+            this.#headers["Authorization"] ??= `Bearer ${key}`;
+        }
         this.defaultModel = defaultModel;
     }
 
