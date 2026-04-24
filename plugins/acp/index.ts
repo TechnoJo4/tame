@@ -251,7 +251,12 @@ export class ACPAdapter implements acp.Agent {
 					const agent = this.#sessions.get(sessionId)!;
 					const result = agent.context.flatMap(m => m.content).find(c => c.type === "tool_result" && c.tool_use_id === block.id) as ToolResult | undefined;
 					const tool = agent.tools.get(block.name) as Tool<TSchema>;
-					const view = tool?.view?.acp?.(block.input, result);
+					let view;
+					try {
+						view = tool?.view?.acp?.(block.input, result);
+					} catch {
+						// ignore
+					}
 					this.#connection.sessionUpdate({
 						sessionId,
 						update: {
@@ -274,7 +279,12 @@ export class ACPAdapter implements acp.Agent {
 					const agent = this.#sessions.get(sessionId)!;
 					const call = agent.context.flatMap(m => m.content).find(c => c.type === "tool_use" && c.id === block.tool_use_id) as ToolUse;
 					const tool = agent.tools.get(call.name) as Tool<TSchema>;
-					const view = tool?.view?.acp?.(call.input, block);
+					let view;
+					try {
+						view = tool?.view?.acp?.(call.input, block);
+					} catch {
+						// ignore
+					}
 					this.#connection.sessionUpdate({
 						sessionId,
 						update: {
