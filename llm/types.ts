@@ -92,7 +92,7 @@ export interface Tool {
 
 export interface MessageRequest {
 	model?: string;
-	max_tokens?: number;
+	max_tokens: number;
 	system: string;
 	tools?: Tool[];
 	messages: InputMessage[];

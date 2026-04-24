@@ -147,6 +147,7 @@ export class Agent extends Emitter<AgentEvents> {
 				this.fire("completion", {
 					retriesLeft: maxRetries,
 					req: {
+						max_tokens: 32000,
 						system: this.system,
 						session_id: this.id,
 						messages: this.context,
