@@ -1,7 +1,7 @@
 import { AnthropicMessagesProvider } from "../llm/messages.ts";
 import { InferenceProvider } from "../llm/types.ts";
 import { PriorityProvider } from "../llm/router.ts";
-import { Static, Object, Union, Literal, Array, String, Number, Optional, Type } from "typebox";
+import { Static, Type } from "typebox";
 import { StringEnum } from "../util/string-enum.ts";
 import { BackoffRatelimiter, Ratelimiter } from "../util/ratelimit.ts";
 import { RatelimitedProvider } from "../llm/ratelimited.ts";
@@ -11,39 +11,39 @@ export const knownProvider = StringEnum(["openrouter", "opencode"] as const);
 
 export type KnownProvider = Static<typeof knownProvider>;
 
-export const backoffRatelimiterConfig = Object({
-	type: Literal("backoff"),
-	minDelay: Optional(Number()),
-	errorMin: Optional(Number()),
-	errorMax: Optional(Number()),
-	errorExp: Optional(Number())
+export const backoffRatelimiterConfig = Type.Object({
+	type: Type.Literal("backoff"),
+	minDelay: Type.Optional(Type.Number()),
+	errorMin: Type.Optional(Type.Number()),
+	errorMax: Type.Optional(Type.Number()),
+	errorExp: Type.Optional(Type.Number())
 });
 
-export const ratelimiterConfig = Union([backoffRatelimiterConfig]);
+export const ratelimiterConfig = Type.Union([backoffRatelimiterConfig]);
 
 export type RatelimiterConfig = Static<typeof ratelimiterConfig>;
 
-export const knownProviderConfig = Object({
-	type: Literal("provider"),
+export const knownProviderConfig = Type.Object({
+	type: Type.Literal("provider"),
 	provider: knownProvider,
-	apiKey: Optional(String()),
-	model: String(),
+	apiKey: Type.Optional(Type.String()),
+	model: Type.String(),
 });
 
 export type KnownProviderConfig = Static<typeof knownProviderConfig>;
 
-export const messagesProviderConfig = Object({
-	type: Literal("anthropic-messages"),
+export const messagesProviderConfig = Type.Object({
+	type: Type.Literal("anthropic-messages"),
 	apiUrl: knownProvider,
-	apiKey: Optional(String()),
-	model: String(),
+	apiKey: Type.Optional(Type.String()),
+	model: Type.String(),
 });
 
 export type MessagesProviderConfig = Static<typeof messagesProviderConfig>;
 
 export const providerExtraConfig = Type.Object({
-	headers: Optional(Object({}, { additionalProperties: String() })),
-	limiter: Optional(ratelimiterConfig),
+	headers: Type.Optional(Type.Object({}, { additionalProperties: Type.String() })),
+	limiter: Type.Optional(ratelimiterConfig),
 });
 
 export type ProviderExtraConfig = Static<typeof providerExtraConfig>;
@@ -53,15 +53,15 @@ export const anyProviderConfig = Type.Intersect([
 	providerExtraConfig
 ]);
 
-export const autoProviderConfig = Object({
+export type AnyProviderConfig = Static<typeof anyProviderConfig>;
+
+export const llmConfig = Type.Object({
 	type: Type.Literal("priority"),
-	providers: Array(knownProviderConfig),
+	providers: Type.Array(knownProviderConfig),
 	maxDelay: Type.Number()
 });
 
-export const providerConfig = Union([ anyProviderConfig, autoProviderConfig ]);
-
-export type ProviderConfig = Static<typeof providerConfig>;
+export type LLMConfig = Static<typeof llmConfig>;
 
 type ProviderType = "anthropic-messages";
 
@@ -113,13 +113,15 @@ export const parseMessagesProvider = (o: MessagesProviderConfig & ProviderExtraC
 	return new AnthropicMessagesProvider(o.apiUrl, o.apiKey, o.headers as Record<string, string>, o.model);
 };
 
-export const parseProvider = (o: ProviderConfig): InferenceProvider => {
+export const parseProvider = (o: AnyProviderConfig): InferenceProvider => {
 	switch (o.type) {
 		case "provider":
 			return parseExtra(parseKnownProvider(o), o);
 		case "anthropic-messages":
 			return parseExtra(parseMessagesProvider(o), o);
-		case "priority":
-			return new PriorityProvider(o.providers.map(parseProvider), o.maxDelay);
 	}
+};
+
+export const parseLLM = (o: LLMConfig): InferenceProvider => {
+	return new PriorityProvider(o.providers.map(parseProvider), o.maxDelay);
 };
