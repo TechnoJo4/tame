@@ -170,7 +170,8 @@ export class Agent extends Emitter<AgentEvents> {
 	async #execTool(tool: AnyTool, call: ToolUse) {
 		this.#pendingToolCalls.add(call.id);
 		try {
-			const args = assertSchema(call.input, tool.args, `invalid args to "${call.name}":`, this.#validators.get(tool)!)
+			const args = assertSchema(call.input, tool.args, `invalid args to "${call.name}":`, this.#validators.get(tool)!);
+			console.log(args);
 
 			let res = await (tool as Tool<TSchema>).exec(args, this);
 			if (typeof res !== "string")

@@ -1,14 +1,12 @@
 import { Static, TSchema } from "typebox";
 import Compile, { Validator } from "typebox/compile";
 
-export const assertSchema = <T extends TSchema>(data: unknown, schema: T, baseError: string, val?: Validator<any>): Static<T> => {
+export const assertSchema = <T extends TSchema>(data: unknown, schema: T, baseError: string, val_?: Validator<any>): Static<T> => {
+	const val = (val_ ?? Compile(schema)) as Validator<any, T>;
 	data = structuredClone(data);
-	if (val === undefined)
-		val = Compile(schema);
-
-	val.Default(data);
-	val.Convert(data);
-	val.Clean(data);
+	data = val.Default(data);
+	data = val.Convert(data);
+	data = val.Clean(data);
 	if (!val.Check(data)) {
 		const errors = val.Errors(data);
 		const s = [baseError];
@@ -24,5 +22,5 @@ export const assertSchema = <T extends TSchema>(data: unknown, schema: T, baseEr
 		}
 		throw new Error(s.join("\n"));
 	}
-	return data as Static<T>;
+	return data;
 };
