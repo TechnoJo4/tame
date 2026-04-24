@@ -34,7 +34,7 @@ export type KnownProviderConfig = Static<typeof knownProviderConfig>;
 
 export const messagesProviderConfig = Type.Object({
 	type: Type.Literal("anthropic-messages"),
-	apiUrl: knownProvider,
+	apiUrl: Type.String(),
 	apiKey: Type.Optional(Type.String()),
 	model: Type.String(),
 });
@@ -57,7 +57,7 @@ export type AnyProviderConfig = Static<typeof anyProviderConfig>;
 
 export const llmConfig = Type.Object({
 	type: Type.Literal("priority"),
-	providers: Type.Array(knownProviderConfig),
+	providers: Type.Array(anyProviderConfig),
 	maxDelay: Type.Number()
 });
 
