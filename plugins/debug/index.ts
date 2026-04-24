@@ -11,5 +11,9 @@ export default {
 			console.log(e);
 			return e;
 		});
+		agent.after("idle", async (e) => {
+			console.log("idle", e.stopReason);
+			return e;
+		});
 	}
 } as Plugin;
