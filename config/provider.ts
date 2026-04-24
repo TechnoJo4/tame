@@ -5,6 +5,7 @@ import { Static, Type } from "typebox";
 import { StringEnum } from "../util/string-enum.ts";
 import { BackoffRatelimiter, Ratelimiter } from "../util/ratelimit.ts";
 import { RatelimitedProvider } from "../llm/ratelimited.ts";
+import { ExtraDataProvider } from "../llm/extra-data.ts";
 
 // Schema
 export const knownProvider = StringEnum(["openrouter", "opencode"] as const);
@@ -44,6 +45,7 @@ export type MessagesProviderConfig = Static<typeof messagesProviderConfig>;
 export const providerExtraConfig = Type.Object({
 	headers: Type.Optional(Type.Object({}, { additionalProperties: Type.String() })),
 	limiter: Type.Optional(ratelimiterConfig),
+	extra: Type.Optional(Type.Object({})),
 });
 
 export type ProviderExtraConfig = Static<typeof providerExtraConfig>;
@@ -94,6 +96,8 @@ export const parseLimiter = (o: RatelimiterConfig): Ratelimiter => {
 export const parseExtra = (provider: InferenceProvider, extra: ProviderExtraConfig): InferenceProvider => {
 	if (extra.limiter)
 		provider = new RatelimitedProvider(provider, parseLimiter(extra.limiter));
+	if (extra.extra)
+		provider = new ExtraDataProvider(provider, extra.extra);
 	return provider;
 }
 

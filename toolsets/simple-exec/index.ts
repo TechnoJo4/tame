@@ -90,6 +90,8 @@ export const exec = tool({
 	view: {
 		compact: ({ command }) => `exec ${getExecName(command)}`,
 		acp: ({ command }, result) => {
+			if (result?.is_error) return;
+
 			const args = stripShell(command);
 			const content = [ {
 				"type": "content",
