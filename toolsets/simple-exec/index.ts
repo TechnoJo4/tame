@@ -17,9 +17,9 @@ export const killTree = (pid: number) => {
 
 export const stripShell = (args: string[]) => {
 	let i = 0;
-	while (args[i].endsWith("sh")) {
+	while (args[i]?.endsWith("sh")) {
 		++i;
-		while (args[i].startsWith("-")) ++i;
+		while (args[i]?.startsWith("-")) ++i;
 	}
 	return args.slice(i);
 };
@@ -28,7 +28,7 @@ export const getExecName = (args: string[]) => {
 	args = stripShell(args);
 	let arg = args[0];
 	if (arg.startsWith("cd"))
-		arg = arg.replace(/cd [^ ]+(&&|;|\s)*/, "");
+		arg = arg.replace(/cd\s+[^ ]+(&&|;|\s)*/, "");
 	const s = args[0].indexOf(" ");
 	return s === -1 ? args[0] : args[0].slice(0, s);
 };
@@ -89,8 +89,8 @@ export const exec = tool({
 	},
 	view: {
 		compact: ({ command }) => `exec ${getExecName(command)}`,
-		acp: ({ command }, result) => {
-			if (result?.is_error) return;
+		acp: ({ command }, result) => { 
+			if (!command) return;
 
 			const args = stripShell(command);
 			const content = [ {
@@ -101,7 +101,7 @@ export const exec = tool({
 				}
 			} ];
 
-			if (result)
+			if (result && !result?.is_error)
 				content.push({
 					"type": "content",
 					"content": {
