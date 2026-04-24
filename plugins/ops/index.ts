@@ -54,14 +54,12 @@ export interface OpsEvents {
 }
 
 const configSchema = Type.Object({
-	maxLines: Type.Optional(Type.Number({ default: 2000 })),
-	maxBytes: Type.Optional(Type.Number({ default: 50 * 1024 })),
-	timeout: Type.Optional(Type.Number({ default: 120_000 })),
+	maxLines: Type.Number({ default: 2000 }),
+	maxBytes: Type.Number({ default: 50 * 1024 }),
+	timeout: Type.Number({ default: 120_000 }),
 });
 
-const rawConfig = readTameConfig("ops.json", configSchema);
-const maxLines = rawConfig.maxLines ?? 2000;
-const maxBytes = rawConfig.maxBytes ?? 50 * 1024;
+const config = readTameConfig("ops.json", configSchema);
 
 export const envKey = Symbol("tame:ops:env");
 
@@ -109,9 +107,9 @@ const localEnv: Env = {
 			throw new Error(`${resolved}: access failed`);
 		}
 		const stat = await fs.stat(resolved);
-		if (stat.size > maxBytes) {
+		if (stat.size > config.maxLines) {
 			throw new Error(
-				`${resolved}: file too large (${stat.size} bytes, max ${maxBytes})`,
+				`${resolved}: file too large (${stat.size} bytes, max ${config.maxLines})`,
 			);
 		}
 		return new Uint8Array(await fs.readFile(resolved));
@@ -202,7 +200,7 @@ ops.after("read", async (e) => {
 
 	const lines = text.split("\n");
 	const startLine = e.offset ? Math.max(0, e.offset - 1) : 0;
-	const endLine = Math.min(startLine + (e.limit ?? maxLines), lines.length);
+	const endLine = Math.min(startLine + (e.limit ?? config.maxLines), lines.length);
 
 	text = lines.slice(startLine, endLine).join("\n");
 	const notice = [
