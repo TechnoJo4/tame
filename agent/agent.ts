@@ -150,7 +150,7 @@ export class Agent extends Emitter<AgentEvents> {
 						max_tokens: 32000,
 						system: this.system,
 						session_id: this.id,
-						messages: this.context,
+						messages: structuredClone(this.context),
 						tools: this.tools.values().map(t => ({
 							name: t.name,
 							description: t.desc,
