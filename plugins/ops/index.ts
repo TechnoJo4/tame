@@ -107,9 +107,9 @@ const localEnv: Env = {
 			throw new Error(`${resolved}: access failed`);
 		}
 		const stat = await fs.stat(resolved);
-		if (stat.size > config.maxLines) {
+		if (stat.size > config.maxBytes) {
 			throw new Error(
-				`${resolved}: file too large (${stat.size} bytes, max ${config.maxLines})`,
+				`${resolved}: file too large (${stat.size} bytes, max ${config.maxBytes})`,
 			);
 		}
 		return new Uint8Array(await fs.readFile(resolved));
