@@ -9,7 +9,7 @@ export class ExtraDataProvider implements InferenceProvider {
         this.extra = extra;
     }
 
-    complete(req: MessageRequest): Promise<AssistantMessage> {
-        return this.underlying.complete({ ...this.extra, ...req });
+    complete(req: MessageRequest, signal?: AbortSignal): Promise<AssistantMessage> {
+        return this.underlying.complete({ ...this.extra, ...req }, signal);
     }
 }

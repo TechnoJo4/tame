@@ -14,7 +14,7 @@ export class PriorityProvider implements InferenceProvider {
 		this.maxDelay = maxDelay;
 	}
 
-	async complete(req: MessageRequest): Promise<AssistantMessage> {
+	async complete(req: MessageRequest, signal?: AbortSignal): Promise<AssistantMessage> {
 		const skipped: [InferenceProvider, number][] = [];
 		for (const provider of this.underlying) {
 			if ("delay" in provider) {
@@ -26,7 +26,7 @@ export class PriorityProvider implements InferenceProvider {
 			}
 
 			try {
-				return await provider.complete(req);
+				return await provider.complete(req, signal);
 			} catch (e) {
 				console.error("error in inference request:", req, e);
 			}
@@ -35,7 +35,7 @@ export class PriorityProvider implements InferenceProvider {
 		skipped.sort(([_a, a], [_b, b]) => a - b);
 		for (const [provider, _] of skipped) {
 			try {
-				return await provider.complete(req);
+				return await provider.complete(req, signal);
 			} catch (e) {
 				console.error("error in inference request:", req, e);
 			}

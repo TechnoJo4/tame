@@ -11,10 +11,10 @@ export class RatelimitedProvider implements RatelimitedProvider {
         this.limiter = limiter;
     }
 
-    async complete(req: MessageRequest): Promise<AssistantMessage> {
+    async complete(req: MessageRequest, signal?: AbortSignal): Promise<AssistantMessage> {
         await this.limiter.wait();
         try {
-            const res = await this.underlying.complete(req);
+            const res = await this.underlying.complete(req, signal);
             this.limiter.success();
             return res;
         } catch (e) {
