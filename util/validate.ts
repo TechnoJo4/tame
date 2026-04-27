@@ -5,7 +5,6 @@ export const assertSchema = <T extends TSchema>(data: unknown, schema: T, baseEr
 	const val = (val_ ?? Compile(schema)) as Validator<any, T>;
 	data = structuredClone(data);
 	data = val.Default(data);
-	data = val.Convert(data);
 	data = val.Clean(data);
 	if (!val.Check(data)) {
 		const errors = val.Errors(data);
