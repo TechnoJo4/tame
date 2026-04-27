@@ -29,6 +29,7 @@ export class PriorityProvider implements InferenceProvider {
 				return await provider.complete(req, signal);
 			} catch (e) {
 				console.error("error in inference request:", req, e);
+				if (signal?.aborted) throw e;
 			}
 		}
 
@@ -38,6 +39,7 @@ export class PriorityProvider implements InferenceProvider {
 				return await provider.complete(req, signal);
 			} catch (e) {
 				console.error("error in inference request:", req, e);
+				if (signal?.aborted) throw e;
 			}
 		}
 
