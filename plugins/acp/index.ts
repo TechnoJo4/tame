@@ -1,12 +1,12 @@
 import * as acp from "npm:@agentclientprotocol/sdk";
-import { Static, TSchema, Type } from "typebox";
+import { Static, Type } from "typebox";
 
 import type { Agent, AgentStopReason } from "../../agent/agent.ts";
 import * as harness from "../../agent/harness.ts";
 import { Plugin } from "../../agent/plugin.ts";
 import { readTameConfig } from "../../config/index.ts";
 import { InputContent, InputMessage, ToolResult, ToolUse } from "../../llm/types.ts";
-import { Tool, tool } from "../../agent/tool.ts";
+import { tool } from "../../agent/tool.ts";
 import { getAgentHistory, default as history } from "../history/index.ts";
 
 const tcpListen = Type.Object({
@@ -250,13 +250,7 @@ export class ACPAdapter implements acp.Agent {
 				case "tool_use": {
 					const agent = this.#sessions.get(sessionId)!;
 					const result = agent.context.flatMap(m => m.content).find(c => c.type === "tool_result" && c.tool_use_id === block.id) as ToolResult | undefined;
-					const tool = agent.tools.get(block.name) as Tool<TSchema>;
-					let view;
-					try {
-						view = tool?.view?.acp?.(block.input, result);
-					} catch {
-						// ignore
-					}
+					const view = agent.viewToolCall("acp", block, result);
 					this.#connection.sessionUpdate({
 						sessionId,
 						update: {
@@ -278,13 +272,7 @@ export class ACPAdapter implements acp.Agent {
 					if (noToolResult) break;
 					const agent = this.#sessions.get(sessionId)!;
 					const call = agent.context.flatMap(m => m.content).find(c => c.type === "tool_use" && c.id === block.tool_use_id) as ToolUse;
-					const tool = agent.tools.get(call.name) as Tool<TSchema>;
-					let view;
-					try {
-						view = tool?.view?.acp?.(call.input, block);
-					} catch {
-						// ignore
-					}
+					const view = agent.viewToolCall("acp", call, block);
 					this.#connection.sessionUpdate({
 						sessionId,
 						update: {

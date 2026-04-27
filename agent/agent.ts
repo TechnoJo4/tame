@@ -2,7 +2,7 @@ import { Compile, Validator } from "typebox/compile";
 import { TSchema } from "typebox";
 import { Thread } from "../util/thread.ts";
 import { Emitter } from "../util/emitter.ts";
-import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason, MessageRequest } from "../llm/types.ts";
+import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason, MessageRequest, ToolResult } from "../llm/types.ts";
 import type { AnyTool, Tool } from "./tool.ts";
 import { assertSchema } from "../util/validate.ts";
 
@@ -165,6 +165,18 @@ export class Agent extends Emitter<AgentEvents> {
 	addTool(tool: AnyTool) {
 		this.tools.set(tool.name, tool);
 		this.#validators.set(tool, Compile(tool.args));
+	}
+
+	viewToolCall(view: string, call: ToolUse, result?: ToolResult) {
+		try {
+			const tool = this.tools.get(call.name)! as Tool<TSchema>;
+			assertSchema(call.input, tool.args, "", this.#validators.get(tool)!);
+			if (result === undefined)
+				result = this.context.flatMap(m => m.content).find(c => c.type === "tool_result" && c.tool_use_id === call.id) as ToolResult | undefined;
+			return tool.view?.[view]?.(call.input, result);
+		} catch {
+			return undefined;
+		}
 	}
 
 	async #execTool(tool: AnyTool, call: ToolUse) {
