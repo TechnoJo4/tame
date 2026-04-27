@@ -114,13 +114,16 @@ export class Agent extends Emitter<AgentEvents> {
 		});
 
 		this.after("completion", async (e) => {
+			const signal = this.signal!;
 			try {
-				const msg = await this.llm.complete(e.req, this.signal);
+				const msg = await this.llm.complete(e.req, signal);
 				this.#completionQueued = false;
 				this.fire("assistantMessage", { msg });
 			} catch {
 				this.#completionQueued = false;
-				if (e.retriesLeft > 0)
+				if (signal.aborted)
+					this.fire("idle", { stopReason: "aborted" });
+				else if (e.retriesLeft > 0)
 					this.queueCompletion(e.retriesLeft - 1);
 				else
 					this.fire("idle", { stopReason: "error" });
