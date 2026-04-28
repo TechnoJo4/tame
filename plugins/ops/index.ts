@@ -282,8 +282,17 @@ const readTool = tool({
 	},
 	view: {
 		compact: (args) => `Read ${args.path}`,
-		acp: (args) => ({
+		acp: (args, result) => ({
 			title: `Read ${contractHome(args.path)}`,
+			content: result ? [ {
+				"type": "content",
+				"content": {
+					"type": "text",
+					"text": result.content.includes("```")
+						? result.content
+						: "```\n" + result.content + "\n```\n"
+				},
+			} ] : [],
 		}),
 	},
 });
@@ -315,7 +324,9 @@ const writeTool = tool({
 				"type": "content",
 				"content": {
 					"type": "text",
-					"text": args.content
+					"text": args.content.includes("```")
+						? args.content
+						: "```\n" + args.content + "\n```\n"
 				},
 			} ],
 		}),
