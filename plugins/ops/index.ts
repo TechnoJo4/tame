@@ -71,6 +71,14 @@ export function setEnv(agent: Agent, env: Env) {
 	agent.pluginData.set(envKey, env);
 }
 
+const home = process.env.HOME ?? "";
+
+const contractHome = (path: string) => {
+	if (path === home) return "~";
+	if (home && path.startsWith(home + "/")) return "~" + path.slice(home.length);
+	return path;
+};
+
 const stripShell = (args: string[]) => {
 	let i = 0;
 	while (args[i]?.endsWith("sh")) {
@@ -275,7 +283,7 @@ const readTool = tool({
 	view: {
 		compact: (args) => `Read ${args.path}`,
 		acp: (args) => ({
-			title: `Read ${args.path}`,
+			title: `Read ${contractHome(args.path)}`,
 		}),
 	},
 });
@@ -302,7 +310,7 @@ const writeTool = tool({
 		compact: (args) => `Write ${args.path}`,
 		acp: (args) => ({
 			kind: "edit",
-			title: `Write ${args.path}`,
+			title: `Write ${contractHome(args.path)}`,
 			content: [ {
 				"type": "content",
 				"content": {
@@ -324,26 +332,20 @@ const editTool = tool({
 	}),
 	exec: async (args, agent) => {
 		return await edit(agent, args.path, (content) => {
-			if (!content.includes(args.oldString)) {
-				throw new Error(
-					`${args.path} does not contain ${JSON.stringify(args.oldString)}`,
-				);
-			}
-			const result = content.replace(args.oldString, args.newString);
-			if (result.includes(args.oldString)) {
-				throw new Error(
-					`${args.path} contains ${
-						JSON.stringify(args.oldString)
-					} more than once`,
-				);
-			}
-			return result;
+			let count = 0;
+			let idx = -1;
+			while ((idx = content.indexOf(args.oldString, idx + 1)) !== -1) count++;
+			if (count === 0)
+				throw new Error(`${args.path} does not contain ${JSON.stringify(args.oldString)}`);
+			if (count > 1) 
+				throw new Error(`${args.path} contains ${JSON.stringify(args.oldString)} more than once (${count} occurrences)`);
+			return content.replace(args.oldString, args.newString);
 		});
 	},
 	view: {
 		compact: (args) => `Edit ${args.path}`,
 		acp: (args) => ({
-			title: `Edit ${args.path}`,
+			title: `Edit ${contractHome(args.path)}`,
 		}),
 	},
 });
