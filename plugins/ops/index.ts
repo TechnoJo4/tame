@@ -303,11 +303,13 @@ const writeTool = tool({
 		acp: (args) => ({
 			kind: "edit",
 			title: `Write ${args.path}`,
-			content: [{
-				type: "diff",
-				oldText: null,
-				newText: args.content,
-			}],
+			content: [ {
+				"type": "content",
+				"content": {
+					"type": "text",
+					"text": args.content
+				},
+			} ],
 		}),
 	},
 });
@@ -376,11 +378,12 @@ const execTool = tool({
 		compact: ({ command }) => `exec ${getExecName(command)}`,
 		acp: ({ command }, result) => {
 			if (!command) return;
+			const cmd = stripShell(command).join(" ");
 			const content = [{
 				"type": "content",
 				"content": {
 					"type": "text",
-					"text": "```\n" + stripShell(command).join(" ") + "\n```\n",
+					"text": cmd.includes("`") ? "```\n" + cmd + "\n```\n" : "`" + cmd + "`",
 				},
 			}];
 			if (result && !result.is_error) {
@@ -388,7 +391,7 @@ const execTool = tool({
 					"type": "content",
 					"content": {
 						"type": "text",
-						"text": "\n```\n" + result.content + "\n```",
+						"text": result.content,
 					},
 				});
 			}
