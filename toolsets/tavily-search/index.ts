@@ -26,6 +26,28 @@ export const web_search = tool({
 		if (!req.ok)
 			throw new Error(`Tavily API returned ${req.status}, error: ${res.detail.error}`);
 		return res.results;
+	},
+	view: {
+		acp: ({ query }, result) => {
+			const content = [];
+			if (result && !result.is_error) {
+				try {
+					const results = JSON.parse(result.content);
+					const text = results.map((r: { title: string; url: string; content: string }, i: number) =>
+						`${i+1}. **[${r.title}](${r.url})** — ${r.content?.slice(0, 200)}`
+					).join("\n\n");
+					content.push({
+						"type": "content",
+						"content": { "type": "text", "text": text || "(no results)" }
+					});
+				} catch { /* skip malformed result */ }
+			}
+			return {
+				kind: "search",
+				title: `Search: ${query}`,
+				content
+			};
+		}
 	}
 });
 
