@@ -1,39 +1,28 @@
-export interface BackoffRatelimitOptions {
+import { Ratelimiter } from "./ratelimit.ts";
+
+export interface SerialRatelimitOptions {
 	minDelay: number;
 	errorMin: number;
 	errorMax: number;
 	errorExp: number;
 }
 
-export const defaultOptions: BackoffRatelimitOptions = {
+export const defaultOptions: SerialRatelimitOptions = {
 	minDelay: 100,
 	errorMin: 1_000,
 	errorMax: 300_000,
 	errorExp: 2,
 };
 
-export interface Ratelimiter {
-	/** Report an error response */
-	error(): void;
-	/** Report a success response */
-	success(): void;
-	/** Report a response with a Retry-After header (usually a 429) */
-	retryAfter(date: string): void;
-	/** How long a request would have to wait if wait() was called. */
-	delay(): number;
-	/** Wait before sending a request. Callers must call success or error after their request. */
-	wait(): Promise<void>;
-}
-
-export class BackoffRatelimiter {
-	#options: BackoffRatelimitOptions;
+export class SerialRatelimiter implements Ratelimiter {
+	#options: SerialRatelimitOptions;
 
 	#errors: number = 0;
 	#nextReq: number = 0;
 	#shouldQueue: boolean = false;
 	#queue: (() => void)[] = [];
 
-	constructor(options: Partial<BackoffRatelimitOptions> = {}) {
+	constructor(options: Partial<SerialRatelimitOptions> = {}) {
 		this.#options = { ...defaultOptions, ...options };
 	}
 
@@ -67,7 +56,7 @@ export class BackoffRatelimiter {
 	}
 
 	delay(): number {
-		return this.#nextReq - Date.now();
+		return Math.max(0, this.#nextReq - Date.now());
 	}
 
 	async wait() {
@@ -85,3 +74,4 @@ export class BackoffRatelimiter {
 		}
 	}
 }
+

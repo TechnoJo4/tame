@@ -1,4 +1,4 @@
-import { Ratelimiter } from "../util/ratelimit.ts";
+import { Ratelimiter } from "../ratelimit/ratelimit.ts";
 import { InferenceError } from "./error.ts";
 import { AssistantMessage, InferenceProvider, MessageRequest } from "./types.ts";
 

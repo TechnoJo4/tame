@@ -3,7 +3,8 @@ import { InferenceProvider } from "../llm/types.ts";
 import { PriorityProvider } from "../llm/router.ts";
 import { Static, Type } from "typebox";
 import { StringEnum } from "../util/string-enum.ts";
-import { BackoffRatelimiter, Ratelimiter } from "../util/ratelimit.ts";
+import { Ratelimiter } from "../ratelimit/ratelimit.ts";
+import { SerialRatelimiter } from "../ratelimit/serial.ts";
 import { RatelimitedProvider } from "../llm/ratelimited.ts";
 import { ExtraDataProvider } from "../llm/extra-data.ts";
 
@@ -12,15 +13,15 @@ export const knownProvider = StringEnum(["openrouter", "opencode", "deepseek"] a
 
 export type KnownProvider = Static<typeof knownProvider>;
 
-export const backoffRatelimiterConfig = Type.Object({
-	type: Type.Literal("backoff"),
+export const serialRatelimiterConfig = Type.Object({
+	type: Type.Literal("serial"),
 	minDelay: Type.Optional(Type.Number()),
 	errorMin: Type.Optional(Type.Number()),
 	errorMax: Type.Optional(Type.Number()),
 	errorExp: Type.Optional(Type.Number())
 });
 
-export const ratelimiterConfig = Type.Union([backoffRatelimiterConfig]);
+export const ratelimiterConfig = Type.Union([serialRatelimiterConfig]);
 
 export type RatelimiterConfig = Static<typeof ratelimiterConfig>;
 
@@ -93,8 +94,8 @@ export const knownProviders: Record<KnownProvider, ProviderInfo> = {
 
 export const parseLimiter = (o: RatelimiterConfig): Ratelimiter => {
 	switch (o.type) {
-		case "backoff":
-			return new BackoffRatelimiter(o);
+		case "serial":
+			return new SerialRatelimiter(o);
 	}
 }
 
