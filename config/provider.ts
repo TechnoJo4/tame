@@ -5,6 +5,8 @@ import { Static, Type } from "typebox";
 import { StringEnum } from "../util/string-enum.ts";
 import { Ratelimiter } from "../ratelimit/ratelimit.ts";
 import { SerialRatelimiter } from "../ratelimit/serial.ts";
+import { TokenBucketRatelimiter } from "../ratelimit/bucket.ts";
+import { BackoffOnlyRatelimiter } from "../ratelimit/backoff.ts";
 import { RatelimitedProvider } from "../llm/ratelimited.ts";
 import { ExtraDataProvider } from "../llm/extra-data.ts";
 
@@ -21,7 +23,21 @@ export const serialRatelimiterConfig = Type.Object({
 	errorExp: Type.Optional(Type.Number())
 });
 
-export const ratelimiterConfig = Type.Union([serialRatelimiterConfig]);
+export const bucketRatelimiterConfig = Type.Object({
+	type: Type.Literal("bucket"),
+	rps: Type.Optional(Type.Number()),
+	maxBurst: Type.Optional(Type.Number()),
+	errorMultiplier: Type.Optional(Type.Number()),
+});
+
+export const backoffOnlyRatelimiterConfig = Type.Object({
+	type: Type.Literal("backoff-only"),
+	errorMin: Type.Optional(Type.Number()),
+	errorMax: Type.Optional(Type.Number()),
+	errorExp: Type.Optional(Type.Number()),
+});
+
+export const ratelimiterConfig = Type.Union([ serialRatelimiterConfig, bucketRatelimiterConfig, backoffOnlyRatelimiterConfig ]);
 
 export type RatelimiterConfig = Static<typeof ratelimiterConfig>;
 
@@ -95,7 +111,11 @@ export const knownProviders: Record<KnownProvider, ProviderInfo> = {
 export const parseLimiter = (o: RatelimiterConfig): Ratelimiter => {
 	switch (o.type) {
 		case "serial":
-			return new SerialRatelimiter(o);
+			return new SerialRatelimiter(o);		
+		case "bucket":
+			return new TokenBucketRatelimiter(o);
+		case "backoff-only":
+			return new BackoffOnlyRatelimiter(o);
 	}
 }
 
