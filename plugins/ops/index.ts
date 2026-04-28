@@ -383,7 +383,9 @@ const execTool = tool({
 				"type": "content",
 				"content": {
 					"type": "text",
-					"text": cmd.includes("`") ? "```\n" + cmd + "\n```\n" : "`" + cmd + "`",
+					"text": cmd.includes("`")
+						? "```\n" + cmd + "\n```\n"
+						: "`" + cmd + "`",
 				},
 			}];
 			if (result && !result.is_error) {
@@ -391,7 +393,9 @@ const execTool = tool({
 					"type": "content",
 					"content": {
 						"type": "text",
-						"text": result.content,
+						"text": result.content.includes("```")
+							? result.content
+							: "```\n" + result.content + "\n```\n",
 					},
 				});
 			}
