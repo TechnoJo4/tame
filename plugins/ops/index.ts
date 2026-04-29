@@ -57,6 +57,7 @@ const configSchema = Type.Object({
 	maxLines: Type.Number({ default: 2000 }),
 	maxBytes: Type.Number({ default: 50 * 1024 }),
 	timeout: Type.Number({ default: 120_000 }),
+	shell: Type.Array(Type.String(), { default: ["bash", "-lc"] }),
 });
 
 const config = readTameConfig("ops.json", configSchema);
@@ -79,7 +80,7 @@ const contractHome = (path: string) => {
 	return path;
 };
 
-const stripShell = (args: string[]) => {
+const stripShell = (args: string[]): string[] => {
 	let i = 0;
 	while (args[i]?.endsWith("sh")) {
 		++i;
@@ -88,10 +89,15 @@ const stripShell = (args: string[]) => {
 	return args.slice(i);
 };
 
-const getExecName = (args: string[]) => {
+const getExecName = (args: string[]): string => {
 	const a = stripShell(args);
 	const s = a[0].indexOf(" ");
 	return s === -1 ? a[0] : a[0].slice(0, s);
+};
+
+const normalizeCommand = (command: string | string[]): string[] => {
+	if (typeof command === "string") return [...config.shell, command];
+	return command;
 };
 
 const killTree = (pid: number) => {
@@ -364,20 +370,24 @@ const editTool = tool({
 const execTool = tool({
 	name: "exec",
 	desc: `Run a shell command and returns its output.
-- The arguments to shell will be passed to execvp(). Most terminal commands should be prefixed with ["bash", "-lc"].
+- The arguments will be passed to execvp(). Most terminal commands should be prefixed with ["bash", "-lc"].
 - Always set the workdir param when using the shell function. Do not cd unless absolutely necessary.`,
 	args: Type.Object({
-		command: Type.Array(Type.String(), {
-			description: "Command line for the new process",
-			minItems: 1,
-		}),
+		command: Type.Union([
+			Type.Array(Type.String(), {
+				description: "Command line for the new process (passed directly to execvp)",
+				minItems: 1,
+			}),
+			Type.String({ description: "Shell command to run" }),
+		]),
 		workdir: Type.Optional(Type.String({ description: "Working directory to execute the command in" })),
 		timeout: Type.Number({ description: "Timeout for the command in milliseconds" }),
 	}),
 	exec: async (args, agent) => {
+		const command = normalizeCommand(args.command);
 		const e = await ops.do("exec", {
 			agent,
-			command: args.command,
+			command,
 			workdir: args.workdir,
 			timeout: args.timeout,
 		});
@@ -388,17 +398,21 @@ const execTool = tool({
 		].filter((s) => s !== "").join("\n\n") || "ok";
 	},
 	view: {
-		compact: ({ command }) => `exec ${getExecName(command)}`,
+		compact: ({ command }) => {
+			const cmd = normalizeCommand(command);
+			return `exec ${getExecName(cmd)}`;
+		},
 		acp: ({ command }, result) => {
 			if (!command) return;
-			const cmd = stripShell(command).join(" ");
+			const cmd = normalizeCommand(command);
+			const display = stripShell(cmd).join(" ");
 			const content = [{
 				"type": "content",
 				"content": {
 					"type": "text",
-					"text": cmd.includes("`")
-						? "```\n" + cmd + "\n```\n"
-						: "`" + cmd + "`",
+					"text": display.includes("`")
+						? "```\n" + display + "\n```\n"
+						: "`" + display + "`",
 				},
 			}];
 			if (result && !result.is_error) {
@@ -413,7 +427,7 @@ const execTool = tool({
 				});
 			}
 			return {
-				title: getExecName(command),
+				title: getExecName(cmd),
 				content,
 			};
 		},
