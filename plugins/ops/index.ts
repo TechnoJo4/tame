@@ -404,8 +404,8 @@ const execTool = tool({
 		},
 		acp: ({ command }, result) => {
 			if (!command) return;
-			const cmd = normalizeCommand(command);
-			const display = stripShell(cmd).join(" ");
+			const cmd = stripShell(normalizeCommand(command));
+			const display = cmd.join(" ");
 			const content = [{
 				"type": "content",
 				"content": {
