@@ -20,6 +20,7 @@ export interface ToolResultEvent {
 	toolUse: string;
 	error: boolean;
 	result: string;
+	resultMessageIdx: number;
 };
 
 export interface CompletionEvent {
@@ -70,36 +71,34 @@ export class Agent extends Emitter<AgentEvents> {
 		this.after("assistantMessage", async (e: AssistantMessageEvent) => {
 			this.context.push(e.msg);
 			const calls = e.msg.content.filter(c => c.type === "tool_use");
-			if (calls.length > 0)
+			if (calls.length > 0) {
+				this.context.push({
+					role: "user",
+					content: []
+				});
+				const i = this.context.length - 1;
 				this.#thread.queue(async () => {
 					for (const call of calls) {
 						const tool = this.tools.get(call.name);
 						if (tool)
-							this.#execTool(tool, call)
+							this.#execTool(tool, call, i);
 						else
 							this.fire("toolResult", {
 								error: true,
 								toolUse: call.id,
-								result: `tool "${call.name}" not found`
+								result: `tool "${call.name}" not found`,
+								resultMessageIdx: i
 							});
 					}
 				});
+			}
 			else
 				this.fire("idle", { stopReason: e.msg.stop_reason });
 			return e;
 		});
 
 		this.after("toolResult", async (e: ToolResultEvent) => {
-			let m = this.context.at(-1);
-			if (m?.role !== "user") {
-				m = {
-					role: "user",
-					content: []
-				};
-				this.context.push(m);
-			}
-
-			m.content.push({
+			this.context[e.resultMessageIdx].content.push({
 				type: "tool_result",
 				is_error: e.error,
 				tool_use_id: e.toolUse,
@@ -182,7 +181,7 @@ export class Agent extends Emitter<AgentEvents> {
 		}
 	}
 
-	async #execTool(tool: AnyTool, call: ToolUse) {
+	async #execTool(tool: AnyTool, call: ToolUse, resultMessageIdx: number) {
 		this.#pendingToolCalls.add(call.id);
 		try {
 			const args = assertSchema(call.input, tool.args, `invalid args to "${call.name}":`, this.#validators.get(tool)!);
@@ -194,13 +193,15 @@ export class Agent extends Emitter<AgentEvents> {
 			this.fire("toolResult", {
 				toolUse: call.id,
 				error: false,
-				result: res as string
+				result: res as string,
+				resultMessageIdx
 			});
 		} catch (e) {
 			this.fire("toolResult", {
 				toolUse: call.id,
 				error: true,
-				result: e instanceof Error ? e.message : e as string
+				result: e instanceof Error ? e.message : e as string,
+				resultMessageIdx
 			});
 		}
 	}
