@@ -1,7 +1,7 @@
 import { Compile, Validator } from "typebox/compile";
 import { TSchema } from "typebox";
 import { Thread } from "../util/thread.ts";
-import { Emitter } from "../util/emitter.ts";
+import { Emitter, handlerWrapperSkipErrors } from "../util/emitter.ts";
 import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason, MessageRequest, ToolResult } from "../llm/types.ts";
 import type { AnyTool, Tool } from "./tool.ts";
 import { assertSchema } from "../util/validate.ts";
@@ -56,6 +56,7 @@ export class Agent extends Emitter<AgentEvents> {
 
 	constructor(llm: InferenceProvider, system: string, id?: string) {
 		super();
+		this.wrapHandler = handlerWrapperSkipErrors;
 		this.llm = llm;
 		this.system = system;
 		this.#id = id ?? Array.from(crypto.getRandomValues(new Uint8Array(16)))

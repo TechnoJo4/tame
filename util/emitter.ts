@@ -1,6 +1,6 @@
 import { Thread } from "./thread.ts";
 
-export const wrapHandler = <T>(f: (x: T) => Promise<T>): ((x: T) => Promise<T>) => {
+export const handlerWrapperSkipErrors = <T>(f: (x: T) => Promise<T>): ((x: T) => Promise<T>) => {
 	return async x => {
 		try {
 			return await f(x);
@@ -11,9 +11,12 @@ export const wrapHandler = <T>(f: (x: T) => Promise<T>): ((x: T) => Promise<T>) 
 	};
 }
 
+export type HandlerWrapper = <T>(f: (x: T) => Promise<T>) => ((x: T) => Promise<T>);
+
 export type Handler<Events, K extends keyof Events> = (data: Events[K]) => Promise<Events[K]>;
 
 export class Emitter<Events> {
+	protected wrapHandler: HandlerWrapper = x => x;
 	protected thread = new Thread();
 	protected handlers = new Map<keyof Events, ((e: never) => unknown)[]>();
 	protected onceHandlers = new Map<keyof Events, ((e: never) => unknown)[]>();
@@ -51,7 +54,7 @@ export class Emitter<Events> {
 
 	/** Run an event and get the processed event data. */
 	do<K extends keyof Events>(event: K, data: Events[K]): Promise<Events[K]> {
-		return new Promise(resolve => this.thread.queue(() => {
+		return new Promise((resolve, reject) => this.thread.queue(() => {
 			let p: Promise<Events[K]> = Promise.resolve(data);
 			for (const h of this.onceHandlers.get(event) ?? []) {
 				p = p.then(h as Handler<Events, K>);
@@ -60,7 +63,7 @@ export class Emitter<Events> {
 			for (const h of this.handlers.get(event) ?? []) {
 				p = p.then(h as Handler<Events, K>);
 			}
-			return p.then(e => resolve(e));
+			return p.then(e => resolve(e)).catch(e => reject(e));
 		}));
 	}
 
@@ -68,21 +71,21 @@ export class Emitter<Events> {
 	before<K extends keyof Events>(event: K, f: Handler<Events, K>) {
 		if (!this.handlers.has(event))
 			this.handlers.set(event, []);
-		this.handlers.get(event)!.unshift(wrapHandler(f));
+		this.handlers.get(event)!.unshift(this.wrapHandler(f));
 	}
 
 	/** Add a handler at the end of an event's processing. */
 	after<K extends keyof Events>(event: K, f: Handler<Events, K>) {
 		if (!this.handlers.has(event))
 			this.handlers.set(event, []);
-		this.handlers.get(event)!.push(wrapHandler(f));
+		this.handlers.get(event)!.push(this.wrapHandler(f));
 	}
 
 	/** Add a handler for the processing of the single next instance of an event. */
 	once<K extends keyof Events>(event: K, f: Handler<Events, K>) {
 		if (!this.onceHandlers.has(event))
 			this.onceHandlers.set(event, []);
-		this.onceHandlers.get(event)!.push(wrapHandler(f));
+		this.onceHandlers.get(event)!.push(this.wrapHandler(f));
 	}
 
 	/** Promise that resolves with the next instance of an event. */
