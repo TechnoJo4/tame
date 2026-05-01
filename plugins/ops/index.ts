@@ -370,8 +370,8 @@ const editTool = tool({
 const execTool = tool({
 	name: "exec",
 	desc: `Run a shell command and returns its output.
-- The arguments will be passed to execvp(). Most terminal commands should be prefixed with ["bash", "-lc"].
-- Always set the workdir param when using the shell function. Do not cd unless absolutely necessary.`,
+- Always set the workdir param. Do not cd unless absolutely necessary.
+- Array arguments will be passed to execvp(). Most terminal commands should be prefixed with ["bash", "-lc"].`,
 	args: Type.Object({
 		command: Type.Union([
 			Type.Array(Type.String(), {
