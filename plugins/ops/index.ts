@@ -305,8 +305,7 @@ const readTool = tool({
 
 const writeTool = tool({
 	name: "write",
-	desc:
-		"Write a file. Creates a file if it does not exist, overwrites if it does. Automatically creates parent directories.",
+	desc: "Write a file. Creates a file if it does not exist, overwrites if it does. Automatically creates parent directories.",
 	args: Type.Object({
 		path: Type.String({
 			description: "Path to the file (relative or absolute)",
