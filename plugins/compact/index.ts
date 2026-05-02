@@ -1,20 +1,21 @@
 import { Tiktoken } from "npm:js-tiktoken/lite";
-import { TSchema, Type } from "typebox";
+import { Type } from "typebox";
 import { Agent } from "../../agent/agent.ts";
 import { Plugin } from "../../agent/plugin.ts";
 import { readTameConfig } from "../../config/index.ts";
 import { StringEnum } from "../../util/string-enum.ts";
 import type { InputMessage, AssistantMessage, ToolUse } from "../../llm/types.ts";
-import { Tool } from "../../agent/tool.ts";
 import { tameMsgMeta } from "../../util/symbols.ts";
 import { default as memory } from "../memory/index.ts";
 
 export const configSchema = Type.Object({
 	maxTokens: Type.Number(),
-	estimation: Type.Object({
-		// tiktoken ranks
-		encoding: StringEnum([ "gpt2", "r50k_base", "p50k_base", "p50k_edit", "cl100k_base", "o200k_base" ] as const)
-	}),
+	estimation: Type.Union([
+		Type.Object({
+			type: "tiktoken",
+			encoding: StringEnum([ "gpt2", "r50k_base", "p50k_base", "p50k_edit", "cl100k_base", "o200k_base" ] as const)
+		}),
+	]),
 	keepTail: Type.Union([
 		Type.Object({ type: Type.Literal("tokens"), tokens: Type.Number() }),
 		Type.Object({ type: Type.Literal("messages"), messages: Type.Number() }),

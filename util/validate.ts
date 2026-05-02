@@ -1,6 +1,12 @@
 import { Static, TSchema } from "typebox";
 import Compile, { Validator } from "typebox/compile";
 
+export class ValidationError extends Error {
+	constructor(message?: string, options?: ErrorOptions) {
+		super(message, options);
+	}
+}
+
 export const assertSchema = <T extends TSchema>(data: unknown, schema: T, baseError: string, val_?: Validator<any>): Static<T> => {
 	const val = (val_ ?? Compile(schema)) as Validator<any, T>;
 	data = structuredClone(data);
@@ -19,7 +25,7 @@ export const assertSchema = <T extends TSchema>(data: unknown, schema: T, baseEr
 				s.push(`- ${path}: ${err.message}`);
 			}
 		}
-		throw new Error(s.join("\n"));
+		throw new ValidationError(s.join("\n"));
 	}
 	return data;
 };

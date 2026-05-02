@@ -4,7 +4,7 @@ import { Thread } from "../util/thread.ts";
 import { Emitter, handlerWrapperSkipErrors } from "../util/emitter.ts";
 import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason, MessageRequest, ToolResult } from "../llm/types.ts";
 import type { AnyTool, Tool } from "./tool.ts";
-import { assertSchema } from "../util/validate.ts";
+import { assertSchema, ValidationError } from "../util/validate.ts";
 
 export type AgentStopReason = StopReason | "aborted" | "error";
 
@@ -177,7 +177,10 @@ export class Agent extends Emitter<AgentEvents> {
 			if (result === undefined)
 				result = this.context.flatMap(m => m.content).find(c => c.type === "tool_result" && c.tool_use_id === call.id) as ToolResult | undefined;
 			return tool.view?.[view]?.(call.input, result);
-		} catch {
+		} catch (e) {
+			if (!(e instanceof ValidationError)) {
+				console.warn("error while viewing tool call:", call, e);
+			}
 			return undefined;
 		}
 	}
