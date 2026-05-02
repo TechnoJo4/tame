@@ -74,10 +74,8 @@ export const summarizeContext = (ctx: InputMessage[], agent: Agent) => {
 	for (const m of ctx) {
 		for (const c of m.content) {
 			if (c.type === "tool_result" && !c.is_error) {
-				const tool = agent.tools.get(calls[c.tool_use_id].name)! as Tool<TSchema>;
-				if (tool?.view?.compact) {
-					calls_text += `\n- ${tool.view.compact(calls[c.tool_use_id].input, c)}`;
-				}
+				const view = agent.viewToolCall("compact", calls[c.tool_use_id], c);
+				if (view) calls_text += `\n- ${view}`;
 			}
 		}
 	}
