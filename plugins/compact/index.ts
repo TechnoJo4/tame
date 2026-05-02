@@ -16,7 +16,7 @@ export const configSchema = Type.Object({
 		encoding: StringEnum([ "gpt2", "r50k_base", "p50k_base", "p50k_edit", "cl100k_base", "o200k_base" ] as const)
 	}),
 	keepTail: Type.Union([
-		//Type.Object({ type: Type.Literal("tokens"), tokens: Type.Number() }),
+		Type.Object({ type: Type.Literal("tokens"), tokens: Type.Number() }),
 		Type.Object({ type: Type.Literal("messages"), messages: Type.Number() }),
 		//Type.Object({ type: Type.Literal("calls"), calls: Type.Number() }),
 	]),
@@ -119,7 +119,21 @@ export default {
 			}
 
 			if (tokenCount > config.maxTokens) {
-				const toSummarize = agent.context.slice(0, -config.keepTail.messages);
+				let keepCount: number;
+				if (config.keepTail.type === "messages") {
+					keepCount = config.keepTail.messages;
+				} else {
+					// tokens: walk backwards accumulating tokens until we hit the limit
+					let acc = 0;
+					keepCount = 0;
+					for (let i = agent.context.length - 1; i >= 0; i--) {
+						acc += estimateMessageTokens(agent.context[i]);
+						if (acc > config.keepTail.tokens) break;
+						keepCount++;
+					}
+				}
+
+				const toSummarize = agent.context.slice(0, -keepCount);
 				const summary = summarizeContext(toSummarize, agent);
 				agent.context = [
 					{
@@ -127,7 +141,7 @@ export default {
 						content: [ { type: "text", text: summary } ],
 						[tameMsgMeta]: { automated: true }
 					},
-					...agent.context.slice(-config.keepTail.messages)
+					...agent.context.slice(-keepCount)
 				];
 			}
 
