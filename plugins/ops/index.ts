@@ -18,7 +18,7 @@ export interface Env {
 	write(path: string, content: Content): Promise<void>;
 	exec(
 		command: string[],
-		opts: { workdir?: string; timeout: number; signal?: AbortSignal },
+		opts: { workdir?: string; timeout: number; signal?: AbortSignal; env?: Record<string, string> },
 	): Promise<{ stdout: string; stderr: string; exitCode: number }>;
 }
 
@@ -42,6 +42,7 @@ export interface ExecEvent {
 	command: string[];
 	workdir?: string;
 	timeout: number;
+	env?: Record<string, string>;
 	stdout?: string;
 	stderr?: string;
 	exitCode?: number;
@@ -53,14 +54,43 @@ export interface OpsEvents {
 	exec: ExecEvent;
 }
 
+const dynamicEnvKey = Type.Union([
+	Type.Literal("MODEL"),
+	Type.Literal("AGENT_ID"),
+	Type.Literal("AGENT_SYSTEM"),
+]);
+
 const configSchema = Type.Object({
 	maxLines: Type.Number({ default: 2000 }),
 	maxBytes: Type.Number({ default: 50 * 1024 }),
 	timeout: Type.Number({ default: 120_000 }),
 	shell: Type.Array(Type.String(), { default: ["bash", "-lc"] }),
+	env: Type.Optional(Type.Object({
+		static: Type.Optional(Type.Object({}, { additionalProperties: Type.String() })),
+		dynamic: Type.Optional(Type.Object({}, { additionalProperties: dynamicEnvKey })),
+	})),
 });
 
 const config = readTameConfig("ops.json", configSchema);
+
+const resolveDynamicEnv = (agent: Agent): Record<string, string> => {
+	const env: Record<string, string> = {};
+	if (!config.env?.dynamic) return env;
+	for (const [key, source] of Object.entries(config.env.dynamic)) {
+		switch (source) {
+			case "model":
+				env[key] = agent.llm.defaultModel ?? "unknown";
+				break;
+			case "id":
+				env[key] = agent.id;
+				break;
+			case "system":
+				env[key] = agent.system.split("\n")[0] ?? agent.system;
+				break;
+		}
+	}
+	return env;
+};
 
 export const envKey = Symbol("tame:ops:env");
 
@@ -156,6 +186,7 @@ const localEnv: Env = {
 			detached: true,
 			cwd: opts.workdir,
 			stdio: ["ignore", "pipe", "pipe"],
+			env: { ...process.env, ...config.env?.static, ...opts.env },
 		});
 
 		const stdout: string[] = [];
@@ -237,12 +268,22 @@ ops.after("write", async (e) => {
 	return e;
 });
 
+ops.before("exec", async (e) => {
+	e.env = {
+		...(config.env?.static ?? {}),
+		...resolveDynamicEnv(e.agent),
+		...e.env,
+	};
+	return e;
+});
+
 ops.after("exec", async (e) => {
 	if (e.stdout !== undefined || e.exitCode !== undefined) return e;
 	const env = getEnv(e.agent);
 	const res = await env.exec(e.command, {
 		workdir: e.workdir,
-		timeout: e.timeout
+		timeout: e.timeout,
+		env: e.env,
 	});
 	e.stdout = res.stdout;
 	e.stderr = res.stderr;
