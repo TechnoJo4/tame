@@ -8,6 +8,7 @@ import { readTameConfig } from "../../config/index.ts";
 import { InputContent, InputMessage, ToolResult, ToolUse } from "../../llm/types.ts";
 import { tool } from "../../agent/tool.ts";
 import { getAgentHistory, default as history } from "../history/index.ts";
+import commands from "../commands/index.ts";
 
 const tcpListen = Type.Object({
 	transport: Type.Literal("tcp"),
@@ -120,10 +121,40 @@ export class ACPAdapter implements acp.Agent {
 		const agent = this.#sessions.get(params.sessionId);
 		if (!agent) throw new Error(`session ${params.sessionId} not found`);
 
+		const content = this.#contentFromACP(params.prompt);
+
+		// Check for slash commands when the commands plugin is enabled
+		const firstText = content.find(c => c.type === "text");
+		if (commands.enabled && firstText?.text?.startsWith("/")) {
+			agent.context.push({ role: "user", content });
+			const idlePromise = agent.waitFor("idle");
+			try {
+				await commands.dispatch(agent, firstText.text);
+			} catch (e) {
+				agent.fire("assistantMessage", {
+					msg: {
+						role: "assistant",
+						content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : String(e)}` }],
+						stop_reason: "end_turn",
+						model: "command",
+						usage: { cache_creation_input_tokens: 0, cache_read_input_tokens: 0, input_tokens: 0, output_tokens: 0, service_tier: "standard" }
+					}
+				});
+			}
+			agent.fire("idle", { stopReason: "end_turn" });
+			const idle = await idlePromise;
+
+			const hist = getAgentHistory(agent);
+			if (hist.title) this.#sendTitle(agent.id, hist.title);
+
+			if (idle.stopReason === "error") throw new Error("command failed");
+			return { stopReason: stopReasonMap[idle.stopReason] };
+		}
+
 		agent.fire("userMessage", {
 			msg: {
 				role: "user",
-				content: this.#contentFromACP(params.prompt)
+				content
 			}
 		});
 		const idle = await agent.waitFor("idle");
@@ -194,6 +225,19 @@ export class ACPAdapter implements acp.Agent {
 					}
 				}));
 			}
+		}
+
+		if (commands.enabled) {
+			this.#connection.sessionUpdate({
+				sessionId: agent.id,
+				update: {
+					sessionUpdate: "available_commands_update",
+					availableCommands: [...commands.list()].map(c => ({
+						name: c.name,
+						description: c.description,
+					}))
+				}
+			});
 		}
 
 		agent.after("assistantMessage", async (e) => {

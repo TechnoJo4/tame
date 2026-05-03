@@ -18,6 +18,10 @@ export class CommandsPlugin implements Plugin {
         this.#registry.set(command.name, command);
     }
 
+    list(): IterableIterator<Command> {
+        return this.#registry.values();
+    }
+
     async dispatch(agent: Agent, text: string) {
         const i = text.indexOf(" ");
         const name = text.substring(text.at(0) === "/" ? 1 : 0, i !== -1 ? i : undefined);
