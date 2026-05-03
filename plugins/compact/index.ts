@@ -12,7 +12,7 @@ export const configSchema = Type.Object({
 	maxTokens: Type.Number(),
 	estimation: Type.Union([
 		Type.Object({
-			type: "tiktoken",
+			type: Type.Literal("tiktoken"),
 			encoding: StringEnum([ "gpt2", "r50k_base", "p50k_base", "p50k_edit", "cl100k_base", "o200k_base" ] as const)
 		}),
 	]),
