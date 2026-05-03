@@ -101,5 +101,6 @@ export interface MessageRequest {
 }
 
 export interface InferenceProvider {
+	defaultModel: string | undefined;
 	complete(req: MessageRequest, signal?: AbortSignal): Promise<AssistantMessage>;
 }

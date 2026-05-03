@@ -2,9 +2,13 @@ import { Ratelimiter } from "../ratelimit/ratelimit.ts";
 import { InferenceError } from "./error.ts";
 import { AssistantMessage, InferenceProvider, MessageRequest } from "./types.ts";
 
-export class RatelimitedProvider implements RatelimitedProvider {
+export class RatelimitedProvider {
     underlying: InferenceProvider;
     limiter: Ratelimiter;
+
+    get defaultModel(): string | undefined {
+        return this.underlying.defaultModel;
+    }
 
     constructor(underlying: InferenceProvider, limiter: Ratelimiter) {
         this.underlying = underlying;

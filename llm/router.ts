@@ -9,6 +9,10 @@ export class PriorityProvider implements InferenceProvider {
 	underlying: (InferenceProvider | RatelimitedProvider)[];
 	maxDelay: number;
 
+	get defaultModel(): string | undefined {
+		return this.underlying[0]?.defaultModel;
+	}
+
 	constructor(underlying: InferenceProvider[], maxDelay: number = 100) {
 		this.underlying = underlying;
 		this.maxDelay = maxDelay;
