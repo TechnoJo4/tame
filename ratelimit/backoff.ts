@@ -1,3 +1,5 @@
+import { Ratelimiter } from "./ratelimit.ts";
+
 export interface BackoffOnlyOptions {
 	errorMin: number;
 	errorMax: number;
@@ -17,7 +19,7 @@ export const defaultBackoffOnlyOptions: BackoffOnlyOptions = {
  * Multiple concurrent callers may proceed simultaneously. Useful as a
  * fallback when the upstream provider does its own rate-limiting.
  */
-export class BackoffOnlyRatelimiter {
+export class BackoffOnlyRatelimiter implements Ratelimiter {
     #options: BackoffOnlyOptions;
     #errors: number = 0;
     #retryAfterTime: number = 0;

@@ -1,3 +1,4 @@
+import { Ratelimiter } from "./ratelimit.ts";
 
 export interface TokenBucketOptions {
 	/** Requests per second */
@@ -14,7 +15,7 @@ export const defaultTokenBucketOptions: TokenBucketOptions = {
 	errorMultiplier: 5,
 };
 
-export class TokenBucketRatelimiter {
+export class TokenBucketRatelimiter implements Ratelimiter {
     #increment: number;
     #errIncrement: number;
     #maxDiff: number;
