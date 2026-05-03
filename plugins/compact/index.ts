@@ -131,15 +131,21 @@ export default {
 					}
 				}
 
-				const toSummarize = agent.context.slice(0, -keepCount);
-				const summary = summarizeContext(toSummarize, agent);
+				const tail = agent.context.slice(-keepCount);
+				const head = agent.context.slice(0, -keepCount);
+
+				const protectedMsgs = head.filter(m => m[tameMsgMeta]?.noCompact);
+				const summarizable = head.filter(m => !m[tameMsgMeta]?.noCompact);
+
+				const summary = summarizeContext(summarizable, agent);
 				agent.context = [
 					{
 						role: "user",
 						content: [ { type: "text", text: summary } ],
 						[tameMsgMeta]: { automated: true }
 					},
-					...agent.context.slice(-keepCount)
+					...protectedMsgs,
+					...tail
 				];
 			}
 

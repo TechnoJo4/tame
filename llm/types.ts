@@ -59,6 +59,10 @@ export type StopReason =
 export interface TameMessageMeta {
 	/** Whether this message was automatically inserted.  */
 	automated?: true
+	/** Keep this message during compaction. */
+	noCompact?: true
+	/** Skill associated with this message. */
+	skill?: string
 }
 
 export interface UserMessage {
