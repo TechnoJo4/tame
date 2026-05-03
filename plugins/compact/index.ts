@@ -19,7 +19,6 @@ export const configSchema = Type.Object({
 	keepTail: Type.Union([
 		Type.Object({ type: Type.Literal("tokens"), tokens: Type.Number() }),
 		Type.Object({ type: Type.Literal("messages"), messages: Type.Number() }),
-		//Type.Object({ type: Type.Literal("calls"), calls: Type.Number() }),
 	]),
 });
 
