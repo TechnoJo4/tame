@@ -6,7 +6,7 @@ import { tool, Type } from "../../agent/tool.ts";
 import { readTameConfig, tameDataFolder } from "../../config/index.ts";
 import { Agent } from "../../agent/agent.ts";
 import { tameMsgMeta } from "../../util/symbols.ts";
-import commands from "../commands/index.ts";
+import { CommandsPlugin } from "../commands/index.ts";
 
 const home = Deno.env.get("HOME");
 
@@ -278,7 +278,7 @@ export default {
 			}),
 		);
 
-		if (commands.enabled) commands.add({
+		harness.getPlugin(CommandsPlugin)?.add({
 			name: "skill",
 			description: "Activate a skill by name: /skill <name>",
 			run: async (agent, param) => {

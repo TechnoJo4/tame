@@ -19,3 +19,6 @@ export const newAgent = (llm?: InferenceProvider, system?: string, id?: string):
 
 	return agent;
 };
+
+export const getPlugin = <T extends Plugin>(t: abstract new (...args: any) => T): T | undefined =>
+	plugins.find(p => p instanceof t) as T | undefined;
