@@ -7,7 +7,7 @@ import { Plugin } from "../../agent/plugin.ts";
 import { readTameConfig } from "../../config/index.ts";
 import { InputContent, InputMessage, ToolResult, ToolUse } from "../../llm/types.ts";
 import { tool } from "../../agent/tool.ts";
-import { getAgentHistory, default as history } from "../history/index.ts";
+import { getAgentHistory, type HistoryPlugin } from "../history/index.ts";
 import commands from "../commands/index.ts";
 
 const tcpListen = Type.Object({
@@ -46,6 +46,7 @@ const stopReasonMap: Record<AgentStopReason, acp.StopReason> = {
 
 export class ACPAdapter implements acp.Agent {
 	#harness: Harness;
+	#history?: HistoryPlugin;
 	#config: Config;
 	#connection: acp.AgentSideConnection;
 	#sessions = new Map<string, Agent>();
@@ -55,17 +56,19 @@ export class ACPAdapter implements acp.Agent {
 		this.#harness = harness;
 		this.#connection = connection;
 		this.#config = config;
+		this.#history = this.#harness.getPlugin<HistoryPlugin>("history");
 	}
 
 	async initialize(params: acp.InitializeRequest): Promise<acp.InitializeResponse> {
 		if (params.clientCapabilities)
 			this.#clientCaps = params.clientCapabilities;
+		
 		return {
 			protocolVersion: acp.PROTOCOL_VERSION,
 			agentCapabilities: {
-				loadSession: history.enabled,
+				loadSession: this.#history !== undefined,
 				sessionCapabilities: {
-					list: history.enabled ? {} : undefined,
+					list: this.#history && {},
 				},
 			}
 		};
@@ -80,7 +83,7 @@ export class ACPAdapter implements acp.Agent {
 	async loadSession(params: acp.LoadSessionRequest): Promise<acp.LoadSessionResponse> {
 		let agent = this.#sessions.get(params.sessionId);
 		if (!agent) {
-			agent = await history.loadAgent(params.sessionId);
+			agent = await this.#history!.loadAgent(params.sessionId);
 			this.#setupAgent(agent);
 		}
 
@@ -95,7 +98,7 @@ export class ACPAdapter implements acp.Agent {
 
 	async listSessions(_params: acp.ListSessionsRequest): Promise<acp.ListSessionsResponse> {
 		const sessions: acp.SessionInfo[] = [];
-		for (const sess of await history.list()) {
+		for (const sess of await this.#history!.list()) {
 			const agent = this.#sessions.get(sess.id);
 			if (agent) {
 				const data = getAgentHistory(agent);
