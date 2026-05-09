@@ -4,21 +4,39 @@ import { Plugin } from "./plugin.ts";
 import { AnyTool } from "./tool.ts";
 import { config, system as configSystem } from "../config/index.ts";
 
-export const plugins: Plugin[] = [];
-export const tools: AnyTool[] = [];
+export class Harness {
+	#tools: AnyTool[] = [];
+	#plugins = new Map<string, Plugin>();
 
-export const newAgent = (llm?: InferenceProvider, system?: string, id?: string): Agent => {
-	const agent = new Agent(llm ?? config.llm, system ?? configSystem, id);
+	getPluginByType<T extends Plugin>(t: abstract new (...args: any) => T): T | undefined {
+		return this.#plugins.values().find(p => p instanceof t) as T | undefined
+	}
 
-	for (const t of tools)
-		agent.addTool(t);
+	getPlugin<T extends Plugin>(id: string): T | undefined {
+		return this.#plugins.get(id) as T | undefined
+	}
 
-	for (const p of plugins)
-		if (p.newAgent)
-			p.newAgent(agent);
+	addTools(...tool: AnyTool[]) {
+		this.#tools.push(...tool);
+	}
 
-	return agent;
-};
+	addPlugins(...plugins: Plugin[]) {
+		for (const p of plugins)
+			this.#plugins.set(p.id, p);
+		for (const p of plugins)
+			p.init?.(this);
+	}
 
-export const getPlugin = <T extends Plugin>(t: abstract new (...args: any) => T): T | undefined =>
-	plugins.find(p => p instanceof t) as T | undefined;
+	newAgent(llm?: InferenceProvider, system?: string, id?: string): Agent {
+		const agent = new Agent(llm ?? config.llm, system ?? configSystem, id);
+
+		for (const t of this.#tools)
+			agent.addTool(t);
+
+		for (const p of this.#plugins.values())
+			if (p.newAgent)
+				p.newAgent(agent);
+
+		return agent;
+	}
+}

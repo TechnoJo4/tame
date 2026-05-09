@@ -8,6 +8,8 @@ export interface Command {
 };
 
 export class CommandsPlugin implements Plugin {
+    id = "commands";
+
     enabled?: true;
 
     #registry = new Map<string, Command>();

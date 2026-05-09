@@ -55,6 +55,8 @@ const setupGitConfig = async () => {
 };
 
 export default {
+	id: "assisted-by",
+
 	async init() {
 		await setupGitConfig();
 

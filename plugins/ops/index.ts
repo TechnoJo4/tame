@@ -1,7 +1,6 @@
 import { Emitter } from "../../util/emitter.ts";
 import type { Agent } from "../../agent/agent.ts";
 import type { Plugin } from "../../agent/plugin.ts";
-import * as harness from "../../agent/harness.ts";
 import { tool, Type } from "../../agent/tool.ts";
 import { readTameConfig } from "../../config/index.ts";
 import { promises as fs } from "node:fs";
@@ -475,8 +474,10 @@ const execTool = tool({
 });
 
 export default {
-	async init() {
-		harness.tools.push(readTool, writeTool, editTool, execTool);
+	id: "ops",
+
+	async init(harness) {
+		harness.addTools(readTool, writeTool, editTool, execTool);
 	},
 	newAgent(agent: Agent) {
 		setEnv(agent, localEnv);

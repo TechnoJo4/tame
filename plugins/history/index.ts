@@ -3,7 +3,7 @@ import type { Agent } from "../../agent/agent.ts";
 import { promises as fs } from "node:fs";
 import { resolve } from "@std/path";
 import { tameDataFolder } from "../../config/index.ts";
-import { newAgent } from "../../agent/harness.ts";
+import type { Harness } from "../../agent/harness.ts";
 import { InputMessage, TameMessageMeta } from "../../llm/types.ts";
 import { tameMsgMeta } from "../../util/symbols.ts";
 
@@ -66,11 +66,15 @@ export interface HistoryHook<T> {
 };
 
 export class HistoryPlugin implements Plugin {
+	id = "history";
+
+	#harness: Harness | undefined;
 	#hooks = new Map<string, HistoryHook<unknown>>();
 
 	enabled?: true;
 
-	async init() {
+	async init(harness: Harness) {
+		this.#harness = harness;
 		try {
 			await fs.access(historyFolder);
 		} catch {
@@ -161,7 +165,7 @@ export class HistoryPlugin implements Plugin {
 	};
 
 	async historyToAgent(history: History): Promise<Agent> {
-		const agent = newAgent(undefined, history.system, history.id);
+		const agent = this.#harness!.newAgent(undefined, history.system, history.id);
 		agent.context = history.context;
 		Object.assign(getAgentHistory(agent), {
 			title: history.title,

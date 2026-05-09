@@ -4,7 +4,7 @@ import { InferenceProvider, AssistantMessage, MessageRequest } from "./types.ts"
 export class AnthropicMessagesProvider implements InferenceProvider {
     #url: string;
     #headers: Record<string, string>;
-    defaultModel?: string;
+    defaultModel = "";
 
     constructor(url: string, key?: string, headers?: Record<string, string>, defaultModel?: string) {
         this.#url = url;
@@ -17,7 +17,8 @@ export class AnthropicMessagesProvider implements InferenceProvider {
             this.#headers["x-api-key"] ??= key;
             this.#headers["Authorization"] ??= `Bearer ${key}`;
         }
-        this.defaultModel = defaultModel;
+        if (defaultModel)
+            this.defaultModel = defaultModel;
     }
 
     async complete(req: MessageRequest, signal?: AbortSignal): Promise<AssistantMessage> {

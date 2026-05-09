@@ -234,6 +234,8 @@ const setCaching = (m: InputMessage): InputMessage => ({
 });
 
 export default {
+	id: "compact",
+
 	async init() {
 	},
 	newAgent(agent: Agent) {

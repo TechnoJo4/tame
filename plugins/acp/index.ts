@@ -2,7 +2,7 @@ import * as acp from "npm:@agentclientprotocol/sdk";
 import { Static, Type } from "typebox";
 
 import type { Agent, AgentStopReason } from "../../agent/agent.ts";
-import * as harness from "../../agent/harness.ts";
+import type { Harness } from "../../agent/harness.ts";
 import { Plugin } from "../../agent/plugin.ts";
 import { readTameConfig } from "../../config/index.ts";
 import { InputContent, InputMessage, ToolResult, ToolUse } from "../../llm/types.ts";
@@ -45,12 +45,14 @@ const stopReasonMap: Record<AgentStopReason, acp.StopReason> = {
 };
 
 export class ACPAdapter implements acp.Agent {
+	#harness: Harness;
 	#config: Config;
 	#connection: acp.AgentSideConnection;
 	#sessions = new Map<string, Agent>();
 	#clientCaps: acp.ClientCapabilities = {};
 
-	constructor(connection: acp.AgentSideConnection, config: Config) {
+	constructor(harness: Harness, connection: acp.AgentSideConnection, config: Config) {
+		this.#harness = harness;
 		this.#connection = connection;
 		this.#config = config;
 	}
@@ -70,7 +72,7 @@ export class ACPAdapter implements acp.Agent {
 	}
 
 	async newSession(_params: acp.NewSessionRequest): Promise<acp.NewSessionResponse> {
-		const agent = harness.newAgent();
+		const agent = this.#harness.newAgent();
 		this.#setupAgent(agent);
 		return { sessionId: agent.id };
 	}
@@ -349,7 +351,9 @@ export class ACPAdapter implements acp.Agent {
 };
 
 export default {
-	async init() {
+	id: "acp",
+
+	async init(harness) {
 		const config = readTameConfig("acp.json", configSchema);
 		let listener: Deno.TcpListener | Deno.UnixListener;
 		if (config.listen.transport === "unix") {
@@ -364,7 +368,7 @@ export default {
 		for await (const conn of listener) {
 			if ("setKeepAlive" in conn) conn.setKeepAlive(true);
 			const stream = acp.ndJsonStream(conn.writable, conn.readable);
-			new acp.AgentSideConnection((conn) => new ACPAdapter(conn, config), stream);
+			new acp.AgentSideConnection((conn) => new ACPAdapter(harness, conn, config), stream);
 		}
 	},
 } as Plugin;

@@ -1,12 +1,11 @@
 import { resolve } from "@std/path";
 import { promises as fs } from "node:fs";
 import { Plugin } from "../../agent/plugin.ts";
-import * as harness from "../../agent/harness.ts";
 import { tool, Type } from "../../agent/tool.ts";
 import { readTameConfig, tameDataFolder } from "../../config/index.ts";
 import { Agent } from "../../agent/agent.ts";
 import { tameMsgMeta } from "../../util/symbols.ts";
-import { CommandsPlugin } from "../commands/index.ts";
+import type { CommandsPlugin } from "../commands/index.ts";
 
 const home = Deno.env.get("HOME");
 
@@ -220,7 +219,9 @@ const removeSkillContent = (agent: Agent, skillName: string): void => {
 };
 
 export default {
-	async init() {
+	id: "skills",
+
+	async init(harness) {
 		const discovered = await discoverSkills();
 		for (const [name, skill] of discovered) {
 			skills.set(name, skill);
@@ -228,7 +229,7 @@ export default {
 
 		if (skills.size === 0) return;
 
-		harness.tools.push(
+		harness.addTools(
 			tool({
 				name: "activate_skill",
 				desc: "Load full instructions for a skill. Call this when a task matches a skill's description from the catalog.",
@@ -256,7 +257,7 @@ export default {
 			}),
 		);
 
-		harness.tools.push(
+		harness.addTools(
 			tool({
 				name: "deactivate_skill",
 				desc: "Deactivate a skill, allowing its instructions to be compacted away. Use when a skill is no longer relevant to the current task.",
@@ -278,7 +279,7 @@ export default {
 			}),
 		);
 
-		harness.getPlugin(CommandsPlugin)?.add({
+		harness.getPlugin<CommandsPlugin>("commands")?.add({
 			name: "skill",
 			description: "Activate a skill by name: /skill <name>",
 			run: async (agent, param) => {
