@@ -233,11 +233,14 @@ const setCaching = (m: InputMessage): InputMessage => ({
 			: c)
 });
 
-export default {
-	id: "compact",
+export class CompactPlugin implements Plugin {
+	id = "compact" as const;
+
+	enabled?: true;
 
 	async init() {
-	},
+	}
+
 	newAgent(agent: Agent) {
 		userMessageHistory.set(agent, []);
 
@@ -274,4 +277,6 @@ export default {
 			};
 		});
 	}
-} as Plugin;
+}
+
+export default new CompactPlugin();
