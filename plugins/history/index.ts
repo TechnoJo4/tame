@@ -66,7 +66,7 @@ export interface HistoryHook<T> {
 };
 
 export class HistoryPlugin implements Plugin {
-	id = "history";
+	id = "history" as const;
 
 	#harness: Harness | undefined;
 	#hooks = new Map<string, HistoryHook<unknown>>();

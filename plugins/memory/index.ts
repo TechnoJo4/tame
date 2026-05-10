@@ -2,7 +2,7 @@ import { Agent } from "../../agent/agent.ts";
 import { Plugin } from "../../agent/plugin.ts";
 import type { Harness } from "../../agent/harness.ts";
 import { tool, Type } from "../../agent/tool.ts";
-import { default as history } from "../history/index.ts";
+import type { HistoryPlugin } from "../history/index.ts";
 
 export interface Memory {
 	forgotten: boolean;
@@ -10,7 +10,7 @@ export interface Memory {
 };
 
 export class MemoryPlugin implements Plugin {
-	id = "memory";
+	id = "memory" as const;
 
 	memory = new Map<Agent, Memory[]>();
 
@@ -65,12 +65,10 @@ export class MemoryPlugin implements Plugin {
 	async init(harness: Harness) {
 		harness.addTools(this.remember, this.forget);
 
-		if (history.enabled) {
-			history.addHook<Memory[]>("memory", {
-				load: (agent, mem) => this.memory.set(agent, mem),
-				save: (agent) => this.memory.get(agent)!
-			});
-		}
+		harness.getPlugin<HistoryPlugin>("history")?.addHook<Memory[]>("memory", {
+			load: (agent, mem) => this.memory.set(agent, mem),
+			save: (agent) => this.memory.get(agent)!
+		});
 	}
 
 	newAgent(agent: Agent) {
