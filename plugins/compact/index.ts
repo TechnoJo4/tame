@@ -35,31 +35,7 @@ export const configSchema = Type.Object({
 	})),
 });
 
-const config = readTameConfig("compact.json", configSchema);
-
-const rank = await import(`npm:js-tiktoken/ranks/${config.estimation.encoding}`);
-const enc = new Tiktoken(rank.default);
-
-export const estimateMessageTokens = (m: InputMessage) => {
-	let n = 4;
-	for (const block of m.content) {
-		switch (block.type) {
-			case "text":
-				n += enc.encode(block.text).length;
-				break;
-			case "thinking":
-				n += enc.encode(block.thinking).length;
-				break;
-			case "tool_use":
-				n += enc.encode(JSON.stringify(block.input)).length;
-				break;
-			case "tool_result":
-				n += enc.encode(block.content).length;
-				break;
-		}
-	}
-	return n;
-}
+export type CompactConfig = Static<typeof configSchema>;
 
 const userMessageHistory = new Map<Agent, string[]>(); // TODO: get from history instead
 
@@ -70,10 +46,39 @@ export class CompactPlugin implements Plugin {
 
 	enabled?: true;
 
+	#config: CompactConfig;
+	#enc!: Tiktoken;
 	#memory?: MemoryPlugin;
+
+	constructor(config: CompactConfig) {
+		this.#config = config;
+	}
 
 	async init(harness: Harness) {
 		this.#memory = harness.getPlugin<MemoryPlugin>("memory");
+		const rank = await import(`npm:js-tiktoken/ranks/${this.#config.estimation.encoding}`);
+		this.#enc = new Tiktoken(rank.default);
+	}
+
+	estimateMessageTokens(m: InputMessage) {
+		let n = 4;
+		for (const block of m.content) {
+			switch (block.type) {
+				case "text":
+					n += this.#enc.encode(block.text).length;
+					break;
+				case "thinking":
+					n += this.#enc.encode(block.thinking).length;
+					break;
+				case "tool_use":
+					n += this.#enc.encode(JSON.stringify(block.input)).length;
+					break;
+				case "tool_result":
+					n += this.#enc.encode(block.content).length;
+					break;
+			}
+		}
+		return n;
 	}
 
 	newAgent(agent: Agent) {
@@ -86,15 +91,15 @@ export class CompactPlugin implements Plugin {
 			const lastUsage = agent.context[lastUsageIdx] as AssistantMessage;
 
 			let tokenCount = lastUsage.usage.input_tokens + lastUsage.usage.cache_read_input_tokens + lastUsage.usage.cache_creation_input_tokens;
-			if (tokenCount < config.maxTokens) {
+			if (tokenCount < this.#config.maxTokens) {
 				const messagesWithoutUsage = agent.context.slice(lastUsageIdx + 1);
 				for (const m of messagesWithoutUsage)
-					tokenCount += estimateMessageTokens(m);
+					tokenCount += this.estimateMessageTokens(m);
 			}
 
-			if (tokenCount > config.maxTokens) {
+			if (tokenCount > this.#config.maxTokens) {
 				this.ceilingCompact(agent);
-			} else if (config.interval) {
+			} else if (this.#config.interval) {
 				this.intervalPrune(agent, lastCompactBoundary);
 			}
 
@@ -115,14 +120,14 @@ export class CompactPlugin implements Plugin {
 
 	tailToKeep(context: InputMessage[]): number {
 		let keepCount: number;
-		if (config.keepTail.type === "messages") {
-			keepCount = config.keepTail.messages;
+		if (this.#config.keepTail.type === "messages") {
+			keepCount = this.#config.keepTail.messages;
 		} else {
 			let acc = 0;
 			keepCount = 0;
 			for (let i = context.length - 1; i >= 0; i--) {
-				acc += estimateMessageTokens(context[i]);
-				if (acc > config.keepTail.tokens) break;
+				acc += this.estimateMessageTokens(context[i]);
+				if (acc > this.#config.keepTail.tokens) break;
 				keepCount++;
 			}
 		}
@@ -173,14 +178,14 @@ export class CompactPlugin implements Plugin {
 		const toPrune = agent.context.slice(lastCompact, -keepCount);
 		const tail = agent.context.slice(-keepCount);
 
-		switch (config.interval!.every.type) {
+		switch (this.#config.interval!.every.type) {
 			case "messages":
-				if (toPrune.length < config.interval!.every.messages) return;
+				if (toPrune.length < this.#config.interval!.every.messages) return;
 				break;
 			case "tokens": {
 				let midTokens = 0;
-				for (const m of toPrune) midTokens += estimateMessageTokens(m);
-				if (midTokens < config.interval!.every.tokens) return;
+				for (const m of toPrune) midTokens += this.estimateMessageTokens(m);
+				if (midTokens < this.#config.interval!.every.tokens) return;
 				break;
 			}
 		}
@@ -196,7 +201,7 @@ export class CompactPlugin implements Plugin {
 
 			const newContent: InputContent[] = [];
 			for (const c of m.content) {
-				const pruned = this.pruneContent(c, failedIds, config.interval!.prune);
+				const pruned = this.pruneContent(c, failedIds, this.#config.interval!.prune);
 				if (pruned !== null) newContent.push(pruned);
 			}
 
@@ -286,4 +291,4 @@ export class CompactPlugin implements Plugin {
 	}
 }
 
-export default new CompactPlugin();
+export default new CompactPlugin(readTameConfig("compact.json", configSchema));
