@@ -8,7 +8,7 @@ import { readTameConfig } from "../../config/index.ts";
 import { InputContent, InputMessage, ToolResult, ToolUse } from "../../llm/types.ts";
 import { tool } from "../../agent/tool.ts";
 import { getAgentHistory, type HistoryPlugin } from "../history/index.ts";
-import commands from "../commands/index.ts";
+import type { CommandsPlugin } from "../commands/index.ts";
 
 const tcpListen = Type.Object({
 	transport: Type.Literal("tcp"),
@@ -47,6 +47,7 @@ const stopReasonMap: Record<AgentStopReason, acp.StopReason> = {
 export class ACPAdapter implements acp.Agent {
 	#harness: Harness;
 	#history?: HistoryPlugin;
+	#commands?: CommandsPlugin;
 	#config: Config;
 	#connection: acp.AgentSideConnection;
 	#sessions = new Map<string, Agent>();
@@ -57,6 +58,7 @@ export class ACPAdapter implements acp.Agent {
 		this.#connection = connection;
 		this.#config = config;
 		this.#history = this.#harness.getPlugin<HistoryPlugin>("history");
+		this.#commands = this.#harness.getPlugin<CommandsPlugin>("commands");
 	}
 
 	async initialize(params: acp.InitializeRequest): Promise<acp.InitializeResponse> {
@@ -130,11 +132,11 @@ export class ACPAdapter implements acp.Agent {
 
 		// Check for slash commands when the commands plugin is enabled
 		const firstText = content.find(c => c.type === "text");
-		if (commands.enabled && firstText?.text?.startsWith("/")) {
+		if (this.#commands && firstText?.text?.startsWith("/")) {
 			agent.context.push({ role: "user", content });
 			const idlePromise = agent.waitFor("idle");
 			try {
-				await commands.dispatch(agent, firstText.text);
+				await this.#commands.dispatch(agent, firstText.text);
 			} catch (e) {
 				agent.fire("assistantMessage", {
 					msg: {
@@ -232,12 +234,12 @@ export class ACPAdapter implements acp.Agent {
 			}
 		}
 
-		if (commands.enabled) {
+		if (this.#commands) {
 			this.#connection.sessionUpdate({
 				sessionId: agent.id,
 				update: {
 					sessionUpdate: "available_commands_update",
-					availableCommands: [...commands.list()].map(c => ({
+					availableCommands: [...this.#commands.list()].map(c => ({
 						name: c.name,
 						description: c.description,
 					}))

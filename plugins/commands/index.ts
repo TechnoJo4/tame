@@ -8,7 +8,7 @@ export interface Command {
 };
 
 export class CommandsPlugin implements Plugin {
-    id = "commands";
+    id = "commands" as const;
 
     enabled?: true;
 
