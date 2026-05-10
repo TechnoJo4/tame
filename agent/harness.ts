@@ -7,7 +7,9 @@ import { config, system as configSystem } from "../config/index.ts";
 export class Harness {
 	#tools: AnyTool[] = [];
 	#plugins = new Map<string, Plugin>();
+	#agents = new Map<string, WeakRef<Agent>>();
 
+	/** @deprecated Use getPlugin instead */
 	getPluginByType<T extends Plugin>(t: abstract new (...args: any) => T): T | undefined {
 		return this.#plugins.values().find(p => p instanceof t) as T | undefined
 	}
@@ -37,6 +39,18 @@ export class Harness {
 			if (p.newAgent)
 				p.newAgent(agent);
 
+		this.#agents.set(agent.id, new WeakRef(agent));
+
 		return agent;
+	}
+
+	getAgent(id: string): Agent | undefined {
+		return this.#agents.get(id)?.deref();
+	}
+
+	cleanup() {
+		this.#agents.entries()
+			.filter(([_,v]) => !v.deref())
+			.forEach(([k,_]) => this.#agents.delete(k));
 	}
 }
