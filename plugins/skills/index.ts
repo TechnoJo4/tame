@@ -6,10 +6,12 @@ import { readTameConfig, tameDataFolder } from "../../config/index.ts";
 import { Agent } from "../../agent/agent.ts";
 import { tameMsgMeta } from "../../util/symbols.ts";
 import type { CommandsPlugin } from "../commands/index.ts";
+import type { Harness } from "../../agent/harness.ts";
+import type { Static } from "typebox";
 
 const home = Deno.env.get("HOME");
 
-const configSchema = Type.Object({
+export const configSchema = Type.Object({
 	paths: Type.Array(Type.String(), {
 		default: [
 			"./.agents/skills",
@@ -22,7 +24,7 @@ const configSchema = Type.Object({
 	excludeDirs: Type.Array(Type.String(), { default: [".git", "node_modules", ".venv", "__pycache__"] }),
 });
 
-const config = readTameConfig("skills.json", configSchema);
+export type SkillsConfig = Static<typeof configSchema>;
 
 interface Skill {
 	name: string;
@@ -82,83 +84,6 @@ const parseFrontmatter = (content: string): { frontmatter: Frontmatter; body: st
 	return { frontmatter, body };
 };
 
-const skills = new Map<string, Skill>();
-
-const scanDir = async (
-	dir: string,
-	depth: number,
-	results: Map<string, Skill>,
-): Promise<void> => {
-	if (depth > config.maxDepth) return;
-
-	let entries = [];
-	try {
-		entries = await fs.readdir(dir, { withFileTypes: true });
-	} catch {
-		return;
-	}
-
-	for (const entry of entries) {
-		if (!entry.isDirectory()) continue;
-		if (config.excludeDirs.includes(entry.name)) continue;
-
-		const subdir = resolve(dir, entry.name);
-		const skillPath = resolve(subdir, "SKILL.md");
-
-		try {
-			await fs.access(skillPath, fs.constants.R_OK);
-		} catch {
-			await scanDir(subdir, depth + 1, results);
-			continue;
-		}
-
-		try {
-			const raw = await fs.readFile(skillPath, { encoding: "utf-8" });
-			const parsed = parseFrontmatter(raw);
-
-			if (!parsed || !parsed.frontmatter.name) {
-				console.warn(`skills: ${skillPath} has no valid frontmatter name, skipping`);
-				continue;
-			}
-
-			const fm = parsed.frontmatter;
-			if (!fm.description) {
-				console.warn(`skills: ${skillPath} has no description, skipping`);
-				continue;
-			}
-
-			const skill: Skill = {
-				name: fm.name!,
-				description: fm.description,
-				location: subdir,
-				compatibility: fm.compatibility,
-				allowedTools: fm["allowed-tools"],
-				license: fm.license,
-				metadata: fm.metadata,
-				body: parsed.body,
-			};
-
-			if (!results.has(skill.name)) {
-				results.set(skill.name, skill);
-			} else {
-				console.warn(`skills: "${skill.name}" from ${skillPath} shadowed by earlier discovery`);
-			}
-		} catch (err) {
-			console.warn(`skills: error parsing ${skillPath}:`, err);
-		}
-	}
-};
-
-const discoverSkills = async (): Promise<Map<string, Skill>> => {
-	const results = new Map<string, Skill>();
-
-	for (const rawPath of config.paths) {
-		await scanDir(resolve(rawPath), 1, results);
-	}
-
-	return results;
-};
-
 const buildCatalog = (skills: Map<string, Skill>): string => {
 	if (skills.size === 0) return "";
 
@@ -190,44 +115,126 @@ const buildActivationResult = (skill: Skill): string => {
 	return result;
 };
 
-const injectSkillContent = (agent: Agent, skill: Skill, automated: boolean = true): void => {
-	const content = buildActivationResult(skill);
+export class SkillsPlugin implements Plugin {
+	id = "skills" as const;
 
-	agent.context.push({
-		role: "user",
-		content: [{ type: "text", text: content }],
-		[tameMsgMeta]: {
-			automated: automated as true | undefined,
-			noCompact: true,
-			skill: skill.name,
-		},
-	});
+	#config: SkillsConfig;
+	#skills = new Map<string, Skill>();
 
-	const data = agent.pluginData.get(dataKey) as AgentSkillsData;
-	data.activated.add(skill.name);
-};
+	constructor(config: SkillsConfig) {
+		this.#config = config;
+	}
 
-const removeSkillContent = (agent: Agent, skillName: string): void => {
-	for (const msg of agent.context) {
-		if (msg[tameMsgMeta]?.skill === skillName) {
-			msg[tameMsgMeta] = { ...msg[tameMsgMeta], noCompact: undefined };
+	async scanDir(
+		dir: string,
+		depth: number,
+		results: Map<string, Skill>,
+	): Promise<void> {
+		if (depth > this.#config.maxDepth) return;
+
+		let entries = [];
+		try {
+			entries = await fs.readdir(dir, { withFileTypes: true });
+		} catch {
+			return;
+		}
+
+		for (const entry of entries) {
+			if (!entry.isDirectory()) continue;
+			if (this.#config.excludeDirs.includes(entry.name)) continue;
+
+			const subdir = resolve(dir, entry.name);
+			const skillPath = resolve(subdir, "SKILL.md");
+
+			try {
+				await fs.access(skillPath, fs.constants.R_OK);
+			} catch {
+				await this.scanDir(subdir, depth + 1, results);
+				continue;
+			}
+
+			try {
+				const raw = await fs.readFile(skillPath, { encoding: "utf-8" });
+				const parsed = parseFrontmatter(raw);
+
+				if (!parsed || !parsed.frontmatter.name) {
+					console.warn(`skills: ${skillPath} has no valid frontmatter name, skipping`);
+					continue;
+				}
+
+				const fm = parsed.frontmatter;
+				if (!fm.description) {
+					console.warn(`skills: ${skillPath} has no description, skipping`);
+					continue;
+				}
+
+				const skill: Skill = {
+					name: fm.name!,
+					description: fm.description,
+					location: subdir,
+					compatibility: fm.compatibility,
+					allowedTools: fm["allowed-tools"],
+					license: fm.license,
+					metadata: fm.metadata,
+					body: parsed.body,
+				};
+
+				if (!results.has(skill.name)) {
+					results.set(skill.name, skill);
+				} else {
+					console.warn(`skills: "${skill.name}" from ${skillPath} shadowed by earlier discovery`);
+				}
+			} catch (err) {
+				console.warn(`skills: error parsing ${skillPath}:`, err);
+			}
 		}
 	}
 
-	const data = agent.pluginData.get(dataKey) as AgentSkillsData;
-	data.activated.delete(skillName);
-};
+	async discoverSkills(): Promise<Map<string, Skill>> {
+		const results = new Map<string, Skill>();
 
-export default {
-	id: "skills",
-
-	async init(harness) {
-		const discovered = await discoverSkills();
-		for (const [name, skill] of discovered) {
-			skills.set(name, skill);
+		for (const rawPath of this.#config.paths) {
+			await this.scanDir(resolve(rawPath), 1, results);
 		}
 
-		if (skills.size === 0) return;
+		return results;
+	}
+
+	injectSkillContent(agent: Agent, skill: Skill, automated: boolean = true): void {
+		const content = buildActivationResult(skill);
+
+		agent.context.push({
+			role: "user",
+			content: [{ type: "text", text: content }],
+			[tameMsgMeta]: {
+				automated: automated as true | undefined,
+				noCompact: true,
+				skill: skill.name,
+			},
+		});
+
+		const data = agent.pluginData.get(dataKey) as AgentSkillsData;
+		data.activated.add(skill.name);
+	}
+
+	removeSkillContent(agent: Agent, skillName: string): void {
+		for (const msg of agent.context) {
+			if (msg[tameMsgMeta]?.skill === skillName) {
+				msg[tameMsgMeta] = { ...msg[tameMsgMeta], noCompact: undefined };
+			}
+		}
+
+		const data = agent.pluginData.get(dataKey) as AgentSkillsData;
+		data.activated.delete(skillName);
+	}
+
+	async init(harness: Harness) {
+		const discovered = await this.discoverSkills();
+		for (const [name, skill] of discovered) {
+			this.#skills.set(name, skill);
+		}
+
+		if (this.#skills.size === 0) return;
 
 		harness.addTools(
 			tool({
@@ -237,9 +244,9 @@ export default {
 					name: Type.String({ description: "Name of the skill to activate" }),
 				}),
 				exec: async ({ name }, agent) => {
-					const skill = skills.get(name);
+					const skill = this.#skills.get(name);
 					if (!skill) {
-						const available = [...skills.keys()].join(", ");
+						const available = [...this.#skills.keys()].join(", ");
 						throw new Error(`Unknown skill "${name}". Available: ${available}`);
 					}
 
@@ -248,7 +255,7 @@ export default {
 						return `Skill "${name}" is already activated.`;
 					}
 
-					injectSkillContent(agent, skill);
+					this.injectSkillContent(agent, skill);
 					return `Activated skill "${name}". Instructions are now in context.`;
 				},
 				view: {
@@ -270,7 +277,7 @@ export default {
 						throw new Error(`Skill "${name}" is not currently activated.`);
 					}
 
-					removeSkillContent(agent, name);
+					this.removeSkillContent(agent, name);
 					return `Deactivated skill "${name}". Its instructions may be compacted when needed.`;
 				},
 				view: {
@@ -286,30 +293,30 @@ export default {
 				if (!param) throw new Error("Usage: /skill <name>");
 
 				const name = param.trim();
-				const skill = skills.get(name);
+				const skill = this.#skills.get(name);
 				if (!skill) {
-					const available = [...skills.keys()].join(", ");
+					const available = [...this.#skills.keys()].join(", ");
 					throw new Error(`Unknown skill "${name}". Available: ${available}`);
 				}
 
 				const data = agent.pluginData.get(dataKey) as AgentSkillsData;
 				if (data.activated.has(name)) {
-					removeSkillContent(agent, name);
+					this.removeSkillContent(agent, name);
 				}
 
-				injectSkillContent(agent, skill, false); // user-driven, so not automated
+				this.injectSkillContent(agent, skill, false); // user-driven, so not automated
 			},
 		});
-	},
+	}
 
 	newAgent(agent: Agent) {
 		agent.pluginData.set(dataKey, {
 			activated: new Set<string>(),
 		});
 
-		if (skills.size === 0) return;
+		if (this.#skills.size === 0) return;
 
-		const catalog = buildCatalog(skills);
+		const catalog = buildCatalog(this.#skills);
 		agent.context.push({
 			role: "user",
 			content: [{ type: "text", text: catalog }],
@@ -318,5 +325,7 @@ export default {
 				noCompact: true,
 			},
 		});
-	},
-} as Plugin;
+	}
+}
+
+export default new SkillsPlugin(readTameConfig("skills.json", configSchema));

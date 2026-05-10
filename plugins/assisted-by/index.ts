@@ -1,25 +1,17 @@
-import { Type } from "typebox";
+import { Type, type Static } from "typebox";
 import { Agent } from "../../agent/agent.ts";
 import { Plugin } from "../../agent/plugin.ts";
+import type { Harness } from "../../agent/harness.ts";
 import { readTameConfig } from "../../config/index.ts";
-import { ops } from "../ops/index.ts";
+import type { OpsPlugin } from "../ops/index.ts";
 import { spawn } from "node:child_process";
 
-const configSchema = Type.Object({
+export const configSchema = Type.Object({
 	agentName: Type.String({ default: "tame" }),
 	extraTools: Type.Array(Type.String(), { default: [] }),
 });
 
-const config = readTameConfig("assisted-by.json", configSchema);
-
-const buildTrailer = (agent: Agent): string => {
-	const model = agent.llm.defaultModel ?? "unknown";
-	let trailer = `${config.agentName}:${model}`;
-	if (config.extraTools.length > 0) {
-		trailer += " " + config.extraTools.join(" ");
-	}
-	return trailer;
-};
+export type AssistedByConfig = Static<typeof configSchema>;
 
 const setupGitConfig = async () => {
 	try {
@@ -54,14 +46,29 @@ const setupGitConfig = async () => {
 	}
 };
 
-export default {
-	id: "assisted-by",
+export class AssistedByPlugin implements Plugin {
+	id = "assisted-by" as const;
 
-	async init() {
+	#config: AssistedByConfig;
+
+	constructor(config: AssistedByConfig) {
+		this.#config = config;
+	}
+
+	buildTrailer(agent: Agent): string {
+		const model = agent.llm.defaultModel ?? "unknown";
+		let trailer = `${this.#config.agentName}:${model}`;
+		if (this.#config.extraTools.length > 0) {
+			trailer += " " + this.#config.extraTools.join(" ");
+		}
+		return trailer;
+	}
+
+	async init(harness: Harness) {
 		await setupGitConfig();
 
-		ops.before("exec", async (e) => {
-			const trailer = buildTrailer(e.agent);
+		harness.getPlugin<OpsPlugin>("ops")?.emitter.before("exec", async (e) => {
+			const trailer = this.buildTrailer(e.agent);
 			e.env = {
 				ASSISTED_BY: trailer,
 				...e.env,
@@ -69,4 +76,6 @@ export default {
 			return e;
 		});
 	}
-} as Plugin;
+}
+
+export default new AssistedByPlugin(readTameConfig("assisted-by.json", configSchema));
