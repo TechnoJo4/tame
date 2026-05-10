@@ -44,13 +44,4 @@ for (const name of pluginNames) {
 	console.log(`gen-plugin-schemas: wrote ${name}.json`);
 }
 
-const index: Record<string, { $ref: string }> = {};
-for (const name of Object.keys(schemas).sort()) {
-	index[name] = { $ref: `./${name}.json` };
-}
-await Deno.writeTextFile(
-	resolve(outDir, "index.json"),
-	JSON.stringify(index, null, "\t") + "\n",
-);
-
-console.log(`gen-plugin-schemas: done, ${count} schemas written to ${outDir}`);
+console.log(`gen-plugin-schemas: done`);
