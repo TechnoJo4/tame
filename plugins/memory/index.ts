@@ -80,4 +80,4 @@ export class MemoryPlugin implements Plugin {
 	}
 }
 
-export default new MemoryPlugin();
+

@@ -2,7 +2,7 @@ import { resolve } from "@std/path";
 import { promises as fs } from "node:fs";
 import { Plugin } from "../../agent/plugin.ts";
 import { tool, Type } from "../../agent/tool.ts";
-import { readTameConfig, tameDataFolder } from "../../config/index.ts";
+import { tameDataFolder } from "../../config/index.ts";
 import { Agent } from "../../agent/agent.ts";
 import { tameMsgMeta } from "../../util/symbols.ts";
 import type { CommandsPlugin } from "../commands/index.ts";
@@ -328,4 +328,4 @@ export class SkillsPlugin implements Plugin {
 	}
 }
 
-export default new SkillsPlugin(readTameConfig("skills.json", configSchema));
+

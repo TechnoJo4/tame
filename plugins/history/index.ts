@@ -186,4 +186,4 @@ export class HistoryPlugin implements Plugin {
 	};
 }
 
-export default new HistoryPlugin();
+

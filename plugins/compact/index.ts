@@ -3,7 +3,6 @@ import { Static, Type } from "typebox";
 import { Agent } from "../../agent/agent.ts";
 import { Plugin } from "../../agent/plugin.ts";
 import type { Harness } from "../../agent/harness.ts";
-import { readTameConfig } from "../../config/index.ts";
 import { StringEnum } from "../../util/string-enum.ts";
 import type { InputMessage, InputContent, AssistantMessage, ToolUse } from "../../llm/types.ts";
 import { tameMsgMeta } from "../../util/symbols.ts";
@@ -291,4 +290,4 @@ export class CompactPlugin implements Plugin {
 	}
 }
 
-export default new CompactPlugin(readTameConfig("compact.json", configSchema));
+

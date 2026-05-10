@@ -10,6 +10,8 @@
     "jsr:@std/path@1": "1.1.4",
     "jsr:@std/path@1.0": "1.0.9",
     "jsr:@std/path@^1.1.4": "1.1.4",
+    "npm:@agentclientprotocol/sdk@*": "0.18.0_zod@4.3.6",
+    "npm:js-tiktoken@*": "1.0.21",
     "npm:tiktoken@^1.0.22": "1.0.22",
     "npm:typebox@^1.1.32": "1.1.32"
   },
@@ -57,11 +59,29 @@
     }
   },
   "npm": {
+    "@agentclientprotocol/sdk@0.18.0_zod@4.3.6": {
+      "integrity": "sha512-JQGEi3EetQ38DLPpYxxnnz1fyo1/3qQEkKfUmj4JfiOJCEtjGWQ0nl54IH4LZceO7zIOrtUUxc+2cJRQbBOChA==",
+      "dependencies": [
+        "zod"
+      ]
+    },
+    "base64-js@1.5.1": {
+      "integrity": "sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA=="
+    },
+    "js-tiktoken@1.0.21": {
+      "integrity": "sha512-biOj/6M5qdgx5TKjDnFT1ymSpM5tbd3ylwDtrQvFQSu0Z7bBYko2dF+W/aUkXUPuk6IVpRxk/3Q2sHOzGlS36g==",
+      "dependencies": [
+        "base64-js"
+      ]
+    },
     "tiktoken@1.0.22": {
       "integrity": "sha512-PKvy1rVF1RibfF3JlXBSP0Jrcw2uq3yXdgcEXtKTYn3QJ/cBRBHDnrJ5jHky+MENZ6DIPwNUGWpkVx+7joCpNA=="
     },
     "typebox@1.1.32": {
       "integrity": "sha512-cbGoj7BCxGcFDJ/RR7wbyMe9IkO2SeNhwLdZWQ+xRtun9+ze9iM1pBND4SoFAxgonuJYrCIWnEQ7sE4bMVDYHA=="
+    },
+    "zod@4.3.6": {
+      "integrity": "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="
     }
   },
   "workspace": {

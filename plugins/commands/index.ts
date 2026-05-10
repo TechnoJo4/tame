@@ -33,4 +33,4 @@ export class CommandsPlugin implements Plugin {
     }
 };
 
-export default new CommandsPlugin();
+

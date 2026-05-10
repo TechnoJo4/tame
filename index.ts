@@ -15,7 +15,7 @@ for (const name of config.toolsets) {
 
 const plugins = [];
 for (const name of config.plugins) {
-    const path = resolve(dir, "plugins", name, "index.ts");
+    const path = resolve(dir, "plugins", name, "main.ts");
     const plugin = await import(toFileUrl(path).toString());
     plugins.push(plugin.default);
 }

@@ -2,7 +2,6 @@ import { Type, type Static } from "typebox";
 import { Agent } from "../../agent/agent.ts";
 import { Plugin } from "../../agent/plugin.ts";
 import type { Harness } from "../../agent/harness.ts";
-import { readTameConfig } from "../../config/index.ts";
 import type { OpsPlugin } from "../ops/index.ts";
 import { spawn } from "node:child_process";
 
@@ -78,4 +77,4 @@ export class AssistedByPlugin implements Plugin {
 	}
 }
 
-export default new AssistedByPlugin(readTameConfig("assisted-by.json", configSchema));
+

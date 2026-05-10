@@ -3,7 +3,6 @@ import type { Agent } from "../../agent/agent.ts";
 import type { Harness } from "../../agent/harness.ts";
 import type { Plugin } from "../../agent/plugin.ts";
 import { tool, Type } from "../../agent/tool.ts";
-import { readTameConfig } from "../../config/index.ts";
 import { promises as fs } from "node:fs";
 import { spawn } from "node:child_process";
 import process from "node:process";
@@ -492,4 +491,4 @@ export class OpsPlugin implements Plugin {
 	}
 }
 
-export default new OpsPlugin(readTameConfig("ops.json", configSchema));
+

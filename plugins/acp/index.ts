@@ -4,7 +4,6 @@ import { Static, Type } from "typebox";
 import type { Agent, AgentStopReason } from "../../agent/agent.ts";
 import type { Harness } from "../../agent/harness.ts";
 import { Plugin } from "../../agent/plugin.ts";
-import { readTameConfig } from "../../config/index.ts";
 import { InputContent, InputMessage, ToolResult, ToolUse } from "../../llm/types.ts";
 import { tool } from "../../agent/tool.ts";
 import { getAgentHistory, type HistoryPlugin } from "../history/index.ts";
@@ -355,25 +354,30 @@ export class ACPAdapter implements acp.Agent {
 	}
 };
 
-export default {
-	id: "acp",
+export class ACPPlugin implements Plugin {
+	id = "acp" as const;
 
-	async init(harness) {
-		const config = readTameConfig("acp.json", configSchema);
+	#config: Config;
+
+	constructor(config: Config) {
+		this.#config = config;
+	}
+
+	async init(harness: Harness) {
 		let listener: Deno.TcpListener | Deno.UnixListener;
-		if (config.listen.transport === "unix") {
-			try { await Deno.remove(config.listen.path); } catch {
+		if (this.#config.listen.transport === "unix") {
+			try { await Deno.remove(this.#config.listen.path); } catch {
 				// ignore
 			}
-			listener = Deno.listen(config.listen);
+			listener = Deno.listen(this.#config.listen);
 		} else {
-			listener = Deno.listen(config.listen);
+			listener = Deno.listen(this.#config.listen);
 		}
 
 		for await (const conn of listener) {
 			if ("setKeepAlive" in conn) conn.setKeepAlive(true);
 			const stream = acp.ndJsonStream(conn.writable, conn.readable);
-			new acp.AgentSideConnection((conn) => new ACPAdapter(harness, conn, config), stream);
+			new acp.AgentSideConnection((conn) => new ACPAdapter(harness, conn, this.#config), stream);
 		}
-	},
-} as Plugin;
+	}
+}
