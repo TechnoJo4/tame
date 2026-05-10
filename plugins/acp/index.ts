@@ -83,10 +83,13 @@ export class ACPAdapter implements acp.Agent {
 
 	async loadSession(params: acp.LoadSessionRequest): Promise<acp.LoadSessionResponse> {
 		let agent = this.#sessions.get(params.sessionId);
-		if (!agent) {
+		if (!agent)
+			agent = this.#harness.getAgent(params.sessionId);
+		if (!agent)
 			agent = await this.#history!.loadAgent(params.sessionId);
-			this.#setupAgent(agent);
-		}
+		if (!agent)
+			throw new Error(`could not find or load agent with id '${params.sessionId}'`);
+		this.#setupAgent(agent);
 
 		const hist = getAgentHistory(agent);
 		if (hist.title) this.#sendTitle(agent.id, hist.title);
