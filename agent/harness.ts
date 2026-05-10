@@ -12,7 +12,7 @@ export class Harness {
 		return this.#plugins.values().find(p => p instanceof t) as T | undefined
 	}
 
-	getPlugin<T extends Plugin>(id: string): T | undefined {
+	getPlugin<T extends Plugin>(id: T["id"]): T | undefined {
 		return this.#plugins.get(id) as T | undefined
 	}
 
