@@ -1,0 +1,66 @@
+{
+	"type": "object",
+	"required": [
+		"maxLines",
+		"maxBytes",
+		"timeout",
+		"shell"
+	],
+	"properties": {
+		"maxLines": {
+			"type": "number",
+			"default": 2000
+		},
+		"maxBytes": {
+			"type": "number",
+			"default": 51200
+		},
+		"timeout": {
+			"type": "number",
+			"default": 120000
+		},
+		"shell": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			},
+			"default": [
+				"bash",
+				"-lc"
+			]
+		},
+		"env": {
+			"type": "object",
+			"properties": {
+				"static": {
+					"type": "object",
+					"properties": {},
+					"additionalProperties": {
+						"type": "string"
+					}
+				},
+				"dynamic": {
+					"type": "object",
+					"properties": {},
+					"additionalProperties": {
+						"anyOf": [
+							{
+								"type": "string",
+								"const": "MODEL"
+							},
+							{
+								"type": "string",
+								"const": "AGENT_ID"
+							},
+							{
+								"type": "string",
+								"const": "AGENT_SYSTEM"
+							}
+						]
+					}
+				}
+			}
+		}
+	},
+	"$schema": "https://json-schema.org/draft/2020-12/schema"
+}

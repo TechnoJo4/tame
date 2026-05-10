@@ -1,0 +1,145 @@
+{
+	"type": "object",
+	"required": [
+		"maxTokens",
+		"estimation",
+		"keepTail"
+	],
+	"properties": {
+		"maxTokens": {
+			"type": "number"
+		},
+		"estimation": {
+			"anyOf": [
+				{
+					"type": "object",
+					"required": [
+						"type",
+						"encoding"
+					],
+					"properties": {
+						"type": {
+							"type": "string",
+							"const": "tiktoken"
+						},
+						"encoding": {
+							"type": "string",
+							"enum": [
+								"gpt2",
+								"r50k_base",
+								"p50k_base",
+								"p50k_edit",
+								"cl100k_base",
+								"o200k_base"
+							]
+						}
+					}
+				}
+			]
+		},
+		"keepTail": {
+			"anyOf": [
+				{
+					"type": "object",
+					"required": [
+						"type",
+						"messages"
+					],
+					"properties": {
+						"type": {
+							"type": "string",
+							"const": "messages"
+						},
+						"messages": {
+							"type": "number"
+						}
+					}
+				},
+				{
+					"type": "object",
+					"required": [
+						"type",
+						"tokens"
+					],
+					"properties": {
+						"type": {
+							"type": "string",
+							"const": "tokens"
+						},
+						"tokens": {
+							"type": "number"
+						}
+					}
+				}
+			]
+		},
+		"interval": {
+			"type": "object",
+			"required": [
+				"every",
+				"prune"
+			],
+			"properties": {
+				"every": {
+					"anyOf": [
+						{
+							"type": "object",
+							"required": [
+								"type",
+								"tokens"
+							],
+							"properties": {
+								"type": {
+									"type": "string",
+									"const": "tokens"
+								},
+								"tokens": {
+									"type": "number"
+								}
+							}
+						},
+						{
+							"type": "object",
+							"required": [
+								"type",
+								"messages"
+							],
+							"properties": {
+								"type": {
+									"type": "string",
+									"const": "messages"
+								},
+								"messages": {
+									"type": "number"
+								}
+							}
+						}
+					]
+				},
+				"prune": {
+					"type": "object",
+					"required": [
+						"thinking",
+						"failedToolCalls",
+						"maxToolResultLength"
+					],
+					"properties": {
+						"thinking": {
+							"type": "boolean",
+							"description": "Strip thinking blocks from pruned messages"
+						},
+						"failedToolCalls": {
+							"type": "boolean",
+							"description": "Remove failed tool_result blocks and their paired tool_use"
+						},
+						"maxToolResultLength": {
+							"type": "number",
+							"description": "Truncate tool results longer than this (0 = no truncation)"
+						}
+					}
+				}
+			}
+		}
+	},
+	"$schema": "https://json-schema.org/draft/2020-12/schema"
+}

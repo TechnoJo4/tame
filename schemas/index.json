@@ -1,0 +1,17 @@
+{
+	"acp": {
+		"$ref": "./acp.json"
+	},
+	"assisted-by": {
+		"$ref": "./assisted-by.json"
+	},
+	"compact": {
+		"$ref": "./compact.json"
+	},
+	"ops": {
+		"$ref": "./ops.json"
+	},
+	"skills": {
+		"$ref": "./skills.json"
+	}
+}

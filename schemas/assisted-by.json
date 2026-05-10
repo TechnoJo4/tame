@@ -1,0 +1,21 @@
+{
+	"type": "object",
+	"required": [
+		"agentName",
+		"extraTools"
+	],
+	"properties": {
+		"agentName": {
+			"type": "string",
+			"default": "tame"
+		},
+		"extraTools": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			},
+			"default": []
+		}
+	},
+	"$schema": "https://json-schema.org/draft/2020-12/schema"
+}

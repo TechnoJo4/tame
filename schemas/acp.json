@@ -1,0 +1,54 @@
+{
+	"type": "object",
+	"required": [
+		"listen",
+		"tools"
+	],
+	"properties": {
+		"listen": {
+			"anyOf": [
+				{
+					"type": "object",
+					"required": [
+						"transport",
+						"hostname",
+						"port"
+					],
+					"properties": {
+						"transport": {
+							"type": "string",
+							"const": "tcp"
+						},
+						"hostname": {
+							"type": "string"
+						},
+						"port": {
+							"type": "number"
+						}
+					}
+				},
+				{
+					"type": "object",
+					"required": [
+						"transport",
+						"path"
+					],
+					"properties": {
+						"transport": {
+							"type": "string",
+							"const": "unix"
+						},
+						"path": {
+							"type": "string"
+						}
+					}
+				}
+			]
+		},
+		"tools": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"$schema": "https://json-schema.org/draft/2020-12/schema"
+}

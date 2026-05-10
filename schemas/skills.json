@@ -1,0 +1,39 @@
+{
+	"type": "object",
+	"required": [
+		"paths",
+		"maxDepth",
+		"excludeDirs"
+	],
+	"properties": {
+		"paths": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			},
+			"default": [
+				"./.agents/skills",
+				"./.tame/skills",
+				"/home/coder/.agents/skills",
+				"/home/coder/.tame/skills"
+			]
+		},
+		"maxDepth": {
+			"type": "number",
+			"default": 4
+		},
+		"excludeDirs": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			},
+			"default": [
+				".git",
+				"node_modules",
+				".venv",
+				"__pycache__"
+			]
+		}
+	},
+	"$schema": "https://json-schema.org/draft/2020-12/schema"
+}
