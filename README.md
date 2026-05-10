@@ -2,24 +2,16 @@
 
 minimal harness for people who don't care to larp as terminal users
 
-features:
+## features
+
 - an agent loop
 - plugin system
 - multi-provider routing
 - nothing else
 
-plugins:
-- `acp`: [ACP](https://agentclientprotocol.com/) (over tcp/unix socket)
-- `compact`: basic compaction
-- `history`: save session history
-- `memory`: per-session memory
+## config
 
-config goes in `$TAME_DATA` or `~/.tame`:
-- `system.txt`
-- `config.json`
-- one file per plugin
-
-## example config.json
+minimal config.json:
 
 ```json
 {
@@ -29,28 +21,41 @@ config goes in `$TAME_DATA` or `~/.tame`:
         "providers": [
             {
                 "type": "provider",
-                "provider": "opencode",
-                "model": "qwen3.6-plus-free",
-                "limiter": { "type": "backoff", "minDelay": 500 }
-            },
-            {
-                "type": "provider",
                 "provider": "openrouter",
                 "model": "qwen/qwen3.6-plus:free",
                 "headers": {
                     "X-Title": "Tame",
                     "HTTP-Referer": "https://merkletr.ee/tame"
                 },
-                "limiter": { "type": "backoff", "minDelay": 500 }
+                "limiter": { "type": "backoff-only", "minDelay": 500 }
             }
         ]
     },
     "toolsets": [
-        "simple-exec"
+        "tavily-search",
+        "jina-fetch"
     ],
     "plugins": [
+        "ops",
         "acp",
-        "compact"
+        "compact",
+        "history",
+        "memory"
     ]
 }
 ```
+
+one file per plugin, see plugin readmes.
+
+## plugins
+
+| plugin | description |
+|--------|-------------|
+| `ops` | file read/write/edit + shell execution |
+| `acp` | [Agent Client Protocol](https://agentclientprotocol.com/) over tcp or unix socket |
+| `assisted-by` | inject `Assisted-by:` git trailer |
+| `commands` | slash commands |
+| `compact` | context compaction |
+| `history` | session persistence |
+| `memory` | per-session memory |
+| `skills` | [Agent Skills](https://agentskills.io) |
