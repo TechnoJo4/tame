@@ -3,6 +3,9 @@ import { Agent } from "../../agent/agent.ts";
 import { Plugin } from "../../agent/plugin.ts";
 import type { Harness } from "../../agent/harness.ts";
 import type { OpsPlugin } from "../ops/index.ts";
+import { tameDataFolder } from "../../config/index.ts";
+import { resolve } from "@std/path";
+import { promises as fs } from "node:fs";
 import { spawn } from "node:child_process";
 
 export const configSchema = Type.Object({
@@ -12,36 +15,53 @@ export const configSchema = Type.Object({
 
 export type AssistedByConfig = Static<typeof configSchema>;
 
+const hooksDir = resolve(tameDataFolder, "hooks");
+
+const commitMsgHook = `#!/bin/sh
+# tame assisted-by hook
+# Appends an Assisted-by trailer to commits, then chains to repo-local hooks.
+
+if [ -n "$ASSISTED_BY" ]; then
+	echo "Assisted-by: $ASSISTED_BY" >> "$1"
+fi
+
+# Chain to repo-local commit-msg hook if one exists
+REPO_GIT_DIR=$(git rev-parse --git-dir 2>/dev/null)
+if [ -n "$REPO_GIT_DIR" ] && [ -x "$REPO_GIT_DIR/hooks/commit-msg" ]; then
+	exec "$REPO_GIT_DIR/hooks/commit-msg" "$@"
+fi
+`;
+
 const setupGitConfig = async () => {
+	// Create ~/.tame/hooks/commit-msg
 	try {
-		await new Promise<void>((resolve, reject) => {
-			const proc = spawn("git", [
-				"config",
-				"--global",
-				"trailer.assisted-by.key",
-				"Assisted-by",
-			], { stdio: "ignore" });
-			proc.once("close", (code) => code === 0 ? resolve() : reject(new Error(`git config exited ${code}`)));
-			proc.once("error", reject);
-		});
+		await fs.mkdir(hooksDir, { recursive: true });
 	} catch {
-		console.warn("assisted-by: failed to set git trailer.assisted-by.key (git may not be installed)");
+		console.warn("assisted-by: failed to create hooks directory");
 		return;
 	}
 
 	try {
+		await fs.writeFile(resolve(hooksDir, "commit-msg"), commitMsgHook, { mode: 0o755 });
+	} catch {
+		console.warn("assisted-by: failed to write commit-msg hook");
+		return;
+	}
+
+	// Point git at our hooks directory
+	try {
 		await new Promise<void>((resolve, reject) => {
 			const proc = spawn("git", [
 				"config",
 				"--global",
-				"trailer.assisted-by.command",
-				`echo $ASSISTED_BY`,
+				"core.hooksPath",
+				hooksDir,
 			], { stdio: "ignore" });
 			proc.once("close", (code) => code === 0 ? resolve() : reject(new Error(`git config exited ${code}`)));
 			proc.once("error", reject);
 		});
 	} catch {
-		console.warn("assisted-by: failed to set git trailer.assisted-by.command");
+		console.warn("assisted-by: failed to set core.hooksPath");
 	}
 };
 
@@ -76,5 +96,3 @@ export class AssistedByPlugin implements Plugin {
 		});
 	}
 }
-
-
