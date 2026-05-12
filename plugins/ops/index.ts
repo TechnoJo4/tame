@@ -69,6 +69,12 @@ export const configSchema = Type.Object({
 		static: Type.Optional(Type.Object({}, { additionalProperties: Type.String() })),
 		dynamic: Type.Optional(Type.Object({}, { additionalProperties: dynamicEnvKey })),
 	})),
+	tools: Type.Optional(Type.Object({
+		read: Type.Optional(Type.Boolean({ default: true })),
+		write: Type.Optional(Type.Boolean({ default: true })),
+		edit: Type.Optional(Type.Boolean({ default: true })),
+		exec: Type.Optional(Type.Boolean({ default: true })),
+	})),
 });
 
 export type OpsConfig = Static<typeof configSchema>;
@@ -319,171 +325,178 @@ export class OpsPlugin implements Plugin {
 		return e.result ?? "ok";
 	}
 
-	async init(harness: Harness) {
-		harness.addTools(
-			tool({
-				name: "read",
-				desc: "Read a file",
-				args: Type.Object({
-					path: Type.String({ description: "Path to the file (relative or absolute)" }),
-					offset: Type.Optional(Type.Number({ description: "Line number to start reading from (1-indexed)" })),
-					limit: Type.Optional(Type.Number({ description: "Max number of lines to read" }))
+	#tools = {
+		read: tool({
+			name: "read",
+			desc: "Read a file",
+			args: Type.Object({
+				path: Type.String({ description: "Path to the file (relative or absolute)" }),
+				offset: Type.Optional(Type.Number({ description: "Line number to start reading from (1-indexed)" })),
+				limit: Type.Optional(Type.Number({ description: "Max number of lines to read" }))
+			}),
+			exec: async (args, agent) => {
+				const e = await this.emitter.do("read", {
+					agent,
+					path: args.path,
+					offset: args.offset,
+					limit: args.limit,
+				});
+				if (!e.result) throw new Error("no handler processed read");
+				if (e.result.type === "text") return e.result.text;
+				return "[binary data]";
+			},
+			view: {
+				compact: (args) => `Read ${args.path}`,
+				acp: (args, result) => ({
+					title: `Read ${contractHome(args.path)}`,
+					content: result ? [ {
+						"type": "content",
+						"content": {
+							"type": "text",
+							"text": result.content.includes("```")
+								? result.content
+								: "```\n" + result.content + "\n```\n"
+						},
+					} ] : [],
 				}),
-				exec: async (args, agent) => {
-					const e = await this.emitter.do("read", {
-						agent,
-						path: args.path,
-						offset: args.offset,
-						limit: args.limit,
-					});
-					if (!e.result) throw new Error("no handler processed read");
-					if (e.result.type === "text") return e.result.text;
-					return "[binary data]";
+			},
+		}),
+		write: tool({
+			name: "write",
+			desc: "Write a file. Creates a file if it does not exist, overwrites if it does. Automatically creates parent directories.",
+			args: Type.Object({
+				path: Type.String({ description: "Path to the file (relative or absolute)" }),
+				content: Type.String({ description: "Text to write into the file" }),
+			}),
+			exec: async (args, agent) => {
+				const e = await this.emitter.do("write", {
+					agent,
+					path: args.path,
+					content: { type: "text", text: args.content },
+				});
+				return e.result ?? "ok";
+			},
+			view: {
+				compact: (args) => `Write ${args.path}`,
+				acp: (args) => ({
+					kind: "edit",
+					title: `Write ${contractHome(args.path)}`,
+					content: [ {
+						"type": "content",
+						"content": {
+							"type": "text",
+							"text": args.content.includes("```")
+								? args.content
+								: "```\n" + args.content + "\n```\n"
+						},
+					} ],
+				}),
+			},
+		}),
+		edit: tool({
+			name: "edit",
+			desc: "Replace a string in an existing file (use for precise, surgical edits)",
+			args: Type.Object({
+				path: Type.String({ description: "Path to the file (relative or absolute)" }),
+				oldString: Type.String({ description: "Text to find and replace (must match exactly, including whitespace)" }),
+				newString: Type.String({ description: "Text to put in its place" }),
+			}),
+			exec: async (args, agent) => {
+				return await this.edit(agent, args.path, (content) => {
+					let count = 0;
+					let idx = -1;
+					while ((idx = content.indexOf(args.oldString, idx + 1)) !== -1) count++;
+					if (count === 0)
+						throw new Error(`${args.path} does not contain ${JSON.stringify(args.oldString)}`);
+					if (count > 1)
+						throw new Error(`${args.path} contains ${JSON.stringify(args.oldString)} more than once (${count} occurrences)`);
+					return content.replace(args.oldString, args.newString);
+				});
+			},
+			view: {
+				compact: (args) => `Edit ${args.path}`,
+				acp: (args) => ({
+					title: `Edit ${contractHome(args.path)}`,
+				}),
+			},
+		}),
+		exec: tool({
+			name: "exec",
+			desc: `Run a shell command and returns its output.
+- Always set the workdir param. Do not cd unless absolutely necessary.
+- Array arguments will be passed to execvp(). Most terminal commands should be prefixed with ["bash", "-lc"].`,
+			args: Type.Object({
+				command: Type.Union([
+					Type.Array(Type.String(), {
+						description: "Command line for the new process (passed directly to execvp)",
+						minItems: 1,
+					}),
+					Type.String({ description: "Shell command to run" }),
+				]),
+				workdir: Type.Optional(Type.String({ description: "Working directory to execute the command in" })),
+				timeout: Type.Number({ description: "Timeout for the command in milliseconds" }),
+			}),
+			exec: async (args, agent) => {
+				const command = this.normalizeCommand(args.command);
+				const e = await this.emitter.do("exec", {
+					agent,
+					command,
+					workdir: args.workdir,
+					timeout: args.timeout,
+				});
+				return [
+					e.exitCode !== 0 ? `exited with code ${e.exitCode}.` : "",
+					e.stdout ? `stdout:\n${e.stdout}` : "",
+					e.stderr ? `stderr:\n${e.stderr}` : "",
+				].filter((s) => s !== "").join("\n\n") || "ok";
+			},
+			view: {
+				compact: ({ command }) => {
+					const cmd = this.normalizeCommand(command);
+					return `exec ${getExecName(cmd)}`;
 				},
-				view: {
-					compact: (args) => `Read ${args.path}`,
-					acp: (args, result) => ({
-						title: `Read ${contractHome(args.path)}`,
-						content: result ? [ {
+				acp: ({ command }, result) => {
+					if (!command) return;
+					const cmd = stripShell(this.normalizeCommand(command));
+					const display = cmd.join(" ");
+					const content = [{
+						"type": "content",
+						"content": {
+							"type": "text",
+							"text": display.includes("`")
+								? "```\n" + display + "\n```\n"
+								: "`" + display + "`",
+						},
+					}];
+					if (result && !result.is_error) {
+						content.push({
 							"type": "content",
 							"content": {
 								"type": "text",
 								"text": result.content.includes("```")
 									? result.content
-									: "```\n" + result.content + "\n```\n"
+									: "```\n" + result.content + "\n```\n",
 							},
-						} ] : [],
-					}),
+						});
+					}
+					return {
+						title: getExecName(cmd),
+						content,
+					};
 				},
-			}),
-			tool({
-				name: "write",
-				desc: "Write a file. Creates a file if it does not exist, overwrites if it does. Automatically creates parent directories.",
-				args: Type.Object({
-					path: Type.String({
-						description: "Path to the file (relative or absolute)",
-					}),
-					content: Type.String({ description: "Text to write into the file" }),
-				}),
-				exec: async (args, agent) => {
-					const e = await this.emitter.do("write", {
-						agent,
-						path: args.path,
-						content: { type: "text", text: args.content },
-					});
-					return e.result ?? "ok";
-				},
-				view: {
-					compact: (args) => `Write ${args.path}`,
-					acp: (args) => ({
-						kind: "edit",
-						title: `Write ${contractHome(args.path)}`,
-						content: [ {
-							"type": "content",
-							"content": {
-								"type": "text",
-								"text": args.content.includes("```")
-									? args.content
-									: "```\n" + args.content + "\n```\n"
-							},
-						} ],
-					}),
-				},
-			}),
-			tool({
-				name: "edit",
-				desc: "Replace a string in an existing file (use for precise, surgical edits)",
-				args: Type.Object({
-					path: Type.String({ description: "Path to the file (relative or absolute)" }),
-					oldString: Type.String({ description: "Text to find and replace (must match exactly, including whitespace)" }),
-					newString: Type.String({ description: "Text to put in its place" }),
-				}),
-				exec: async (args, agent) => {
-					return await this.edit(agent, args.path, (content) => {
-						let count = 0;
-						let idx = -1;
-						while ((idx = content.indexOf(args.oldString, idx + 1)) !== -1) count++;
-						if (count === 0)
-							throw new Error(`${args.path} does not contain ${JSON.stringify(args.oldString)}`);
-						if (count > 1)
-							throw new Error(`${args.path} contains ${JSON.stringify(args.oldString)} more than once (${count} occurrences)`);
-						return content.replace(args.oldString, args.newString);
-					});
-				},
-				view: {
-					compact: (args) => `Edit ${args.path}`,
-					acp: (args) => ({
-						title: `Edit ${contractHome(args.path)}`,
-					}),
-				},
-			}),
-			tool({
-				name: "exec",
-				desc: `Run a shell command and returns its output.
-- Always set the workdir param. Do not cd unless absolutely necessary.
-- Array arguments will be passed to execvp(). Most terminal commands should be prefixed with ["bash", "-lc"].`,
-				args: Type.Object({
-					command: Type.Union([
-						Type.Array(Type.String(), {
-							description: "Command line for the new process (passed directly to execvp)",
-							minItems: 1,
-						}),
-						Type.String({ description: "Shell command to run" }),
-					]),
-					workdir: Type.Optional(Type.String({ description: "Working directory to execute the command in" })),
-					timeout: Type.Number({ description: "Timeout for the command in milliseconds" }),
-				}),
-				exec: async (args, agent) => {
-					const command = this.normalizeCommand(args.command);
-					const e = await this.emitter.do("exec", {
-						agent,
-						command,
-						workdir: args.workdir,
-						timeout: args.timeout,
-					});
-					return [
-						e.exitCode !== 0 ? `exited with code ${e.exitCode}.` : "",
-						e.stdout ? `stdout:\n${e.stdout}` : "",
-						e.stderr ? `stderr:\n${e.stderr}` : "",
-					].filter((s) => s !== "").join("\n\n") || "ok";
-				},
-				view: {
-					compact: ({ command }) => {
-						const cmd = this.normalizeCommand(command);
-						return `exec ${getExecName(cmd)}`;
-					},
-					acp: ({ command }, result) => {
-						if (!command) return;
-						const cmd = stripShell(this.normalizeCommand(command));
-						const display = cmd.join(" ");
-						const content = [{
-							"type": "content",
-							"content": {
-								"type": "text",
-								"text": display.includes("`")
-									? "```\n" + display + "\n```\n"
-									: "`" + display + "`",
-							},
-						}];
-						if (result && !result.is_error) {
-							content.push({
-								"type": "content",
-								"content": {
-									"type": "text",
-									"text": result.content.includes("```")
-										? result.content
-										: "```\n" + result.content + "\n```\n",
-								},
-							});
-						}
-						return {
-							title: getExecName(cmd),
-							content,
-						};
-					},
-				},
-			}),
-		);
+			},
+		}),
+	};
+
+	async init(harness: Harness) {
+		const enabled = this.config.tools ?? {};
+		const tools = [
+			enabled.read !== false ? this.#tools.read : null,
+			enabled.write !== false ? this.#tools.write : null,
+			enabled.edit !== false ? this.#tools.edit : null,
+			enabled.exec !== false ? this.#tools.exec : null,
+		].filter((t): t is NonNullable<typeof t> => t !== null);
+		harness.addTools(...tools);
 	}
 
 	newAgent(agent: Agent) {
