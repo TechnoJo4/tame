@@ -63,7 +63,7 @@ each plugin directory contains:
 - `main.ts` — default-exported plugin instance, constructed with config. this is what the harness loads.
 - `README.md` — usage docs (optional but encouraged)
 
-plugins communicate via `harness.getPlugin<T>(id)` or `harness.getPluginByType(Class)`. this is the intended interop mechanism. plugins should not import each other's internals directly unless they own the dependency (e.g., `ops` owns the `Env` interface; `acp` owns `ACPAdapter`).
+plugins communicate via `harness.getPlugin<T>(id)`. this is the intended interop mechanism. plugins should not import each other's internals directly unless they own the dependency (e.g., `ops` owns the `Env` interface; `acp` owns `ACPAdapter`).
 
 ### how to write a plugin
 

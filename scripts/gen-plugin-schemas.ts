@@ -5,7 +5,7 @@ const dir = import.meta.dirname;
 if (!dir) throw new Error("couldn't get import.meta.dirname");
 
 const pluginsDir = resolve(dir, "..", "plugins");
-const outDir = resolve(dir, "..", "schemas");
+const outDir = resolve(dir, "..", "schemas", "plugins");
 
 await Deno.mkdir(outDir, { recursive: true });
 
