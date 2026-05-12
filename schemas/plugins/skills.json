@@ -33,6 +33,14 @@
 				".venv",
 				"__pycache__"
 			]
+		},
+		"addCatalog": {
+			"type": "boolean",
+			"default": true
+		},
+		"addTools": {
+			"type": "boolean",
+			"default": true
 		}
 	},
 	"$schema": "https://json-schema.org/draft/2020-12/schema"

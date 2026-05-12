@@ -1,9 +1,10 @@
 import type { Agent } from "../../agent/agent.ts";
 import type { Harness } from "../../agent/harness.ts";
 import type { Plugin } from "../../agent/plugin.ts";
-import { tool, Type } from "../../agent/tool.ts";
+import { tool, Type, type AnyTool } from "../../agent/tool.ts";
 import type { Static } from "typebox";
 import { getEnv } from "../ops/index.ts";
+import type { SkillsPlugin } from "../skills/index.ts";
 import { promises as fs } from "node:fs";
 import { spawn } from "node:child_process";
 import { resolve, relative, dirname } from "@std/path";
@@ -21,6 +22,7 @@ export const configSchema = Type.Object({
 		bash: Type.Optional(Type.Boolean({ default: true })),
 		glob: Type.Optional(Type.Boolean({ default: true })),
 		grep: Type.Optional(Type.Boolean({ default: true })),
+		skill: Type.Optional(Type.Boolean({ default: true })),
 	})),
 });
 
@@ -482,7 +484,7 @@ Usage:
 
 	async init(harness: Harness) {
 		const enabled = this.config.tools ?? {};
-		const tools = [
+		const tools: AnyTool[] = [
 			enabled.read !== false ? this.#tools.read : null,
 			enabled.write !== false ? this.#tools.write : null,
 			enabled.edit !== false ? this.#tools.edit : null,
@@ -490,6 +492,64 @@ Usage:
 			enabled.glob !== false ? this.#tools.glob : null,
 			enabled.grep !== false ? this.#tools.grep : null,
 		].filter((t): t is NonNullable<typeof t> => t !== null);
+
+		if (enabled.skill !== false) {
+			const skills = harness.getPlugin<SkillsPlugin>("skills");
+			if (skills) {
+				tools.push(
+					tool({
+						name: "Skill",
+						desc: `Execute a skill within the main conversation
+
+When users ask you to perform tasks, check if any of the available skills match. Skills provide specialized capabilities and domain knowledge.
+
+When users reference a "slash command" or "/<something>" (e.g., "/commit", "/review-pr"), they are referring to a skill. Use this tool to invoke it.
+
+How to invoke:
+- Use this tool with the skill name and optional arguments
+- Examples:
+  - skill: "pdf" - invoke the pdf skill
+  - skill: "commit", args: "-m 'Fix bug'" - invoke with arguments
+  - skill: "review-pr", args: "123" - invoke with arguments`,
+						args: Type.Object({
+							skill: Type.String({ description: 'The skill name. E.g., "commit", "review-pr", or "pdf"' }),
+							args: Type.Optional(Type.String({ description: "Optional arguments for the skill" })),
+						}),
+						exec: async ({ skill: name, args: argsStr }, agent) => {
+							const skill = skills.getSkill(name);
+							if (!skill) {
+								const available = skills.listSkills().map(s => s.name).join(", ");
+								throw new Error(`Unknown skill "${name}". Available: ${available}`);
+							}
+
+							if (skills.isSkillActivated(agent, name)) {
+								return `Skill "${name}" is already active.`;
+							}
+
+							// parse "key=value key2=value2" or "value1 value2" → positional $1, $2
+							const parsedArgs: Record<string, string> = {};
+							if (argsStr && skill.argNames) {
+								const tokens = argsStr.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) ?? [];
+								for (let i = 0; i < tokens.length; i++) {
+									const tok = tokens[i].replace(/^["']|["']$/g, "");
+									if (skill.argNames[i]) {
+										parsedArgs[skill.argNames[i]] = tok;
+									}
+									parsedArgs[String(i + 1)] = tok;
+								}
+							}
+
+							skills.injectSkillContent(agent, skill, true, Object.keys(parsedArgs).length > 0 ? parsedArgs : undefined);
+							return `Activated skill "${name}".`;
+						},
+						view: {
+							compact: ({ skill }) => `Skill ${skill}`,
+						},
+					}),
+				);
+			}
+		}
+
 		harness.addTools(...tools);
 	}
 

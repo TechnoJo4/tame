@@ -29,38 +29,6 @@
 				"-lc"
 			]
 		},
-		"env": {
-			"type": "object",
-			"properties": {
-				"static": {
-					"type": "object",
-					"properties": {},
-					"additionalProperties": {
-						"type": "string"
-					}
-				},
-				"dynamic": {
-					"type": "object",
-					"properties": {},
-					"additionalProperties": {
-						"anyOf": [
-							{
-								"type": "string",
-								"const": "MODEL"
-							},
-							{
-								"type": "string",
-								"const": "AGENT_ID"
-							},
-							{
-								"type": "string",
-								"const": "AGENT_SYSTEM"
-							}
-						]
-					}
-				}
-			}
-		},
 		"tools": {
 			"type": "object",
 			"properties": {
@@ -76,7 +44,19 @@
 					"type": "boolean",
 					"default": true
 				},
-				"exec": {
+				"bash": {
+					"type": "boolean",
+					"default": true
+				},
+				"glob": {
+					"type": "boolean",
+					"default": true
+				},
+				"grep": {
+					"type": "boolean",
+					"default": true
+				},
+				"skill": {
 					"type": "boolean",
 					"default": true
 				}

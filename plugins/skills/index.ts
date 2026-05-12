@@ -22,14 +22,18 @@ export const configSchema = Type.Object({
 	}),
 	maxDepth: Type.Number({ default: 4 }),
 	excludeDirs: Type.Array(Type.String(), { default: [".git", "node_modules", ".venv", "__pycache__"] }),
+	addCatalog: Type.Optional(Type.Boolean({ default: true })),
+	addTools: Type.Optional(Type.Boolean({ default: true })),
 });
 
 export type SkillsConfig = Static<typeof configSchema>;
 
-interface Skill {
+export interface Skill {
 	name: string;
 	description: string;
 	location: string;
+	whenToUse?: string;
+	argNames?: string[];
 	compatibility?: string;
 	allowedTools?: string;
 	license?: string;
@@ -46,6 +50,8 @@ interface AgentSkillsData {
 interface Frontmatter {
 	name?: string;
 	description?: string;
+	"when-to-use"?: string;
+	"arg-names"?: string;
 	compatibility?: string;
 	license?: string;
 	metadata?: Record<string, string>;
@@ -96,9 +102,17 @@ const buildCatalog = (skills: Map<string, Skill>): string => {
 	return catalog + "\n\nWhen a task matches a skill's description, call activate_skill with the skill's name to load its full instructions.";
 };
 
-const buildActivationResult = (skill: Skill): string => {
+const buildActivationResult = (skill: Skill, args?: Record<string, string>): string => {
+	let body = skill.body;
+	if (args) {
+		for (const [key, value] of Object.entries(args)) {
+			body = body.replaceAll(`$\{${key}}`, value);
+			body = body.replaceAll(`${key}`, value);
+		}
+	}
+
 	let result = `<skill name="${skill.name}">\n\n`;
-	result += skill.body;
+	result += body;
 	result += "\n\n</skill>";
 
 	const meta: string[] = [];
@@ -172,6 +186,8 @@ export class SkillsPlugin implements Plugin {
 					name: fm.name!,
 					description: fm.description,
 					location: subdir,
+					whenToUse: fm["when-to-use"],
+					argNames: fm["arg-names"]?.split(",").map(s => s.trim()).filter(s => s.length > 0),
 					compatibility: fm.compatibility,
 					allowedTools: fm["allowed-tools"],
 					license: fm.license,
@@ -200,8 +216,21 @@ export class SkillsPlugin implements Plugin {
 		return results;
 	}
 
-	injectSkillContent(agent: Agent, skill: Skill, automated: boolean = true): void {
-		const content = buildActivationResult(skill);
+	getSkill(name: string): Skill | undefined {
+		return this.#skills.get(name);
+	}
+
+	listSkills(): Skill[] {
+		return [...this.#skills.values()];
+	}
+
+	isSkillActivated(agent: Agent, name: string): boolean {
+		const data = agent.pluginData.get(dataKey) as AgentSkillsData | undefined;
+		return data?.activated.has(name) ?? false;
+	}
+
+	injectSkillContent(agent: Agent, skill: Skill, automated: boolean = true, args?: Record<string, string>): void {
+		const content = buildActivationResult(skill, args);
 
 		agent.context.push({
 			role: "user",
@@ -236,55 +265,57 @@ export class SkillsPlugin implements Plugin {
 
 		if (this.#skills.size === 0) return;
 
-		harness.addTools(
-			tool({
-				name: "activate_skill",
-				desc: "Load full instructions for a skill. Call this when a task matches a skill's description from the catalog.",
-				args: Type.Object({
-					name: Type.String({ description: "Name of the skill to activate" }),
+		if (this.#config.addTools !== false) {
+			harness.addTools(
+				tool({
+					name: "activate_skill",
+					desc: "Load full instructions for a skill. Call this when a task matches a skill's description from the catalog.",
+					args: Type.Object({
+						name: Type.String({ description: "Name of the skill to activate" }),
+					}),
+					exec: async ({ name }, agent) => {
+						const skill = this.#skills.get(name);
+						if (!skill) {
+							const available = [...this.#skills.keys()].join(", ");
+							throw new Error(`Unknown skill "${name}". Available: ${available}`);
+						}
+
+						const data = agent.pluginData.get(dataKey) as AgentSkillsData;
+						if (data.activated.has(name)) {
+							return `Skill "${name}" is already activated.`;
+						}
+
+						this.injectSkillContent(agent, skill);
+						return `Activated skill "${name}". Instructions are now in context.`;
+					},
+					view: {
+						compact: ({ name }) => `Activate skill ${name}`,
+					},
 				}),
-				exec: async ({ name }, agent) => {
-					const skill = this.#skills.get(name);
-					if (!skill) {
-						const available = [...this.#skills.keys()].join(", ");
-						throw new Error(`Unknown skill "${name}". Available: ${available}`);
-					}
+			);
 
-					const data = agent.pluginData.get(dataKey) as AgentSkillsData;
-					if (data.activated.has(name)) {
-						return `Skill "${name}" is already activated.`;
-					}
+			harness.addTools(
+				tool({
+					name: "deactivate_skill",
+					desc: "Deactivate a skill, allowing its instructions to be compacted away. Use when a skill is no longer relevant to the current task.",
+					args: Type.Object({
+						name: Type.String({ description: "Name of the skill to deactivate" }),
+					}),
+					exec: async ({ name }, agent) => {
+						const data = agent.pluginData.get(dataKey) as AgentSkillsData;
+						if (!data.activated.has(name)) {
+							throw new Error(`Skill "${name}" is not currently activated.`);
+						}
 
-					this.injectSkillContent(agent, skill);
-					return `Activated skill "${name}". Instructions are now in context.`;
-				},
-				view: {
-					compact: ({ name }) => `Activate skill ${name}`,
-				},
-			}),
-		);
-
-		harness.addTools(
-			tool({
-				name: "deactivate_skill",
-				desc: "Deactivate a skill, allowing its instructions to be compacted away. Use when a skill is no longer relevant to the current task.",
-				args: Type.Object({
-					name: Type.String({ description: "Name of the skill to deactivate" }),
+						this.removeSkillContent(agent, name);
+						return `Deactivated skill "${name}". Its instructions may be compacted when needed.`;
+					},
+					view: {
+						compact: ({ name }) => `Deactivate skill ${name}`,
+					},
 				}),
-				exec: async ({ name }, agent) => {
-					const data = agent.pluginData.get(dataKey) as AgentSkillsData;
-					if (!data.activated.has(name)) {
-						throw new Error(`Skill "${name}" is not currently activated.`);
-					}
-
-					this.removeSkillContent(agent, name);
-					return `Deactivated skill "${name}". Its instructions may be compacted when needed.`;
-				},
-				view: {
-					compact: ({ name }) => `Deactivate skill ${name}`,
-				},
-			}),
-		);
+			);
+		}
 
 		harness.getPlugin<CommandsPlugin>("commands")?.add({
 			name: "skill",
@@ -315,6 +346,7 @@ export class SkillsPlugin implements Plugin {
 		});
 
 		if (this.#skills.size === 0) return;
+		if (this.#config.addCatalog === false) return;
 
 		const catalog = buildCatalog(this.#skills);
 		agent.context.push({
