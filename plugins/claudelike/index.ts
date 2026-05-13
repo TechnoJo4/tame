@@ -28,8 +28,6 @@ export const configSchema = Type.Object({
 
 type ClaudeConfig = Static<typeof configSchema>;
 
-const ADD_LINE_NUMBERS_DEFAULT = true;
-
 function addLineNumbers(content: string, startLine = 1): string {
 	const lines = content.split("\n");
 	return lines.map((line, i) => {
@@ -423,7 +421,7 @@ Usage:
 				pattern: Type.String({ description: "The glob pattern to match files against" }),
 				path: Type.Optional(Type.String({ description: "The directory to search in. If not specified, the current working directory will be used." })),
 			}),
-			exec: async (args, agent) => {
+			exec: async (args) => {
 				const start = Date.now();
 				const searchDir = args.path ? resolve(args.path) : process.cwd();
 				const files = await globFiles(searchDir, args.pattern);
