@@ -113,8 +113,10 @@ export class RPCPlugin implements Plugin {
 	#baseRoutes = new Map<string, CallDescription<any, any>>();
 	#rpc = new Map<string, Map<string, CallDescription<any, any>>>();
 	#validators = new Map<CallDescription<any, any>, { input: Validator<any>; output: Validator<any> }>();
+	#harness?: Harness;
 
 	init(harness: Harness) {
+		this.#harness = harness;
 		this.#baseRoutes.set("newAgent", call({
 			...baseRouteSchemas.newAgent,
 			call: async ({ id, system }) => {
@@ -198,6 +200,9 @@ export class RPCPlugin implements Plugin {
 			case "call":
 				this.#handleCall(conn, msg);
 				break;
+			case "event":
+				this.#handleEvent(msg);
+				break;
 		}
 	}
 
@@ -236,6 +241,16 @@ export class RPCPlugin implements Plugin {
 		} else {
 			subs.events[event]?.agents?.delete(agent_id);
 		}
+	}
+
+	#handleEvent(msg: EventMessage) {
+		const harness = this.#harness;
+		if (!harness) return;
+		if (!msg.agent_id) return;
+		if (msg.plugin !== undefined) return; // only agent events for now
+		const agent = harness.getAgent(msg.agent_id);
+		if (!agent) return;
+		agent.fire(msg.event as never, msg.data as never);
 	}
 
 	#handleCall(conn: Connection, msg: CallMessage) {
