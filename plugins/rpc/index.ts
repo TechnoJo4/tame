@@ -5,6 +5,7 @@ import { assertSchema } from "../../util/validate.ts";
 import type { Agent } from "../../agent/agent.ts";
 import type { Plugin } from "../../agent/plugin.ts";
 import type { Emitter } from "../../util/emitter.ts";
+import type { Harness } from "../../agent/harness.ts";
 
 const eventSchema = Type.Object({
 	type: Type.Literal("event"),
@@ -25,35 +26,35 @@ const subscriptionSchema = Type.Object({
 
 export type SubscriptionMessage = Static<typeof subscriptionSchema>;
 
-const pluginCallSchema = Type.Object({
+const callSchema = Type.Object({
 	type: Type.Literal("call"),
 	id: Type.String({ description: "An ID to return in the response." }),
-	plugin: Type.String({ description: "The plugin to call." }),
+	plugin: Type.Optional(Type.String({ description: "The plugin to call." })),
 	call: Type.String({ description: "The name of the function to call." }),
 	args: Type.Object({}, { additionalProperties: true })
 });
 
-export type PluginCallMessage = Static<typeof pluginCallSchema>;
+export type CallMessage = Static<typeof callSchema>;
 
-const pluginCallResultSchema = Type.Object({
+const callResultSchema = Type.Object({
 	type: Type.Literal("result"),
 	id: Type.String({ description: "The ID included in the call." }),
 	error: Type.Optional(Type.String()),
 	result: Type.Optional(Type.Object({}, { additionalProperties: true }))
 });
 
-export type PluginCallResultMessage = Static<typeof pluginCallResultSchema>;
+export type CallResultMessage = Static<typeof callResultSchema>;
 
-const rpcMsgSchema = Type.Union([ eventSchema, subscriptionSchema, pluginCallSchema, pluginCallResultSchema ]);
+const rpcMsgSchema = Type.Union([ eventSchema, subscriptionSchema, callSchema, callResultSchema ]);
 
 export type RPCMessage = Static<typeof rpcMsgSchema>;
 
-export const schema = {
+export const messagesSchema = {
 	agentEvent: eventSchema,
 	subscriptionMessage: subscriptionSchema,
-	rpcMessage: rpcMsgSchema,
-	pluginCallMessage: pluginCallSchema,
-	pluginCallResultMessage: pluginCallResultSchema
+	callMessage: callSchema,
+	callResultMessage: callResultSchema,
+	rpcMessage: rpcMsgSchema
 };
 
 export interface CallDescription<I extends TSchema, O extends TSchema> {
@@ -61,6 +62,10 @@ export interface CallDescription<I extends TSchema, O extends TSchema> {
 	output: O;
 	call: (args: Static<I>) => Promise<Static<O>>;
 };
+
+function callDesc<I extends TSchema, O extends TSchema>(input: I, output: O, call: CallDescription<I, O>["call"]): CallDescription<I, O> {
+	return { input, output, call };
+}
 
 export type Stream = {
 	writable: WritableStream<RPCMessage>;
@@ -95,6 +100,7 @@ export class RPCPlugin implements Plugin {
 	id = "rpc" as const;
 
 	#connections = new Set<Connection>();
+	#baseRoutes = new Map<string, CallDescription<any, any>>();
 	#rpc = new Map<string, Map<string, CallDescription<any, any>>>();
 	#validators = new Map<CallDescription<any, any>, { input: Validator<any>; output: Validator<any> }>();
 
@@ -212,22 +218,24 @@ export class RPCPlugin implements Plugin {
 		}
 	}
 
-	#handleCall(conn: Connection, msg: PluginCallMessage) {
-		const methods = this.#rpc.get(msg.plugin);
+	#handleCall(conn: Connection, msg: CallMessage) {
+		const methods = msg.plugin ? this.#rpc.get(msg.plugin) : this.#baseRoutes;
+		const source = msg.plugin ? `plugin "${msg.plugin}"` : "tame";
 		if (!methods) {
-			this.#write(conn, { type: "result", id: msg.id, error: `plugin "${msg.plugin}" has no registered RPC methods` });
+			this.#write(conn, { type: "result", id: msg.id, error: `${source} has no registered RPC methods` });
 			return;
 		}
 		const method = methods.get(msg.call);
+		const call = `method "${msg.call}"`;
 		if (!method) {
-			this.#write(conn, { type: "result", id: msg.id, error: `no RPC method "${msg.call}" on plugin "${msg.plugin}"` });
+			this.#write(conn, { type: "result", id: msg.id, error: `no RPC ${call} on ${source}` });
 			return;
 		}
 
 		const validators = this.#validators.get(method)!;
 		let args: unknown;
 		try {
-			args = assertSchema(msg.args, method.input, `invalid args to ${msg.plugin}.${msg.call}:`, validators.input);
+			args = assertSchema(msg.args, method.input, `invalid args to ${source} ${call}:`, validators.input);
 		} catch (e) {
 			this.#write(conn, { type: "result", id: msg.id, error: e instanceof Error ? e.message : String(e) });
 			return;
@@ -236,7 +244,7 @@ export class RPCPlugin implements Plugin {
 		// fire off call in background so the read loop isn't blocked
 		method.call(args).then(result => {
 			try {
-				const validated = assertSchema(result, method.output, `invalid result from ${msg.plugin}.${msg.call}:`, validators.output) as object;
+				const validated = assertSchema(result, method.output, `invalid result from ${source} ${call}:`, validators.output) as object;
 				this.#write(conn, { type: "result", id: msg.id, result: validated });
 			} catch (e) {
 				this.#write(conn, { type: "result", id: msg.id, error: e instanceof Error ? e.message : String(e) });

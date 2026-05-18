@@ -2,7 +2,7 @@ import { Type, Static } from "typebox";
 import { Compile } from "typebox/compile";
 import { Plugin } from "../../agent/plugin.ts";
 import type { Harness } from "../../agent/harness.ts";
-import { RPCPlugin, RPCMessage, Stream, schema } from "../rpc/index.ts";
+import { RPCPlugin, RPCMessage, Stream, messagesSchema } from "../rpc/index.ts";
 import { assertSchema } from "../../util/validate.ts";
 
 export const configSchema = Type.Object({
@@ -14,7 +14,7 @@ export const configSchema = Type.Object({
 
 export type Config = Static<typeof configSchema>;
 
-const rpcMsgValidator = Compile(schema.rpcMessage);
+const rpcMsgValidator = Compile(messagesSchema.rpcMessage);
 
 /** Wrap a WebSocket in a Stream adapter. Validates incoming messages
  * are RPCMessages; invalid messages are silently dropped. */
@@ -24,7 +24,7 @@ export function wsToStream(socket: WebSocket): Stream {
 			socket.addEventListener("message", (event) => {
 				try {
 					const data = JSON.parse(event.data);
-					const msg = assertSchema(data, schema.rpcMessage, "invalid RPC message:", rpcMsgValidator);
+					const msg = assertSchema(data, messagesSchema.rpcMessage, "invalid RPC message:", rpcMsgValidator);
 					controller.enqueue(msg);
 				} catch {
 					// skip malformed messages
