@@ -15,11 +15,14 @@ export type HandlerWrapper = <T>(f: (x: T) => Promise<T>) => ((x: T) => Promise<
 
 export type Handler<Events, K extends keyof Events> = (data: Events[K]) => Promise<Events[K]>;
 
+export type Listener<Events> = (type: keyof Events, e: Events[typeof type]) => void;
+
 export class Emitter<Events> {
 	protected wrapHandler: HandlerWrapper = x => x;
 	protected thread = new Thread();
 	protected handlers = new Map<keyof Events, ((e: never) => unknown)[]>();
 	protected onceHandlers = new Map<keyof Events, ((e: never) => unknown)[]>();
+	protected listeners: Listener<Events>[] = [];
 
 	get signal() {
 		return this.thread.signal;
@@ -48,7 +51,7 @@ export class Emitter<Events> {
 			for (const h of this.handlers.get(event) ?? []) {
 				p = p.then(h as Handler<Events, K>);
 			}
-			return p;
+			return p.then(e => this.#runListeners(event, e));
 		});
 	}
 
@@ -63,7 +66,7 @@ export class Emitter<Events> {
 			for (const h of this.handlers.get(event) ?? []) {
 				p = p.then(h as Handler<Events, K>);
 			}
-			return p.then(e => resolve(e)).catch(e => reject(e));
+			return p.then(e => this.#runListeners(event, e)).then(e => resolve(e)).catch(e => reject(e));
 		}));
 	}
 
@@ -96,5 +99,15 @@ export class Emitter<Events> {
 				return e;
 			});
 		});
+	}
+
+	/** Run a callback with final data from all of this emitter's events. */
+	listen(f: Listener<Events>) {
+		this.listeners.push(f);
+	}
+
+	#runListeners<K extends keyof Events>(event: K, data: Events[K]) {
+		for (const f of this.listeners) f(event, data);
+		return data;
 	}
 }
