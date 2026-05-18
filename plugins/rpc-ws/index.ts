@@ -31,14 +31,14 @@ export function wsToStream(socket: WebSocket): Stream {
 				}
 			});
 			socket.addEventListener("close", () => {
-				controller.close();
+				try { controller.close(); } catch { /* already closed */ }
 			});
 			socket.addEventListener("error", () => {
 				controller.error(new Error("WebSocket error"));
 			});
 		},
 		cancel() {
-			socket.close();
+			try { socket.close(); } catch { /* already closed */ }
 		},
 	});
 
@@ -48,7 +48,7 @@ export function wsToStream(socket: WebSocket): Stream {
 			socket.send(JSON.stringify(msg));
 		},
 		close() {
-			socket.close();
+			try { socket.close(); } catch { /* already closed */ }
 		},
 	});
 
