@@ -303,7 +303,6 @@ export class RPCPlugin implements Plugin {
 	}
 
 	#matches(msg: EventMessage, subs: Connection["subscriptions"]): boolean {
-		if (msg.agent_id === undefined) return false;
 		const bucket = msg.plugin ? subs.plugins[msg.plugin] : subs.base;
 		if (!bucket) return false;
 		if (this.#subMatchesAgent(bucket.all_events, msg.agent_id)) return true;
@@ -311,8 +310,8 @@ export class RPCPlugin implements Plugin {
 		return eventSub ? this.#subMatchesAgent(eventSub, msg.agent_id) : false;
 	}
 
-	#subMatchesAgent(sub: Subscription, agent_id: string): boolean {
-		return sub.all_agents || sub.agents.has(agent_id);
+	#subMatchesAgent(sub: Subscription, agent_id: string | undefined): boolean {
+		return sub.all_agents || (agent_id !== undefined && sub.agents.has(agent_id));
 	}
 
 	#getOrCreateBucket(subs: Connection["subscriptions"], plugin?: string): Subscriptions {
