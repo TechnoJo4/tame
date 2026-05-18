@@ -117,13 +117,15 @@ export class RPCPlugin implements Plugin {
 
 	init(harness: Harness) {
 		this.#harness = harness;
-		this.#baseRoutes.set("newAgent", call({
-			...baseRouteSchemas.newAgent,
-			call: async ({ id, system }) => {
-				const agent = harness.newAgent(undefined, system, id);
-				return { id: agent.id };
-			}
-		}));
+		this.register(undefined as never as string, {
+			newAgent: call({
+				...baseRouteSchemas.newAgent,
+				call: async ({ id, system }) => {
+					const agent = harness.newAgent(undefined, system, id);
+					return { id: agent.id };
+				}
+			})
+		});
 	}
 
 	/** Listen to an emitter to automatically send events to subscribers. */
