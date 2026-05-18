@@ -67,11 +67,27 @@ export type Stream = {
 	readable: ReadableStream<RPCMessage>;
 };
 
+interface Subscription {
+	all_agents: boolean;
+	agents: Set<string>;
+}
+
+interface Subscriptions {
+	all_events: Subscription;
+	events: Record<string, Subscription>;
+}
+
 interface Connection {
 	stream: Stream;
 	writer: WritableStreamDefaultWriter<RPCMessage>;
-	subscriptions: SubscriptionMessage[];
+	subscriptions: {
+		base: Subscriptions;
+		plugins: Record<string, Subscriptions>;
+	};
 }
+
+const emptySubscription = (): Subscription => ({ all_agents: false, agents: new Set() });
+const emptySubscriptions = (): Subscriptions => ({ all_events: emptySubscription(), events: {} });
 
 const rpcMsgValidator = Compile(rpcMsgSchema);
 
@@ -94,19 +110,16 @@ export class RPCPlugin implements Plugin {
 		}));
 	}
 
-	/** Send an event to subscriber connections. */
+	/** Send an event to subscriber connections. Fire-and-forget. */
 	emit(msg: EventMessage) {
 		for (const conn of this.#connections) {
-			for (const sub of conn.subscriptions) {
-				if (this.#matches(msg, sub)) {
-					conn.writer.write(msg).catch(() => this.#drop(conn));
-					break; // only send once per connection even if multiple subs match
-				}
+			if (this.#matches(msg, conn.subscriptions)) {
+				conn.writer.write(msg).catch(() => this.#drop(conn));
 			}
 		}
 	}
 
-	/** Register RPC routes for a plugin. */
+	/** Register RPC routes for a plugin. Called during plugin init(). */
 	register(plugin: string, rpc: Record<string, CallDescription<any, any>>) {
 		if (!this.#rpc.has(plugin))
 			this.#rpc.set(plugin, new Map());
@@ -120,10 +133,10 @@ export class RPCPlugin implements Plugin {
 		}
 	}
 
-	/** Connect a bidirectional RPC stream. */
+	/** Connect a bidirectional RPC stream. Kicks off a background read loop. */
 	connect(stream: Stream) {
 		const writer = stream.writable.getWriter();
-		const conn: Connection = { stream, writer, subscriptions: [] };
+		const conn: Connection = { stream, writer, subscriptions: { base: emptySubscriptions(), plugins: {} } };
 		this.#connections.add(conn);
 		this.#readLoop(conn);
 	}
@@ -151,16 +164,68 @@ export class RPCPlugin implements Plugin {
 	#handle(conn: Connection, msg: RPCMessage) {
 		switch (msg.type) {
 			case "subscribe":
-				conn.subscriptions.push(msg);
+				this.#subscribe(conn, msg);
 				break;
 			case "unsubscribe":
-				conn.subscriptions = conn.subscriptions.filter(s =>
-					!(s.agent_id === msg.agent_id && s.plugin === msg.plugin && s.event === msg.event)
-				);
+				this.#unsubscribe(conn, msg);
 				break;
 			case "call":
 				this.#handleCall(conn, msg);
 				break;
+		}
+	}
+
+	#subscribe(conn: Connection, msg: SubscriptionMessage) {
+		const bucket = this.#getOrCreateBucket(conn.subscriptions, msg.plugin);
+		const sub = this.#getOrCreateSubscription(bucket, msg.event);
+		if (msg.agent_id === undefined) {
+			sub.all_agents = true;
+		} else {
+			sub.agents.add(msg.agent_id);
+		}
+	}
+
+	#unsubscribe(conn: Connection, msg: SubscriptionMessage) {
+		// completely empty unsubscribe (all fields undefined) wipes everything
+		if (msg.agent_id === undefined && msg.plugin === undefined && msg.event === undefined) {
+			conn.subscriptions = { base: emptySubscriptions(), plugins: {} };
+			return;
+		}
+
+		if (msg.plugin === undefined) {
+			if (msg.agent_id === undefined) {
+				if (msg.event === undefined) {
+					conn.subscriptions.base = emptySubscriptions();
+				} else {
+					delete conn.subscriptions.base.events[msg.event];
+				}
+			} else {
+				this.#removeAgent(conn.subscriptions.base, msg.agent_id, msg.event);
+			}
+		} else {
+			const bucket = conn.subscriptions.plugins[msg.plugin];
+			if (!bucket) return;
+			if (msg.agent_id === undefined) {
+				if (msg.event === undefined) {
+					delete conn.subscriptions.plugins[msg.plugin];
+				} else {
+					delete bucket.events[msg.event];
+				}
+			} else {
+				this.#removeAgent(bucket, msg.agent_id, msg.event);
+			}
+		}
+	}
+
+	#removeAgent(subs: Subscriptions, agent_id: string, event?: string) {
+		if (event === undefined) {
+			if (!subs.all_events.all_agents) subs.all_events.agents.delete(agent_id);
+			for (const s of Object.values(subs.events)) {
+				if (!s.all_agents) s.agents.delete(agent_id);
+			}
+		} else {
+			const s = subs.events[event];
+			if (s && !s.all_agents) s.agents.delete(agent_id);
 		}
 	}
 
@@ -211,10 +276,28 @@ export class RPCPlugin implements Plugin {
 		try { conn.writer.releaseLock(); } catch { /* already released */ }
 	}
 
-	#matches(msg: EventMessage, sub: SubscriptionMessage): boolean {
-		if (sub.plugin !== msg.plugin) return false;
-		if (sub.agent_id !== undefined && sub.agent_id !== msg.agent_id) return false;
-		if (sub.event !== undefined && sub.event !== msg.event) return false;
-		return true;
+	#matches(msg: EventMessage, subs: Connection["subscriptions"]): boolean {
+		if (msg.agent_id === undefined) return false;
+		const bucket = msg.plugin ? subs.plugins[msg.plugin] : subs.base;
+		if (!bucket) return false;
+		if (this.#subMatchesAgent(bucket.all_events, msg.agent_id)) return true;
+		const eventSub = bucket.events[msg.event];
+		return eventSub ? this.#subMatchesAgent(eventSub, msg.agent_id) : false;
+	}
+
+	#subMatchesAgent(sub: Subscription, agent_id: string): boolean {
+		return sub.all_agents || sub.agents.has(agent_id);
+	}
+
+	#getOrCreateBucket(subs: Connection["subscriptions"], plugin?: string): Subscriptions {
+		if (plugin === undefined) return subs.base;
+		if (!subs.plugins[plugin]) subs.plugins[plugin] = emptySubscriptions();
+		return subs.plugins[plugin];
+	}
+
+	#getOrCreateSubscription(bucket: Subscriptions, event?: string): Subscription {
+		if (event === undefined) return bucket.all_events;
+		if (!bucket.events[event]) bucket.events[event] = emptySubscription();
+		return bucket.events[event];
 	}
 }
