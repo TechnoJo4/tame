@@ -117,7 +117,7 @@ export class RPCPlugin implements Plugin {
 
 	init(harness: Harness) {
 		this.#harness = harness;
-		this.register(undefined as never as string, {
+		this.#registerOn(this.#baseRoutes, {
 			newAgent: call({
 				...baseRouteSchemas.newAgent,
 				call: async ({ id, system }) => {
@@ -153,9 +153,12 @@ export class RPCPlugin implements Plugin {
 	register(plugin: string, rpc: Record<string, CallDescription<any, any>>) {
 		if (!this.#rpc.has(plugin))
 			this.#rpc.set(plugin, new Map());
-		const methods = this.#rpc.get(plugin)!;
+		this.#registerOn(this.#rpc.get(plugin)!, rpc);
+	}
+
+	#registerOn(map: Map<string, CallDescription<any, any>>, rpc: Record<string, CallDescription<any, any>>) {
 		for (const [name, desc] of Object.entries(rpc)) {
-			methods.set(name, desc);
+			map.set(name, desc);
 			this.#validators.set(desc, {
 				input: Compile(desc.input),
 				output: Compile(desc.output)
