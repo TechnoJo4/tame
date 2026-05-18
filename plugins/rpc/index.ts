@@ -186,9 +186,10 @@ export class RPCPlugin implements Plugin {
 	}
 
 	#unsubscribe(conn: Connection, msg: SubscriptionMessage) {
-        this.#unsubscribeTarget(msg, msg.plugin === undefined
+        const subs = msg.plugin === undefined
             ? conn.subscriptions.base
-            : conn.subscriptions.plugins[msg.plugin]);
+            : conn.subscriptions.plugins[msg.plugin];
+        if (subs) this.#unsubscribeTarget(msg, subs);
 	}
 
     #unsubscribeTarget(msg: SubscriptionMessage, subs: Subscriptions) {
