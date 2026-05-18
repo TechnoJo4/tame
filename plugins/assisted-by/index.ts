@@ -19,10 +19,11 @@ const hooksDir = resolve(tameDataFolder, "hooks");
 
 const commitMsgHook = `#!/bin/sh
 # tame assisted-by hook
-# Appends an Assisted-by trailer to commits, then chains to repo-local hooks.
+# Appends an Assisted-by trailer to commits using git-interpret-trailers,
+# then chains to repo-local hooks.
 
 if [ -n "$ASSISTED_BY" ]; then
-	echo "Assisted-by: $ASSISTED_BY" >> "$1"
+	git interpret-trailers --in-place --trailer "Assisted-by: $ASSISTED_BY" "$1"
 fi
 
 # Chain to repo-local commit-msg hook if one exists
