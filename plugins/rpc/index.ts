@@ -94,7 +94,7 @@ export class RPCPlugin implements Plugin {
 		}));
 	}
 
-	/** Send an event to subscriber connections. Fire-and-forget. */
+	/** Send an event to subscriber connections. */
 	emit(msg: EventMessage) {
 		for (const conn of this.#connections) {
 			for (const sub of conn.subscriptions) {
@@ -106,7 +106,7 @@ export class RPCPlugin implements Plugin {
 		}
 	}
 
-	/** Register RPC routes for a plugin. Called during plugin init(). */
+	/** Register RPC routes for a plugin. */
 	register(plugin: string, rpc: Record<string, CallDescription<any, any>>) {
 		if (!this.#rpc.has(plugin))
 			this.#rpc.set(plugin, new Map());
@@ -120,7 +120,7 @@ export class RPCPlugin implements Plugin {
 		}
 	}
 
-	/** Connect a bidirectional RPC stream. Kicks off a background read loop. */
+	/** Connect a bidirectional RPC stream. */
 	connect(stream: Stream) {
 		const writer = stream.writable.getWriter();
 		const conn: Connection = { stream, writer, subscriptions: [] };
@@ -137,7 +137,7 @@ export class RPCPlugin implements Plugin {
 				try {
 					const msg = assertSchema(value, rpcMsgSchema, "invalid RPC message:", rpcMsgValidator);
 					this.#handle(conn, msg);
-				} catch (e) {
+				} catch {
 					// skip malformed messages
 				}
 			}
