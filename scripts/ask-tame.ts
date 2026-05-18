@@ -4,7 +4,7 @@
 // Usage: deno run -A scripts/ask-tame.ts "your message here"
 //        echo "your message" | deno run -A scripts/ask-tame.ts
 
-const WS_URL = Deno.env.get("TAME_WS_URL") ?? "ws://0.0.0.0:6701";
+const WS_URL = Deno.env.get("TAME_WS_URL") ?? "ws://127.0.0.1:6701";
 
 interface TextContent {
 	type: "text";
@@ -113,8 +113,6 @@ async function main() {
 					lastAssistant = (msg.data as { msg: AssistantMessage }).msg;
 				}
 				if (msg.event === "idle") {
-					// agent is done — close the connection (abort-equivalent
-					// for cleanup; the agent's queue is already drained)
 					ws.close();
 					onDone();
 				}
