@@ -63,9 +63,19 @@ export interface CallDescription<I extends TSchema, O extends TSchema> {
 	call: (args: Static<I>) => Promise<Static<O>>;
 };
 
-function callDesc<I extends TSchema, O extends TSchema>(input: I, output: O, call: CallDescription<I, O>["call"]): CallDescription<I, O> {
-	return { input, output, call };
-}
+export const call = <I extends TSchema, O extends TSchema>(c: CallDescription<I, O>): CallDescription<I, O> => c;
+
+export const baseRouteSchemas = {
+	newAgent: {
+		input: Type.Object({
+			id: Type.Optional(Type.String()),
+			system: Type.Optional(Type.String()),
+		}),
+		output: Type.Object({
+			id: Type.String()
+		})
+	}
+};
 
 export type Stream = {
 	writable: WritableStream<RPCMessage>;
@@ -103,6 +113,16 @@ export class RPCPlugin implements Plugin {
 	#baseRoutes = new Map<string, CallDescription<any, any>>();
 	#rpc = new Map<string, Map<string, CallDescription<any, any>>>();
 	#validators = new Map<CallDescription<any, any>, { input: Validator<any>; output: Validator<any> }>();
+
+	init(harness: Harness) {
+		this.#baseRoutes.set("newAgent", call({
+			...baseRouteSchemas.newAgent,
+			call: async ({ id, system }) => {
+				const agent = harness.newAgent(undefined, system, id);
+				return { id: agent.id };
+			}
+		}));
+	}
 
 	/** Listen to an emitter to automatically send events to subscribers. */
 	hookEmitter<T>(emitter: Emitter<T>, translate: (event: keyof T, data: T[typeof event]) => EventMessage) {
