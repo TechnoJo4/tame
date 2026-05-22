@@ -13,16 +13,14 @@ export type Config = Static<typeof configSchema>;
 export class SystemLoadPlugin implements Plugin {
     id = "system-load" as const;
 
-    #text: string = "";
+    #text: Promise<string>;
 
     constructor(config: Config) {
-        Promise.all(config.prepend.map(f => fs.readFile(f, { encoding: "utf-8" }))).then(res => {
-            this.#text = res.join("\n\n");
-        });
+        this.#text = Promise.all(config.prepend.map(f => fs.readFile(f, { encoding: "utf-8" }))).then(res => res.join("\n\n"));
     }
 
     async newAgent(agent: Agent) {
-        agent.system = this.#text + agent.system;
+        agent.system = (await this.#text) + agent.system;
     }
 }
 
