@@ -2,16 +2,29 @@ import { LitElement, html } from "lit";
 import type { RPCController } from "../lib/rpc-controller.ts";
 
 export class TameSidebar extends LitElement {
-	static properties = { controller: { type: Object } };
+	static properties = {
+		controller: { type: Object },
+		collapsed: { type: Boolean, reflect: true },
+	};
+
 	declare controller: RPCController;
+	declare collapsed: boolean;
 	#loaded = new Set<string>();
 
 	createRenderRoot() { return this; }
 
 	render() {
+		if (this.collapsed) {
+			return html`<button class="toggle" @click=${this.#toggle} title="expand sidebar">☰</button>`;
+		}
 		const placements = this.controller?.getPlacements("panel:sidebar") ?? [];
-		return html`${placements.map((p) => this.#renderPlacement(p))}`;
+		return html`
+			<button class="toggle" @click=${this.#toggle} title="collapse sidebar">☰</button>
+			${placements.map((p) => this.#renderPlacement(p))}
+		`;
 	}
+
+	#toggle() { this.collapsed = !this.collapsed; }
 
 	#renderPlacement(p: { tag: string; props?: Record<string, unknown> }) {
 		const src = this.controller.getComponentSrc(p.tag);
