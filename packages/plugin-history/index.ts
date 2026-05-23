@@ -190,6 +190,8 @@ export class HistoryPlugin implements Plugin {
 	}
 
 	async loadAgent(id: string): Promise<IAgent> {
+		const existing = this.#harness?.getAgent(id);
+		if (existing) return existing;
 		const agent = await this.historyToAgent(await this.load(id));
 		this.#rpc?.emit({ type: "event", plugin: "history", event: "sessionsChanged", data: {} });
 		return agent;

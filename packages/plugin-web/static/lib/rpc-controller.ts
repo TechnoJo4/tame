@@ -116,6 +116,9 @@ export class RPCController implements WebController {
 		if (!this.#client) return;
 		if (id === this.agentId) return;
 
+		// ensure agent is loaded into memory (no-op if already there)
+		await this.#client.call("history", "load", { id });
+
 		// fetch context and populate the thread
 		const ctx = await this.#client.call("@tame", "getAgentContext", { id });
 		this.agentId = id;
