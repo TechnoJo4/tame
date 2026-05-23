@@ -81,6 +81,10 @@ export class RPCController {
 	async #connect() {
 		try {
 			const ws = new WebSocket(`ws://${location.host}`);
+			await new Promise<void>((resolve, reject) => {
+				ws.addEventListener("open", () => resolve(), { once: true });
+				ws.addEventListener("error", () => reject(new Error("WebSocket connection failed")), { once: true });
+			});
 			const stream = wsToStream(ws);
 			this.#client = new RPCClient(stream);
 
