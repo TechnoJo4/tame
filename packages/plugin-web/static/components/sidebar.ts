@@ -2,10 +2,7 @@ import { LitElement, html } from "lit";
 import type { RPCController } from "../lib/rpc-controller.ts";
 
 export class TameSidebar extends LitElement {
-	static properties = {
-		controller: { type: Object },
-	};
-
+	static properties = { controller: { type: Object } };
 	declare controller: RPCController;
 	#loaded = new Set<string>();
 
@@ -13,11 +10,7 @@ export class TameSidebar extends LitElement {
 
 	render() {
 		const placements = this.controller?.getPlacements("panel:sidebar") ?? [];
-		return html`
-			<aside style="width:260px;border-right:1px solid #333;overflow-y:auto;padding:8px;flex-shrink:0">
-				${placements.map((p) => this.#renderPlacement(p))}
-			</aside>
-		`;
+		return html`${placements.map((p) => this.#renderPlacement(p))}`;
 	}
 
 	#renderPlacement(p: { tag: string; props?: Record<string, unknown> }) {

@@ -1,15 +1,17 @@
 import { LitElement, html } from "lit";
 
 export class TameMarkdown extends LitElement {
-	text!: string;
+	static properties = { text: { type: String } };
+	declare text: string;
 
 	createRenderRoot() { return this; }
 
-	render() {
-		// minimal markdown — paragraphs and code. good enough for mvp.
-		const md = this.#renderMd(this.text ?? "");
-		// .innerHTML bypasses lit's escaping — #renderMd returns trusted html
-		return html`<div style="line-height:1.5;word-break:break-word" .innerHTML=${md}></div>`;
+	render() { return html``; }
+
+	updated(changed: Map<string, unknown>) {
+		if (changed.has("text")) {
+			this.innerHTML = this.#renderMd(this.text ?? "");
+		}
 	}
 
 	// state-machine markdown — paragraphs and fenced code blocks. good enough.
@@ -23,43 +25,30 @@ export class TameMarkdown extends LitElement {
 			const para = buf.join("\n").trim();
 			buf = [];
 			if (!para) return;
-			// inline code: `...` — escape contents
 			const processed = para.replace(
 				/`([^`]+)`/g,
-				(_, code: string) =>
-					`<code style="background:#0a0a14;padding:1px 4px;border-radius:2px;font-size:13px">${this.#escape(code)}</code>`,
+				(_, code: string) => `<code>${this.#escape(code)}</code>`,
 			);
-			parts.push(`<p style="margin:4px 0">${processed}</p>`);
+			parts.push(`<p>${processed}</p>`);
 		};
 
 		const flushCode = () => {
 			const code = buf.join("\n").trim();
 			buf = [];
-			parts.push(`<pre style="background:#0a0a14;padding:8px;border-radius:4px;overflow-x:auto;font-size:13px"><code>${this.#escape(code)}</code></pre>`);
+			parts.push(`<pre><code>${this.#escape(code)}</code></pre>`);
 		};
 
 		for (const line of lines) {
 			const isFence = line.trim().startsWith("```");
 			if (!inCode) {
-				if (isFence) {
-					flushPara();
-					inCode = true;
-					// optional language tag after opening ``` — discard it
-				} else if (line.trim() === "") {
-					flushPara();
-				} else {
-					buf.push(line);
-				}
+				if (isFence) { flushPara(); inCode = true; }
+				else if (line.trim() === "") { flushPara(); }
+				else { buf.push(line); }
 			} else {
-				if (isFence) {
-					flushCode();
-					inCode = false;
-				} else {
-					buf.push(line);
-				}
+				if (isFence) { flushCode(); inCode = false; }
+				else { buf.push(line); }
 			}
 		}
-		// trailing content
 		if (inCode) flushCode();
 		else flushPara();
 

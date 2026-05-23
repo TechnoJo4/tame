@@ -25,16 +25,16 @@ export class TameShell extends LitElement {
 
 	render() {
 		if (this.loading) {
-			return html`<div style="display:flex;align-items:center;justify-content:center;height:100%">loading...</div>`;
+			return html`<div class="loading">loading...</div>`;
 		}
 		if (this.error) {
-			return html`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#f66">${this.error}</div>`;
+			return html`<div class="error">${this.error}</div>`;
 		}
 		return html`
-			<div style="display:flex;height:100%">
+			<div class="layout">
 				<tame-sidebar .controller=${this.#controller}></tame-sidebar>
-				<main style="flex:1;display:flex;flex-direction:column;min-width:0">
-					<tame-thread .messages=${this.messages} .controller=${this.#controller} style="flex:1;overflow-y:auto"></tame-thread>
+				<main class="main">
+					<tame-thread .messages=${this.messages} .controller=${this.#controller}></tame-thread>
 					<tame-composer .controller=${this.#controller}></tame-composer>
 				</main>
 			</div>
