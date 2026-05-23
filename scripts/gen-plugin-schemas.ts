@@ -4,8 +4,8 @@ import { readdir } from "node:fs/promises";
 const dir = import.meta.dirname;
 if (!dir) throw new Error("couldn't get import.meta.dirname");
 
-const packagesDir = resolve(dir, "..", "..", "..");
-const outDir = resolve(dir, "..", "schemas", "plugins");
+const packagesDir = resolve(dir, "..", "packages");
+const outDir = resolve(dir, "..", "packages", "core", "schemas", "plugins");
 
 await Deno.mkdir(outDir, { recursive: true });
 

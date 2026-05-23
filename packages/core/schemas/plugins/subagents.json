@@ -1,0 +1,20 @@
+{
+	"type": "object",
+	"required": [
+		"maxDepth",
+		"maxToolResultLength"
+	],
+	"properties": {
+		"maxDepth": {
+			"type": "number",
+			"default": 1,
+			"description": "Maximum nesting depth. 0 = no subagents, 1 = top-level only."
+		},
+		"maxToolResultLength": {
+			"type": "number",
+			"default": 2000,
+			"description": "Truncate tool results in the output summary."
+		}
+	},
+	"$schema": "https://json-schema.org/draft/2020-12/schema"
+}

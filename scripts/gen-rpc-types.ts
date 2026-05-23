@@ -4,7 +4,7 @@ import { readdir } from "node:fs/promises";
 const dir = import.meta.dirname;
 if (!dir) throw new Error("couldn't get import.meta.dirname");
 
-const packagesDir = resolve(dir, "..", "..");
+const packagesDir = resolve(dir, "..", "packages");
 const referenceDirective = '/// <reference path="./rpc.d.ts" />';
 
 const pluginNames: string[] = [];

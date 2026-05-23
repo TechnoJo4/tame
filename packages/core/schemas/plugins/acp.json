@@ -47,7 +47,7 @@
 		},
 		"tools": {
 			"type": "boolean",
-			"default": true
+			"default": false
 		}
 	},
 	"$schema": "https://json-schema.org/draft/2020-12/schema"
