@@ -3,8 +3,8 @@ import { Static, Type } from "typebox";
 
 import type { IAgent, IHarness, Plugin, InputContent, InputMessage, ToolResult, ToolUse, AgentStopReason } from "@tame/sdk";
 import { tool } from "@tame/sdk";
-import { getAgentHistory, type HistoryPlugin } from "../history/index.ts";
-import type { CommandsPlugin } from "../commands/index.ts";
+import { getAgentHistory, type HistoryPlugin } from "@tame/plugin-history/index";
+import type { CommandsPlugin } from "@tame/plugin-commands/index";
 
 const tcpListen = Type.Object({
 	transport: Type.Literal("tcp"),

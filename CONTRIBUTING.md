@@ -48,30 +48,29 @@ tame/
 │   │   ├── llm/
 │   │   │   └── types.ts      # message types, InferenceProvider
 │   │   └── util/             # emitter, thread, validation, symbols
-│   └── core/             # @tame/core — implementations + plugins
-│       ├── index.ts          # entry point
-│       ├── agent/            # Agent, Harness implementations
-│       ├── config/           # config parsing, llm provider setup
-│       ├── llm/              # inference provider implementations
-│       ├── ratelimit/        # rate limiter implementations
-│       ├── plugins/          # one directory per plugin
-│       │   ├── acp/          # agent client protocol
-│       │   ├── assisted-by/  # git assisted-by trailer
-│       │   ├── commands/     # slash command registry
-│       │   ├── compact/      # context compaction
-│       │   ├── debug/        # debug logging
-│       │   ├── history/      # session persistence
-│       │   ├── memory/       # remember/forget tools
-│       │   ├── ops/          # file & shell operations
-│       │   ├── rpc/          # json-based rpc
-│       │   ├── rpc-ws/       # websocket rpc transport
-│       │   ├── skills/       # agent skills
-│       │   └── system-load/  # system prompt prepend
-│       ├── toolsets/         # standalone tool collections
-│       │   ├── jina-fetch/   # web page fetching
-│       │   └── tavily-search/# web search
-│       ├── schemas/          # generated plugin config schemas
-│       └── scripts/          # utility scripts
+│   ├── core/             # @tame/core — implementations
+│   │   ├── index.ts          # entry point
+│   │   ├── agent/            # Agent, Harness implementations
+│   │   ├── config/           # config parsing, llm provider setup
+│   │   ├── llm/              # inference provider implementations
+│   │   ├── ratelimit/        # rate limiter implementations
+│   │   ├── toolsets/         # legacy tool collections (to be removed)
+│   │   ├── schemas/          # generated plugin config schemas
+│   │   └── scripts/          # utility scripts
+│   ├── plugin-acp/       # agent client protocol
+│   ├── plugin-assisted-by/# git assisted-by trailer
+│   ├── plugin-commands/  # slash command registry
+│   ├── plugin-compact/   # context compaction
+│   ├── plugin-debug/     # debug logging
+│   ├── plugin-history/   # session persistence
+│   ├── plugin-jina-fetch/# web page fetching
+│   ├── plugin-memory/    # remember/forget tools
+│   ├── plugin-ops/       # file & shell operations
+│   ├── plugin-rpc/       # json-based rpc
+│   ├── plugin-rpc-ws/    # websocket rpc transport
+│   ├── plugin-skills/    # agent skills
+│   ├── plugin-system-load/# system prompt prepend
+│   └── plugin-tavily-search/# web search
 └── .docs/                # design docs
 ```
 

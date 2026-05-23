@@ -1,6 +1,6 @@
 import { Type, Static, TSchema } from "typebox";
 import { Compile, Validator } from "typebox/compile";
-import { StringEnum, assertSchema, type IAgent, type IHarness, type Plugin, type Emitter } from "@tame/sdk";
+import { StringEnum, assertSchema, type IAgent, type IHarness, type Plugin } from "@tame/sdk";
 
 const eventSchema = Type.Object({
 	type: Type.Literal("event"),
@@ -124,7 +124,7 @@ export class RPCPlugin implements Plugin {
 	}
 
 	/** Listen to an emitter to automatically send events to subscribers. */
-	hookEmitter<T>(emitter: Emitter<T>, translate: (event: keyof T, data: T[typeof event]) => EventMessage) {
+	hookEmitter<T>(emitter: { listen(f: (type: keyof T, data: T[typeof type]) => void): void }, translate: (event: keyof T, data: T[typeof event]) => EventMessage) {
 		emitter.listen((event, data) => this.emit(translate(event, data)));
 	}
 

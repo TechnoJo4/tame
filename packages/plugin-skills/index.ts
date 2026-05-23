@@ -1,7 +1,7 @@
 import { resolve } from "@std/path";
 import { promises as fs } from "node:fs";
 import { Plugin, tool, Type, tameDataFolder, tameMsgMeta, type IAgent, type IHarness } from "@tame/sdk";
-import type { CommandsPlugin } from "../commands/index.ts";
+import type { CommandsPlugin } from "@tame/plugin-commands/index";
 import type { Static } from "typebox";
 
 const home = Deno.env.get("HOME");

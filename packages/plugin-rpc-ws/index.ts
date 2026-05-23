@@ -1,7 +1,7 @@
 import { Type, Static } from "typebox";
 import { Compile } from "typebox/compile";
 import { Plugin, assertSchema, type IHarness } from "@tame/sdk";
-import { RPCPlugin, RPCMessage, Stream, messagesSchema } from "../rpc/index.ts";
+import { RPCPlugin, RPCMessage, Stream, messagesSchema } from "@tame/plugin-rpc/index";
 
 export const configSchema = Type.Object({
 	listen: Type.Object({

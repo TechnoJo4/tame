@@ -1,6 +1,6 @@
 import { Type, type Static } from "typebox";
 import { Plugin, tameDataFolder, type IAgent, type IHarness } from "@tame/sdk";
-import type { OpsPlugin } from "../ops/index.ts";
+import type { OpsPlugin } from "@tame/plugin-ops/index";
 import { resolve } from "@std/path";
 import { promises as fs } from "node:fs";
 import { spawn } from "node:child_process";

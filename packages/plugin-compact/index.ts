@@ -2,7 +2,7 @@ import { Tiktoken } from "npm:js-tiktoken/lite";
 import { Static, Type } from "typebox";
 import type { IAgent, IHarness, InputMessage, InputContent, AssistantMessage, ToolUse } from "@tame/sdk";
 import { Plugin, StringEnum, tameMsgMeta } from "@tame/sdk";
-import type { MemoryPlugin } from "../memory/index.ts";
+import type { MemoryPlugin } from "@tame/plugin-memory/index";
 
 const target = Type.Union([
 	Type.Object({ type: Type.Literal("tokens"), tokens: Type.Number() }),

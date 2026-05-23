@@ -19,7 +19,7 @@ export interface Env {
 }
 
 export interface ReadEvent {
-	agent: Agent;
+	agent: IAgent;
 	path: string;
 	offset?: number;
 	limit?: number;
@@ -27,14 +27,14 @@ export interface ReadEvent {
 }
 
 export interface WriteEvent {
-	agent: Agent;
+	agent: IAgent;
 	path: string;
 	content: Content;
 	result?: string;
 }
 
 export interface ExecEvent {
-	agent: Agent;
+	agent: IAgent;
 	command: string[];
 	workdir?: string;
 	timeout: number;
@@ -77,11 +77,11 @@ export type OpsConfig = Static<typeof configSchema>;
 
 export const envKey = Symbol("tame:ops:env");
 
-export function getEnv(agent: Agent): Env {
+export function getEnv(agent: IAgent): Env {
 	return agent.pluginData.get(envKey) as Env;
 }
 
-export function setEnv(agent: Agent, env: Env) {
+export function setEnv(agent: IAgent, env: Env) {
 	agent.pluginData.set(envKey, env);
 }
 
@@ -279,7 +279,7 @@ export class OpsPlugin implements Plugin {
 		});
 	}
 
-	resolveDynamicEnv(agent: Agent): Record<string, string> {
+	resolveDynamicEnv(agent: IAgent): Record<string, string> {
 		const env: Record<string, string> = {};
 		if (!this.config.env?.dynamic) return env;
 		for (const [key, source] of Object.entries(this.config.env.dynamic)) {
@@ -304,7 +304,7 @@ export class OpsPlugin implements Plugin {
 	}
 
 	async edit(
-		agent: Agent,
+		agent: IAgent,
 		path: string,
 		fn: (content: string) => string,
 	): Promise<string> {
@@ -484,7 +484,7 @@ export class OpsPlugin implements Plugin {
 		}),
 	};
 
-	async init(harness: Harness) {
+	async init(harness: IHarness) {
 		const enabled = this.config.tools ?? {};
 		const tools = [
 			enabled.read !== false ? this.#tools.read : null,
