@@ -3,7 +3,7 @@ import {
 	AssistantMessage,
 	InferenceProvider,
 	MessageRequest,
-} from "./types.ts";
+} from "@tame/sdk";
 
 export class PriorityProvider implements InferenceProvider {
 	underlying: (InferenceProvider | RatelimitedProvider)[];

@@ -88,17 +88,17 @@ export interface InputMessage {
 	[tameMsgMeta]?: TameMessageMeta;
 }
 
-export interface Tool {
+export interface ApiTool {
 	name: string;
 	description: string;
 	input_schema: TSchema;
-};
+}
 
 export interface MessageRequest {
 	model?: string;
 	max_tokens: number;
 	system: string;
-	tools?: Tool[];
+	tools?: ApiTool[];
 	messages: InputMessage[];
 	cache_control?: CacheControl;
 	session_id?: string;

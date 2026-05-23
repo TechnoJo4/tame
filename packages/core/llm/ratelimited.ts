@@ -1,6 +1,6 @@
 import { Ratelimiter } from "../ratelimit/ratelimit.ts";
 import { InferenceError } from "./error.ts";
-import { AssistantMessage, InferenceProvider, MessageRequest } from "./types.ts";
+import { AssistantMessage, InferenceProvider, MessageRequest } from "@tame/sdk";
 
 export class RatelimitedProvider {
     underlying: InferenceProvider;

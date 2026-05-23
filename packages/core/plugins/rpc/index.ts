@@ -1,11 +1,6 @@
 import { Type, Static, TSchema } from "typebox";
 import { Compile, Validator } from "typebox/compile";
-import { StringEnum } from "../../util/string-enum.ts";
-import { assertSchema } from "../../util/validate.ts";
-import type { Agent } from "../../agent/agent.ts";
-import type { Plugin } from "../../agent/plugin.ts";
-import type { Emitter } from "../../util/emitter.ts";
-import type { Harness } from "../../agent/harness.ts";
+import { StringEnum, assertSchema, type IAgent, type IHarness, type Plugin, type Emitter } from "@tame/sdk";
 
 const eventSchema = Type.Object({
 	type: Type.Literal("event"),
@@ -61,7 +56,7 @@ export interface CallDescription<I extends TSchema, O extends TSchema> {
 	input: I;
 	output: O;
 	call: (args: Static<I>) => Promise<Static<O>>;
-};
+}
 
 export const call = <I extends TSchema, O extends TSchema>(c: CallDescription<I, O>): CallDescription<I, O> => c;
 
@@ -113,9 +108,9 @@ export class RPCPlugin implements Plugin {
 	#baseRoutes = new Map<string, CallDescription<any, any>>();
 	#rpc = new Map<string, Map<string, CallDescription<any, any>>>();
 	#validators = new Map<CallDescription<any, any>, { input: Validator<any>; output: Validator<any> }>();
-	#harness?: Harness;
+	#harness?: IHarness;
 
-	init(harness: Harness) {
+	init(harness: IHarness) {
 		this.#harness = harness;
 		this.#registerOn(this.#baseRoutes, {
 			newAgent: call({
@@ -133,7 +128,7 @@ export class RPCPlugin implements Plugin {
 		emitter.listen((event, data) => this.emit(translate(event, data)));
 	}
 
-	newAgent(agent: Agent) {
+	newAgent(agent: IAgent) {
 		const agent_id = agent.id;
 		this.hookEmitter(agent, (event, data) => ({
 			type: "event", agent_id, event, data
@@ -252,7 +247,7 @@ export class RPCPlugin implements Plugin {
 		const harness = this.#harness;
 		if (!harness) return;
 		if (!msg.agent_id) return;
-		if (msg.plugin !== undefined) return; // only agent events for now
+		if (msg.plugin !== undefined) return;
 		const agent = harness.getAgent(msg.agent_id);
 		if (!agent) return;
 		agent.fire(msg.event as never, msg.data as never);
@@ -281,7 +276,6 @@ export class RPCPlugin implements Plugin {
 			return;
 		}
 
-		// fire off call in background so the read loop isn't blocked
 		method.call(args).then(result => {
 			try {
 				const validated = assertSchema(result, method.output, `invalid result from ${source} ${call}:`, validators.output) as object;

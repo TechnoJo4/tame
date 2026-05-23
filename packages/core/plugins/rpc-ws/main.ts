@@ -1,4 +1,4 @@
-import { readTameConfig } from "../../config/index.ts";
+import { readTameConfig } from "@tame/sdk";
 import { configSchema, RPCWSPlugin } from "./index.ts";
 
 export { configSchema } from "./index.ts";

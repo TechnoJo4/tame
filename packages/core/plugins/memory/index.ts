@@ -1,18 +1,17 @@
-import { Agent } from "../../agent/agent.ts";
-import { Plugin } from "../../agent/plugin.ts";
-import type { Harness } from "../../agent/harness.ts";
-import { tool, Type } from "../../agent/tool.ts";
+import type { IAgent } from "@tame/sdk";
+import { Plugin, tool, Type } from "@tame/sdk";
+import type { IHarness } from "@tame/sdk";
 import type { HistoryPlugin } from "../history/index.ts";
 
 export interface Memory {
 	forgotten: boolean;
 	text: string;
-};
+}
 
 export class MemoryPlugin implements Plugin {
 	id = "memory" as const;
 
-	memory = new Map<Agent, Memory[]>();
+	memory = new Map<IAgent, Memory[]>();
 
 	enabled?: true;
 
@@ -62,7 +61,7 @@ export class MemoryPlugin implements Plugin {
 		}
 	});
 
-	async init(harness: Harness) {
+	async init(harness: IHarness) {
 		harness.addTools(this.remember, this.forget);
 
 		harness.getPlugin<HistoryPlugin>("history")?.addHook<Memory[]>("memory", {
@@ -71,13 +70,11 @@ export class MemoryPlugin implements Plugin {
 		});
 	}
 
-	newAgent(agent: Agent) {
+	newAgent(agent: IAgent) {
 		this.memory.set(agent, []);
 	}
 
-	getAgentMemory(agent: Agent) {
+	getAgentMemory(agent: IAgent) {
 		return this.memory.get(agent)!;
 	}
 }
-
-

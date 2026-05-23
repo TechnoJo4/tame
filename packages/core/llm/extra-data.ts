@@ -1,4 +1,4 @@
-import { AssistantMessage, InferenceProvider, MessageRequest } from "./types.ts";
+import { AssistantMessage, InferenceProvider, MessageRequest } from "@tame/sdk";
 
 export class ExtraDataProvider implements InferenceProvider {
     underlying: InferenceProvider;

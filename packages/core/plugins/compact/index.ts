@@ -1,11 +1,7 @@
 import { Tiktoken } from "npm:js-tiktoken/lite";
 import { Static, Type } from "typebox";
-import { Agent } from "../../agent/agent.ts";
-import { Plugin } from "../../agent/plugin.ts";
-import type { Harness } from "../../agent/harness.ts";
-import { StringEnum } from "../../util/string-enum.ts";
-import type { InputMessage, InputContent, AssistantMessage, ToolUse } from "../../llm/types.ts";
-import { tameMsgMeta } from "../../util/symbols.ts";
+import type { IAgent, IHarness, InputMessage, InputContent, AssistantMessage, ToolUse } from "@tame/sdk";
+import { Plugin, StringEnum, tameMsgMeta } from "@tame/sdk";
 import type { MemoryPlugin } from "../memory/index.ts";
 
 const target = Type.Union([
@@ -36,7 +32,7 @@ export const configSchema = Type.Object({
 
 export type CompactConfig = Static<typeof configSchema>;
 
-const userMessageHistory = new Map<Agent, string[]>(); // TODO: get from history instead
+const userMessageHistory = new Map<IAgent, string[]>();
 
 const lastCompactKey = Symbol("tame:compact:last-interval-compact");
 
@@ -53,7 +49,7 @@ export class CompactPlugin implements Plugin {
 		this.#config = config;
 	}
 
-	async init(harness: Harness) {
+	async init(harness: IHarness) {
 		this.#memory = harness.getPlugin<MemoryPlugin>("memory");
 		const rank = await import(`npm:js-tiktoken/ranks/${this.#config.estimation.encoding}`);
 		this.#enc = new Tiktoken(rank.default);
@@ -80,7 +76,7 @@ export class CompactPlugin implements Plugin {
 		return n;
 	}
 
-	newAgent(agent: Agent) {
+	newAgent(agent: IAgent) {
 		userMessageHistory.set(agent, []);
 
 		agent.before("completion", async (e) => {
@@ -171,7 +167,7 @@ export class CompactPlugin implements Plugin {
 		return c;
 	}
 
-	intervalPrune(agent: Agent, lastCompact: number): void {
+	intervalPrune(agent: IAgent, lastCompact: number): void {
 		const keepCount = this.tailToKeep(agent.context);
 		const head = agent.context.slice(0, lastCompact);
 		const toPrune = agent.context.slice(lastCompact, -keepCount);
@@ -212,7 +208,7 @@ export class CompactPlugin implements Plugin {
 		agent.context = [...head, ...pruned, ...tail];
 	}
 
-	ceilingCompact(agent: Agent): void {
+	ceilingCompact(agent: IAgent): void {
 		const keepCount = this.tailToKeep(agent.context);
 		const tail = agent.context.slice(-keepCount);
 		const head = agent.context.slice(0, -keepCount);
@@ -232,7 +228,7 @@ export class CompactPlugin implements Plugin {
 		];
 	}
 
-	summarizeContext(ctx: InputMessage[], agent: Agent) {
+	summarizeContext(ctx: InputMessage[], agent: IAgent) {
 		let summary = "Your context window has been compacted.\n\n<history>\nKey conversation turns:";
 
 		const calls: Record<string, ToolUse> = {};
@@ -289,5 +285,3 @@ export class CompactPlugin implements Plugin {
 		};
 	}
 }
-
-

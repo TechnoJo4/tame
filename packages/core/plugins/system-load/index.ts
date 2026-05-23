@@ -1,6 +1,5 @@
-import type { Agent } from "../../agent/agent.ts";
-import type { Plugin } from "../../agent/plugin.ts";
-import { Type } from "../../agent/tool.ts";
+import type { IAgent } from "@tame/sdk";
+import { Plugin, Type } from "@tame/sdk";
 import { promises as fs } from "node:fs";
 import type { Static } from "typebox";
 
@@ -19,8 +18,7 @@ export class SystemLoadPlugin implements Plugin {
         this.#text = Promise.all(config.prepend.map(f => fs.readFile(f, { encoding: "utf-8" }))).then(res => res.join("\n\n"));
     }
 
-    async newAgent(agent: Agent) {
+    async newAgent(agent: IAgent) {
         agent.system = (await this.#text) + agent.system;
     }
 }
-

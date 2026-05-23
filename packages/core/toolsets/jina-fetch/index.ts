@@ -1,4 +1,4 @@
-import { tool, Type } from "../../agent/tool.ts";
+import { tool, Type } from "@tame/sdk";
 
 export const web_fetch = tool({
 	name: "web_fetch",

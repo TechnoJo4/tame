@@ -1,9 +1,6 @@
 import { Type, type Static } from "typebox";
-import { Agent } from "../../agent/agent.ts";
-import { Plugin } from "../../agent/plugin.ts";
-import type { Harness } from "../../agent/harness.ts";
+import { Plugin, tameDataFolder, type IAgent, type IHarness } from "@tame/sdk";
 import type { OpsPlugin } from "../ops/index.ts";
-import { tameDataFolder } from "../../config/index.ts";
 import { resolve } from "@std/path";
 import { promises as fs } from "node:fs";
 import { spawn } from "node:child_process";
@@ -34,7 +31,6 @@ fi
 `;
 
 const setupGitConfig = async () => {
-	// Create ~/.tame/hooks/commit-msg
 	try {
 		await fs.mkdir(hooksDir, { recursive: true });
 	} catch {
@@ -49,7 +45,6 @@ const setupGitConfig = async () => {
 		return;
 	}
 
-	// Point git at our hooks directory
 	try {
 		await new Promise<void>((resolve, reject) => {
 			const proc = spawn("git", [
@@ -75,7 +70,7 @@ export class AssistedByPlugin implements Plugin {
 		this.#config = config;
 	}
 
-	buildTrailer(agent: Agent): string {
+	buildTrailer(agent: IAgent): string {
 		const model = agent.llm.defaultModel ?? "unknown";
 		let trailer = `${this.#config.agentName}:${model}`;
 		if (this.#config.extraTools.length > 0) {
@@ -84,7 +79,7 @@ export class AssistedByPlugin implements Plugin {
 		return trailer;
 	}
 
-	async init(harness: Harness) {
+	async init(harness: IHarness) {
 		await setupGitConfig();
 
 		harness.getPlugin<OpsPlugin>("ops")?.emitter.before("exec", async (e) => {

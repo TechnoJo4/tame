@@ -1,46 +1,35 @@
 import { Compile, Validator } from "typebox/compile";
 import { TSchema } from "typebox";
-import { Thread } from "../util/thread.ts";
-import { Emitter, handlerWrapperSkipErrors } from "../util/emitter.ts";
-import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason, MessageRequest, ToolResult } from "../llm/types.ts";
-import type { AnyTool, Tool } from "./tool.ts";
-import { assertSchema, ValidationError } from "../util/validate.ts";
+import {
+	Thread,
+	Emitter,
+	handlerWrapperSkipErrors,
+	ValidationError,
+	assertSchema,
+	type InferenceProvider,
+	type InputMessage,
+	type UserMessage,
+	type AssistantMessage,
+	type ToolUse,
+	type StopReason,
+	type MessageRequest,
+	type ToolResult,
+	type AnyTool,
+	type Tool,
+	type IAgent,
+	type AgentEvents,
+	type UserMessageEvent,
+	type AssistantMessageEvent,
+	type ToolResultEvent,
+	type CompletionEvent,
+	type IdleEvent,
+	type AgentStopReason,
+} from "@tame/sdk";
 
-export type AgentStopReason = StopReason | "aborted" | "error";
+export type { AgentStopReason };
+export type { UserMessageEvent, AssistantMessageEvent, ToolResultEvent, CompletionEvent, IdleEvent, AgentEvents };
 
-export interface UserMessageEvent {
-	msg: UserMessage
-};
-
-export interface AssistantMessageEvent {
-	msg: AssistantMessage
-};
-
-export interface ToolResultEvent {
-	toolUse: string;
-	error: boolean;
-	result: string;
-	resultMessageIdx: number;
-};
-
-export interface CompletionEvent {
-	retriesLeft: number;
-	req: MessageRequest;
-};
-
-export interface IdleEvent {
-	stopReason: AgentStopReason
-};
-
-export interface AgentEvents {
-	userMessage: UserMessageEvent;
-	assistantMessage: AssistantMessageEvent;
-	toolResult: ToolResultEvent;
-	completion: CompletionEvent;
-	idle: IdleEvent;
-};
-
-export class Agent extends Emitter<AgentEvents> {
+export class Agent extends Emitter<AgentEvents> implements IAgent {
 	#id: string;
 	#thread = new Thread();
 	#pendingToolCalls = new Set<string>();

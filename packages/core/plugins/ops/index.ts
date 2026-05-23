@@ -1,8 +1,4 @@
-import { Emitter } from "../../util/emitter.ts";
-import type { Agent } from "../../agent/agent.ts";
-import type { Harness } from "../../agent/harness.ts";
-import type { Plugin } from "../../agent/plugin.ts";
-import { tool, Type } from "../../agent/tool.ts";
+import { Emitter, tool, Type, type IAgent, type IHarness, type Plugin } from "@tame/sdk";
 import { promises as fs } from "node:fs";
 import { spawn } from "node:child_process";
 import process from "node:process";
@@ -499,7 +495,7 @@ export class OpsPlugin implements Plugin {
 		harness.addTools(...tools);
 	}
 
-	newAgent(agent: Agent) {
+	newAgent(agent: IAgent) {
 		setEnv(agent, this.#localEnv);
 	}
 }

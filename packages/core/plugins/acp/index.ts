@@ -1,11 +1,8 @@
 import * as acp from "npm:@agentclientprotocol/sdk";
 import { Static, Type } from "typebox";
 
-import type { Agent, AgentStopReason } from "../../agent/agent.ts";
-import type { Harness } from "../../agent/harness.ts";
-import { Plugin } from "../../agent/plugin.ts";
-import { InputContent, InputMessage, ToolResult, ToolUse } from "../../llm/types.ts";
-import { tool } from "../../agent/tool.ts";
+import type { IAgent, IHarness, Plugin, InputContent, InputMessage, ToolResult, ToolUse, AgentStopReason } from "@tame/sdk";
+import { tool } from "@tame/sdk";
 import { getAgentHistory, type HistoryPlugin } from "../history/index.ts";
 import type { CommandsPlugin } from "../commands/index.ts";
 
@@ -44,15 +41,15 @@ const stopReasonMap: Record<AgentStopReason, acp.StopReason> = {
 };
 
 export class ACPAdapter implements acp.Agent {
-	#harness: Harness;
+	#harness: IHarness;
 	#history?: HistoryPlugin;
 	#commands?: CommandsPlugin;
 	#config: Config;
 	#connection: acp.AgentSideConnection;
-	#sessions = new Map<string, Agent>();
+	#sessions = new Map<string, IAgent>();
 	#clientCaps: acp.ClientCapabilities = {};
 
-	constructor(harness: Harness, connection: acp.AgentSideConnection, config: Config) {
+	constructor(harness: IHarness, connection: acp.AgentSideConnection, config: Config) {
 		this.#harness = harness;
 		this.#connection = connection;
 		this.#config = config;
@@ -109,13 +106,13 @@ export class ACPAdapter implements acp.Agent {
 				sessions.push({
 					sessionId: sess.id,
 					title: data.title,
-					cwd: "/", // required by acp
+					cwd: "/",
 				});
 			} else {
 				sessions.push({
 					sessionId: sess.id,
 					title: sess.title,
-					cwd: "/", // required by acp
+					cwd: "/",
 				});
 			}
 		}
@@ -132,7 +129,6 @@ export class ACPAdapter implements acp.Agent {
 
 		const content = this.#contentFromACP(params.prompt);
 
-		// Check for slash commands when the commands plugin is enabled
 		const firstText = content.find(c => c.type === "text");
 		if (this.#commands && firstText?.text?.startsWith("/")) {
 			agent.context.push({ role: "user", content });
@@ -181,7 +177,7 @@ export class ACPAdapter implements acp.Agent {
 		agent.abort();
 	}
 
-	#setupAgent(agent: Agent) {
+	#setupAgent(agent: IAgent) {
 		this.#sessions.set(agent.id, agent);
 
 		if (this.#config.tools) {
@@ -355,7 +351,7 @@ export class ACPAdapter implements acp.Agent {
 		}
 		return [ { type: "text", text } ];
 	}
-};
+}
 
 export class ACPPlugin implements Plugin {
 	id = "acp" as const;
@@ -366,7 +362,7 @@ export class ACPPlugin implements Plugin {
 		this.#config = config;
 	}
 
-	async init(harness: Harness) {
+	async init(harness: IHarness) {
 		let listener: Deno.TcpListener | Deno.UnixListener;
 		if (this.#config.listen.transport === "unix") {
 			try { await Deno.remove(this.#config.listen.path); } catch {

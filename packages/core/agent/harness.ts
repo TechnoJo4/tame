@@ -1,10 +1,8 @@
 import { Agent } from "./agent.ts";
-import { InferenceProvider } from "../llm/types.ts";
-import { Plugin } from "./plugin.ts";
-import { AnyTool } from "./tool.ts";
+import type { InferenceProvider, Plugin, AnyTool, IHarness } from "@tame/sdk";
 import { config, system as configSystem } from "../config/index.ts";
 
-export class Harness {
+export class Harness implements IHarness {
 	#tools: AnyTool[] = [];
 	#plugins = new Map<string, Plugin>();
 	#agents = new Map<string, WeakRef<Agent>>();

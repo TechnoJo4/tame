@@ -1,11 +1,6 @@
-import type { Plugin } from "../../agent/plugin.ts";
-import type { Agent } from "../../agent/agent.ts";
+import { Plugin, tameDataFolder, tameMsgMeta, type IAgent, type IHarness, type InputMessage, type TameMessageMeta } from "@tame/sdk";
 import { promises as fs } from "node:fs";
 import { resolve } from "@std/path";
-import { tameDataFolder } from "../../config/index.ts";
-import type { Harness } from "../../agent/harness.ts";
-import { InputMessage, TameMessageMeta } from "../../llm/types.ts";
-import { tameMsgMeta } from "../../util/symbols.ts";
 
 const historyFolder = resolve(tameDataFolder, "history");
 const indexFile = resolve(historyFolder, "index.json");
@@ -39,7 +34,7 @@ export type PersistedHistory = History & {
 export interface HistoryAgentData {
 	title?: string;
 	history: InputMessage[];
-};
+}
 
 export const messageToPersisted = (msg: InputMessage): PersistedMessage => ({
 	...msg,
@@ -52,7 +47,7 @@ export const messageFromPersisted = (msg: PersistedMessage): InputMessage => ({
 	[tameMsgMeta]: msg?._tame
 });
 
-export const getAgentHistory = (agent: Agent): HistoryAgentData => {
+export const getAgentHistory = (agent: IAgent): HistoryAgentData => {
 	if (!agent.pluginData.has(dataKey))
 		agent.pluginData.set(dataKey, {
 			history: []
@@ -61,19 +56,19 @@ export const getAgentHistory = (agent: Agent): HistoryAgentData => {
 }
 
 export interface HistoryHook<T> {
-	save(agent: Agent): T;
-	load(agent: Agent, t: T): void;
-};
+	save(agent: IAgent): T;
+	load(agent: IAgent, t: T): void;
+}
 
 export class HistoryPlugin implements Plugin {
 	id = "history" as const;
 
-	#harness: Harness | undefined;
+	#harness: IHarness | undefined;
 	#hooks = new Map<string, HistoryHook<unknown>>();
 
 	enabled?: true;
 
-	async init(harness: Harness) {
+	async init(harness: IHarness) {
 		this.#harness = harness;
 		try {
 			await fs.access(historyFolder);
@@ -83,7 +78,7 @@ export class HistoryPlugin implements Plugin {
 		}
 	}
 
-	newAgent(agent: Agent) {
+	newAgent(agent: IAgent) {
 		agent.after("userMessage", async (e) => {
 			const hist = getAgentHistory(agent);
 			if (!hist.title) {
@@ -114,7 +109,7 @@ export class HistoryPlugin implements Plugin {
 		this.#hooks.set(key, hook);
 	}
 
-	async saveAgent(agent: Agent) { // TODO: debounce (use own thread?)
+	async saveAgent(agent: IAgent) {
 		const data = getAgentHistory(agent);
 		const path = resolve(historyFolder, agent.id);
 		const history: History = {
@@ -125,9 +120,9 @@ export class HistoryPlugin implements Plugin {
 			extra: Object.fromEntries(this.#hooks.entries().map(([k,v]) => [k, v.save(agent)]))
 		};
 		await fs.writeFile(path, JSON.stringify(history), { encoding: "utf-8" })
-	};
+	}
 
-	async updateIndex(...agents: Agent[]) {
+	async updateIndex(...agents: IAgent[]) {
 		const data = await fs.readFile(indexFile, { encoding: "utf-8" });
 		const index: SessionInfo[] = JSON.parse(data);
 		for (const agent of agents) {
@@ -138,7 +133,7 @@ export class HistoryPlugin implements Plugin {
 				index.push({ id: agent.id, title: getAgentHistory(agent).title });
 		}
 		await fs.writeFile(indexFile, JSON.stringify(index), { encoding: "utf-8" })
-	};
+	}
 
 	async list(): Promise<SessionInfo[]> {
 		const data = await fs.readFile(indexFile, { encoding: "utf-8" });
@@ -148,7 +143,7 @@ export class HistoryPlugin implements Plugin {
 			if (file.isFile() && file.name !== "index.json" && !index.find(s => s.id === file.name))
 				index.push({ id: file.name });
 		return index;
-	};
+	}
 
 	async load(id: string): Promise<History> {
 		const json = await fs.readFile(resolve(historyFolder, id), { encoding: "utf-8" });
@@ -158,13 +153,13 @@ export class HistoryPlugin implements Plugin {
 			context: data.context.map(messageFromPersisted),
 			history: data.history.map(messageFromPersisted),
 		};
-	};
+	}
 
-	async loadAgent(id: string): Promise<Agent> {
+	async loadAgent(id: string): Promise<IAgent> {
 		return await this.historyToAgent(await this.load(id));
-	};
+	}
 
-	async historyToAgent(history: History): Promise<Agent> {
+	async historyToAgent(history: History): Promise<IAgent> {
 		const agent = this.#harness!.newAgent(undefined, history.system, history.id);
 		agent.context = history.context;
 		Object.assign(getAgentHistory(agent), {
@@ -183,7 +178,5 @@ export class HistoryPlugin implements Plugin {
 
 		await this.updateIndex(agent);
 		return agent;
-	};
+	}
 }
-
-

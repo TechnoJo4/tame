@@ -2,12 +2,7 @@ import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
 import { Static, TSchema, Type } from "typebox";
 import { parseLLM, llmConfig } from "./provider.ts";
-import { InferenceProvider } from "../llm/types.ts";
-import { readConfig } from "./validate.ts";
-
-export const tameDataFolder = Deno.env.has("TAME_DATA")
-	? resolve(Deno.env.get("TAME_DATA")!)
-	: resolve(Deno.env.get("HOME") ?? ".", ".tame");
+import { InferenceProvider, readTameConfig, tameDataFolder } from "@tame/sdk";
 
 export const configSchema = Type.Object({
 	llm: llmConfig,
@@ -27,10 +22,6 @@ export const parseConfig = (o: Static<typeof configSchema>): Config => {
 		toolsets: o.toolsets,
 		plugins: o.plugins,
 	};
-};
-
-export const readTameConfig = <T extends TSchema>(path: string, schema: T): Static<T> => {
-	return readConfig(resolve(tameDataFolder, path), schema);
 };
 
 export const config = parseConfig(readTameConfig("config.json", configSchema));

@@ -1,9 +1,7 @@
 import { Type, Static } from "typebox";
 import { Compile } from "typebox/compile";
-import { Plugin } from "../../agent/plugin.ts";
-import type { Harness } from "../../agent/harness.ts";
+import { Plugin, assertSchema, type IHarness } from "@tame/sdk";
 import { RPCPlugin, RPCMessage, Stream, messagesSchema } from "../rpc/index.ts";
-import { assertSchema } from "../../util/validate.ts";
 
 export const configSchema = Type.Object({
 	listen: Type.Object({
@@ -64,7 +62,7 @@ export class RPCWSPlugin implements Plugin {
 		this.#config = config;
 	}
 
-	init(harness: Harness) {
+	init(harness: IHarness) {
 		const rpc = harness.getPlugin<RPCPlugin>("rpc");
 		if (!rpc) throw new Error("rpc-ws requires the rpc plugin");
 

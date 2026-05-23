@@ -1,10 +1,10 @@
-import type { Agent } from "../../agent/agent.ts";
-import { Plugin } from "../../agent/plugin.ts";
+import type { IAgent } from "@tame/sdk";
+import { Plugin } from "@tame/sdk";
 
 export default {
 	id: "debug",
 
-	newAgent(agent: Agent) {
+	newAgent(agent: IAgent) {
 		agent.after("assistantMessage", async (e) => {
 			console.log(e.msg);
 			return e;

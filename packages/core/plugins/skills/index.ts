@@ -1,12 +1,7 @@
 import { resolve } from "@std/path";
 import { promises as fs } from "node:fs";
-import { Plugin } from "../../agent/plugin.ts";
-import { tool, Type } from "../../agent/tool.ts";
-import { tameDataFolder } from "../../config/index.ts";
-import { Agent } from "../../agent/agent.ts";
-import { tameMsgMeta } from "../../util/symbols.ts";
+import { Plugin, tool, Type, tameDataFolder, tameMsgMeta, type IAgent, type IHarness } from "@tame/sdk";
 import type { CommandsPlugin } from "../commands/index.ts";
-import type { Harness } from "../../agent/harness.ts";
 import type { Static } from "typebox";
 
 const home = Deno.env.get("HOME");
@@ -79,8 +74,6 @@ const parseFrontmatter = (content: string): { frontmatter: Frontmatter; body: st
 		}
 
 		if (key === "metadata") {
-			// metadata is a nested block in YAML; it won't parse line-by-line.
-			// For now, skip — we don't strictly need it.
 			continue;
 		}
 
@@ -224,12 +217,12 @@ export class SkillsPlugin implements Plugin {
 		return [...this.#skills.values()];
 	}
 
-	isSkillActivated(agent: Agent, name: string): boolean {
+	isSkillActivated(agent: IAgent, name: string): boolean {
 		const data = agent.pluginData.get(dataKey) as AgentSkillsData | undefined;
 		return data?.activated.has(name) ?? false;
 	}
 
-	injectSkillContent(agent: Agent, skill: Skill, automated: boolean = true, args?: Record<string, string>): void {
+	injectSkillContent(agent: IAgent, skill: Skill, automated: boolean = true, args?: Record<string, string>): void {
 		const content = buildActivationResult(skill, args);
 
 		agent.context.push({
@@ -246,7 +239,7 @@ export class SkillsPlugin implements Plugin {
 		data.activated.add(skill.name);
 	}
 
-	removeSkillContent(agent: Agent, skillName: string): void {
+	removeSkillContent(agent: IAgent, skillName: string): void {
 		for (const msg of agent.context) {
 			if (msg[tameMsgMeta]?.skill === skillName) {
 				msg[tameMsgMeta] = { ...msg[tameMsgMeta], noCompact: undefined };
@@ -257,7 +250,7 @@ export class SkillsPlugin implements Plugin {
 		data.activated.delete(skillName);
 	}
 
-	async init(harness: Harness) {
+	async init(harness: IHarness) {
 		const discovered = await this.discoverSkills();
 		for (const [name, skill] of discovered) {
 			this.#skills.set(name, skill);
@@ -335,12 +328,12 @@ export class SkillsPlugin implements Plugin {
 					this.removeSkillContent(agent, name);
 				}
 
-				this.injectSkillContent(agent, skill, false); // user-driven, so not automated
+				this.injectSkillContent(agent, skill, false);
 			},
 		});
 	}
 
-	newAgent(agent: Agent) {
+	newAgent(agent: IAgent) {
 		agent.pluginData.set(dataKey, {
 			activated: new Set<string>(),
 		});
@@ -359,5 +352,3 @@ export class SkillsPlugin implements Plugin {
 		});
 	}
 }
-
-

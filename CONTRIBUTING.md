@@ -8,13 +8,13 @@ tame is a minimal ai agent harness written in typescript targeting the deno runt
 
 core concepts:
 
-- **harness** (`agent/harness.ts`): singleton that holds tools + plugins, creates agents. one harness per process.
-- **thread** (`util/thread.ts`): abortable work queue. serializes async functions.
-- **emitter** (`util/emitter.ts`): thread-based event queue. event handler (`T => Promise<T>`) can be added `before`, `after`, `once`. handlers modify event data. `fire` just adds to queue (non-blocking), `do` waits and returns the final modified event.
-- **agent** (`agent/agent.ts`): a single conversation session. owns the message context, an llm provider, tools, and plugin data. extends emitter, events: `userMessage`, `completion`, `assistantMessage`, `toolResult`, `idle`.
-- **plugin** (`agent/plugin.ts`): hooks into `init(harness)` and `newAgent(agent)`. plugins register tools, add event handlers, and store data in `agent.pluginData`.
-- **tool** (`agent/tool.ts`): name, description, typebox args schema, exec function, optional view functions (for e.g. compaction, acp rendering).
-- **llm provider** (`llm/types.ts`): implements `complete(req, signal?) -> AssistantMessage`. wrapped with rate limiters and request data injectors.
+- **harness** (`packages/core/agent/harness.ts`): singleton that holds tools + plugins, creates agents. one harness per process.
+- **thread** (`packages/sdk/util/thread.ts`): abortable work queue. serializes async functions.
+- **emitter** (`packages/sdk/util/emitter.ts`): thread-based event queue. event handler (`T => Promise<T>`) can be added `before`, `after`, `once`. handlers modify event data. `fire` just adds to queue (non-blocking), `do` waits and returns the final modified event.
+- **agent** (`packages/core/agent/agent.ts`): a single conversation session. owns the message context, an llm provider, tools, and plugin data. extends emitter, events: `userMessage`, `completion`, `assistantMessage`, `toolResult`, `idle`.
+- **plugin** (`packages/sdk/agent/plugin.ts`): hooks into `init(harness)` and `newAgent(agent)`. plugins register tools, add event handlers, and store data in `agent.pluginData`.
+- **tool** (`packages/sdk/agent/tool.ts`): name, description, typebox args schema, exec function, optional view functions (for e.g. compaction, acp rendering).
+- **llm provider** (`packages/sdk/llm/types.ts`): `InferenceProvider` interface. implements `complete(req, signal?) -> AssistantMessage`. wrapped with rate limiters and request data injectors.
 - **ratelimiter** (`ratelimit/ratelimit.ts`): `error()`, `success()`, `retryAfter(date)`, `delay()`, `wait()`.
 
 the agent event lifecycle:
@@ -36,30 +36,42 @@ tame/
 ├── deno.json             # workspace root: shared imports, lint, fmt
 ├── deno.lock             # shared lockfile
 ├── packages/
-│   ├── core/             # @tame/core — agent, harness, llm, plugins
-│   │   ├── index.ts          # entry point
-│   │   ├── agent/            # agent, harness, plugin/tool interfaces
-│   │   ├── config/           # config loading & llm provider parsing
-│   │   ├── llm/              # inference provider implementations
-│   │   ├── ratelimit/        # rate limiter implementations
-│   │   ├── plugins/          # one directory per plugin
-│   │   │   ├── acp/          # agent client protocol
-│   │   │   ├── assisted-by/  # git assisted-by trailer
-│   │   │   ├── commands/     # slash command registry
-│   │   │   ├── compact/      # context compaction
-│   │   │   ├── debug/        # debug logging
-│   │   │   ├── history/      # session persistence
-│   │   │   ├── memory/       # remember/forget tools
-│   │   │   ├── ops/          # file & shell operations
-│   │   │   ├── rpc/          # json-based rpc
-│   │   │   ├── rpc-ws/       # websocket rpc transport
-│   │   │   ├── skills/       # agent skills
-│   │   │   └── system-load/  # system prompt prepend
-│   │   ├── toolsets/         # standalone tool collections
-│   │   │   ├── jina-fetch/   # web page fetching
-│   │   │   └── tavily-search/# web search
+│   ├── sdk/              # @tame/sdk — interfaces, types, utilities
+│   │   ├── mod.ts            # re-exports everything
+│   │   ├── agent/
+│   │   │   ├── interfaces.ts # IAgent, IHarness, event types
+│   │   │   ├── plugin.ts     # Plugin interface
+│   │   │   └── tool.ts       # Tool, AnyTool, tool()
+│   │   ├── config/
+│   │   │   ├── index.ts      # tameDataFolder, readTameConfig
+│   │   │   └── validate.ts   # readConfig
+│   │   ├── llm/
+│   │   │   └── types.ts      # message types, InferenceProvider
 │   │   └── util/             # emitter, thread, validation, symbols
-│   └── sdk/              # @tame/sdk (to be populated)
+│   └── core/             # @tame/core — implementations + plugins
+│       ├── index.ts          # entry point
+│       ├── agent/            # Agent, Harness implementations
+│       ├── config/           # config parsing, llm provider setup
+│       ├── llm/              # inference provider implementations
+│       ├── ratelimit/        # rate limiter implementations
+│       ├── plugins/          # one directory per plugin
+│       │   ├── acp/          # agent client protocol
+│       │   ├── assisted-by/  # git assisted-by trailer
+│       │   ├── commands/     # slash command registry
+│       │   ├── compact/      # context compaction
+│       │   ├── debug/        # debug logging
+│       │   ├── history/      # session persistence
+│       │   ├── memory/       # remember/forget tools
+│       │   ├── ops/          # file & shell operations
+│       │   ├── rpc/          # json-based rpc
+│       │   ├── rpc-ws/       # websocket rpc transport
+│       │   ├── skills/       # agent skills
+│       │   └── system-load/  # system prompt prepend
+│       ├── toolsets/         # standalone tool collections
+│       │   ├── jina-fetch/   # web page fetching
+│       │   └── tavily-search/# web search
+│       ├── schemas/          # generated plugin config schemas
+│       └── scripts/          # utility scripts
 └── .docs/                # design docs
 ```
 
@@ -78,20 +90,17 @@ plugins communicate via `harness.getPlugin<T>(id)`. this is the intended interop
 1. create `plugins/<name>/index.ts`:
 
 ```ts
-import { Plugin } from "../../agent/plugin.ts";
-import { Harness } from "../../agent/harness.ts";
-import { Agent } from "../../agent/agent.ts";
-import { tool, Type } from "../../agent/tool.ts";
+import { Plugin, tool, Type, type IAgent, type IHarness } from "@tame/sdk";
 
 export class MyPlugin implements Plugin {
     id = "my-plugin" as const;
 
-    async init(harness: Harness) {
+    async init(harness: IHarness) {
         // register tools, hook into other plugins
         harness.addTools(myTool);
     }
 
-    newAgent(agent: Agent) {
+    newAgent(agent: IAgent) {
         // per-agent setup: add event handlers, init pluginData
         agent.pluginData.set(someKey, {});
     }
@@ -101,7 +110,7 @@ export class MyPlugin implements Plugin {
 2. create `plugins/<name>/main.ts`:
 
 ```ts
-import { readTameConfig } from "../../config/index.ts";
+import { readTameConfig } from "@tame/sdk";
 import { configSchema, MyPlugin } from "./index.ts";
 
 export default new MyPlugin(readTameConfig("my-plugin.json", configSchema));
@@ -119,7 +128,12 @@ use typebox for config schemas. plugins that need config should export `configSc
 
 ## dependencies
 
-managed via `deno.json` imports:
+the repo is split into two packages:
+
+- **@tame/sdk** — interfaces, types, and utilities that plugins depend on. no heavy deps.
+- **@tame/core** — the agent harness implementation, llm providers, rate limiters, and built-in plugins. depends on @tame/sdk.
+
+shared deps managed via root `deno.json` imports:
 
 | import | source | purpose |
 |--------|--------|---------|
