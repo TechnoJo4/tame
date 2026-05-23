@@ -97,7 +97,7 @@ export class RPCController {
 			this.agentId = agent.id;
 			this.#host.loading = false;
 			this.#host.requestUpdate();
-			this.#subscribe();
+			this.#subscribeTo(this.agentId);
 		} catch (e) {
 			this.#host.error = e instanceof Error ? e.message : String(e);
 			this.#host.loading = false;
@@ -105,14 +105,16 @@ export class RPCController {
 		}
 	}
 
-	#subscribe() {
-		if (!this.#client || !this.agentId) return;
+	#subscribeTo(agentId: string) {
+		if (!this.#client) return;
 
 		const on = (event: string, handler: (data: Record<string, unknown>) => void) => {
 			this.#unsubs.push(
-				this.#client.subscribe({ agent_id: this.agentId, event }, (msg) =>
-					handler(msg.data as Record<string, unknown>),
-				),
+				this.#client!.subscribe({ agent_id: agentId, event }, (msg) => {
+					// only apply events for the currently-viewed agent
+					if (msg.agent_id !== this.agentId) return;
+					handler(msg.data as Record<string, unknown>);
+				}),
 			);
 		};
 
@@ -126,10 +128,32 @@ export class RPCController {
 		});
 		on("toolResult", (d) => {
 			applyToolResult(this.#host.items, d);
-			// mutation was in-place — bump reference so lit detects the change
 			this.#host.items = [...this.#host.items];
 			this.#host.requestUpdate();
 		});
+	}
+
+	/** Switch the displayed thread to a different agent. Keeps the old
+	 *  agent's subscriptions alive (the agent stays in memory server-side). */
+	async switchAgent(id: string) {
+		if (!this.#client) return;
+		if (id === this.agentId) return;
+
+		// fetch context and populate the thread
+		const ctx = await this.#client.call("@tame", "getAgentContext", { id });
+		this.agentId = id;
+		this.#host.items = contextToItems(ctx.context as RawMessage[]);
+		this.#host.requestUpdate();
+
+		// subscribe to live events for this agent
+		this.#subscribeTo(id);
+	}
+
+	/** Create a fresh agent and switch to it. */
+	async newChat(system?: string) {
+		if (!this.#client) return;
+		const agent = await this.#client.newAgent({ system });
+		await this.switchAgent(agent.id);
 	}
 
 	send(text: string) {
@@ -171,6 +195,11 @@ interface RawBlock {
 	input?: Record<string, unknown>;
 }
 
+interface RawMessage {
+	role: string;
+	content: RawBlock[];
+}
+
 function userItem(data: { msg: { content: RawBlock[] } }): MessageItem {
 	const content: TextOrThinking[] = [];
 	for (const c of data.msg.content) {
@@ -180,12 +209,31 @@ function userItem(data: { msg: { content: RawBlock[] } }): MessageItem {
 }
 
 function assistantItems(data: { msg: { content: RawBlock[] } }): ThreadItem[] {
+	return rawBlocksToItems(data.msg.content);
+}
+
+function contextToItems(messages: RawMessage[]): ThreadItem[] {
+	const items: ThreadItem[] = [];
+	for (const msg of messages) {
+		if (msg.role === "user") {
+			const content: TextOrThinking[] = [];
+			for (const c of msg.content) {
+				if (c.type === "text") content.push({ type: "text", text: c.text! });
+			}
+			if (content.length > 0) items.push({ type: "message", role: "user", content });
+		} else {
+			items.push(...rawBlocksToItems(msg.content));
+		}
+	}
+	return items;
+}
+
+function rawBlocksToItems(blocks: RawBlock[]): ThreadItem[] {
 	const items: ThreadItem[] = [];
 	const textBlocks: TextOrThinking[] = [];
 
-	for (const c of data.msg.content) {
+	for (const c of blocks) {
 		if (c.type === "tool_use") {
-			// flush pending text blocks as a message
 			if (textBlocks.length > 0) {
 				items.push({ type: "message", role: "assistant", content: [...textBlocks] });
 				textBlocks.length = 0;
@@ -196,6 +244,17 @@ function assistantItems(data: { msg: { content: RawBlock[] } }): ThreadItem[] {
 				name: c.name!,
 				input: c.input!,
 			});
+			// tool results for this call are already in the context, paired up below
+		} else if (c.type === "tool_result") {
+			// find the matching tool_call and attach the result
+			for (let i = items.length - 1; i >= 0; i--) {
+				const item = items[i];
+				if (item.type === "tool_call" && item.id === (c as any).tool_use_id) {
+					item.result = (c as any).content ?? (c as any).result;
+					item.isError = !!(c as any).is_error;
+					break;
+				}
+			}
 		} else if (c.type === "text") {
 			textBlocks.push({ type: "text", text: c.text! });
 		} else if (c.type === "thinking") {
@@ -203,7 +262,6 @@ function assistantItems(data: { msg: { content: RawBlock[] } }): ThreadItem[] {
 		}
 	}
 
-	// trailing text blocks
 	if (textBlocks.length > 0) {
 		items.push({ type: "message", role: "assistant", content: [...textBlocks] });
 	}
@@ -212,7 +270,6 @@ function assistantItems(data: { msg: { content: RawBlock[] } }): ThreadItem[] {
 }
 
 function applyToolResult(items: ThreadItem[], data: { toolUse: string; error: boolean; result: string }) {
-	// walk backwards to find the matching tool_call (most recent first)
 	for (let i = items.length - 1; i >= 0; i--) {
 		const item = items[i];
 		if (item.type === "tool_call" && item.id === data.toolUse) {
