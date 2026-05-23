@@ -14,17 +14,10 @@ export class TameSidebar extends LitElement {
 	createRenderRoot() { return this; }
 
 	render() {
-		if (this.collapsed) {
-			return html`<button class="toggle" @click=${this.#toggle} title="expand sidebar">☰</button>`;
-		}
+		if (this.collapsed) return html``;
 		const placements = this.controller?.getPlacements("panel:sidebar") ?? [];
-		return html`
-			<button class="toggle" @click=${this.#toggle} title="collapse sidebar">☰</button>
-			${placements.map((p) => this.#renderPlacement(p))}
-		`;
+		return html`${placements.map((p) => this.#renderPlacement(p))}`;
 	}
-
-	#toggle() { this.collapsed = !this.collapsed; }
 
 	#renderPlacement(p: { tag: string; props?: Record<string, unknown> }) {
 		const src = this.controller.getComponentSrc(p.tag);
@@ -39,3 +32,21 @@ export class TameSidebar extends LitElement {
 	}
 }
 customElements.define("tame-sidebar", TameSidebar);
+
+// ---- toggle button (sibling to sidebar in the layout) ----
+
+export class TameSidebarToggle extends LitElement {
+	static properties = { collapsed: { type: Boolean } };
+	declare collapsed: boolean;
+
+	createRenderRoot() { return this; }
+
+	render() {
+		return html`<button class="toggle" @click=${this.#fire} title="${this.collapsed ? "expand" : "collapse"} sidebar">☰</button>`;
+	}
+
+	#fire() {
+		this.dispatchEvent(new CustomEvent("tame:sidebar-toggle", { bubbles: true, composed: true }));
+	}
+}
+customElements.define("tame-sidebar-toggle", TameSidebarToggle);

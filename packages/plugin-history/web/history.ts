@@ -12,12 +12,15 @@ export class TameHistory extends LitElement {
 
 	#sessions: SessionInfo[] = [];
 	#loading = true;
+	#loaded = false;
 
 	createRenderRoot() { return this; }
 
-	connectedCallback() {
-		super.connectedCallback();
-		this.#load();
+	updated(changed: Map<string, unknown>) {
+		if (changed.has("controller") && this.controller?.client && !this.#loaded) {
+			this.#loaded = true;
+			this.#load();
+		}
 	}
 
 	async #load() {
