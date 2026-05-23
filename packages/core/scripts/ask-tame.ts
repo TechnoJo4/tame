@@ -2,9 +2,42 @@
 // to finish, then print the last assistant message to stdout.
 //
 // Usage: deno run -A scripts/ask-tame.ts "your message here"
-//        echo "your message" | deno run -A scripts/ask-tame.ts
+//        deno run -A scripts/ask-tame.ts --system-file review.txt "your message"
+//        echo "your message" | deno run -A scripts/ask-tame.ts --system "you are a reviewer"
 
 const WS_URL = Deno.env.get("TAME_WS_URL") ?? "ws://127.0.0.1:6701";
+
+function parseArgs(args: string[]): { system?: string; message: string } {
+	let system: string | undefined;
+	const positional: string[] = [];
+	let i = 0;
+	while (i < args.length) {
+		if (args[i] === "--system-file") {
+			i++;
+			if (i >= args.length) {
+				console.error("ask-tame: --system-file requires a path argument");
+				Deno.exit(1);
+			}
+			try {
+				system = Deno.readTextFileSync(args[i]);
+			} catch (e) {
+				console.error(`ask-tame: failed to read system file ${args[i]}: ${e instanceof Error ? e.message : e}`);
+				Deno.exit(1);
+			}
+		} else if (args[i] === "--system") {
+			i++;
+			if (i >= args.length) {
+				console.error("ask-tame: --system requires a string argument");
+				Deno.exit(1);
+			}
+			system = args[i];
+		} else {
+			positional.push(args[i]);
+		}
+		i++;
+	}
+	return { system, message: positional.join(" ") };
+}
 
 interface TextContent {
 	type: "text";
@@ -53,9 +86,8 @@ function resolvers<T>() {
 }
 
 async function main() {
-	const message = Deno.args.length > 0
-		? Deno.args.join(" ")
-		: await readStdin();
+	const { system, message: rawMessage } = parseArgs(Deno.args);
+	const message = rawMessage || await readStdin();
 
 	if (!message.trim()) {
 		console.error("ask-tame: no message provided (args or stdin)");
@@ -133,7 +165,7 @@ async function main() {
 		type: "call",
 		id: "new-agent",
 		call: "newAgent",
-		args: {},
+		args: system ? { system } : {},
 	}));
 
 	await done;
