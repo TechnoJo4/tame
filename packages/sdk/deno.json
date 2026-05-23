@@ -1,5 +1,9 @@
 {
 	"name": "@tame/sdk",
 	"version": "0.1.0",
-	"exports": "./mod.ts"
+	"exports": {
+		".": "./mod.ts",
+		"./util/string-enum": "./util/string-enum.ts",
+		"./util/validate": "./util/validate.ts"
+	}
 }

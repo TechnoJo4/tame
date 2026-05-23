@@ -80,6 +80,7 @@ console.log("bundling typebox + typebox/compile...");
 const typeboxEntry = `${buildDir}/typebox-combined.entry.ts`;
 Deno.writeTextFileSync(typeboxEntry, [
 	`export * from "typebox";`,
+	`export { default } from "typebox";`,
 	`export { Compile, Code, Validator } from "typebox/compile";`,
 	`export { default as compileDefault } from "typebox/compile";`,
 	``,
