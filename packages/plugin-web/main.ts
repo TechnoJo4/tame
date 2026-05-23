@@ -1,3 +1,7 @@
-import { WebPlugin } from "./index.ts";
+import { readTameConfig } from "@tame/sdk";
+import { configSchema, WebPlugin } from "./index.ts";
 
-export default new WebPlugin(import.meta.dirname! + "/static");
+export { configSchema } from "./index.ts";
+
+const config = readTameConfig("web.json", configSchema);
+export default new WebPlugin(config);
