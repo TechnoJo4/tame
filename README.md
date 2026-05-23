@@ -9,9 +9,30 @@ minimal harness for people who don't care to larp as terminal users
 - multi-provider routing
 - nothing else
 
+## packages
+
+| package | description |
+|---------|-------------|
+| `@tame/sdk` | interfaces, types, utilities — what plugins depend on |
+| `@tame/core` | agent harness, llm providers, rate limiters |
+| `@tame/plugin-acp` | [Agent Client Protocol](https://agentclientprotocol.com/) over tcp or unix socket |
+| `@tame/plugin-assisted-by` | inject `Assisted-by:` git trailer |
+| `@tame/plugin-commands` | slash commands |
+| `@tame/plugin-compact` | context compaction |
+| `@tame/plugin-debug` | debug logging |
+| `@tame/plugin-history` | session persistence |
+| `@tame/plugin-jina-fetch` | web page fetching via Jina Reader |
+| `@tame/plugin-memory` | per-session memory |
+| `@tame/plugin-ops` | file read/write/edit + shell execution |
+| `@tame/plugin-rpc` | json-based rpc |
+| `@tame/plugin-rpc-ws` | websocket rpc transport |
+| `@tame/plugin-skills` | [Agent Skills](https://agentskills.io) |
+| `@tame/plugin-system-load` | prepend files to system prompt |
+| `@tame/plugin-tavily-search` | web search via Tavily |
+
 ## config
 
-minimal config.json:
+minimal `~/.tame/config.json`:
 
 ```json
 {
@@ -31,31 +52,14 @@ minimal config.json:
             }
         ]
     },
-    "toolsets": [
-        "tavily-search",
-        "jina-fetch"
-    ],
     "plugins": [
-        "ops",
-        "acp",
-        "compact",
-        "history",
-        "memory"
+        "@tame/plugin-ops",
+        "@tame/plugin-acp",
+        "@tame/plugin-compact",
+        "@tame/plugin-history",
+        "@tame/plugin-memory"
     ]
 }
 ```
 
-one file per plugin, see plugin readmes.
-
-## plugins
-
-| plugin | description |
-|--------|-------------|
-| `ops` | file read/write/edit + shell execution |
-| `acp` | [Agent Client Protocol](https://agentclientprotocol.com/) over tcp or unix socket |
-| `assisted-by` | inject `Assisted-by:` git trailer |
-| `commands` | slash commands |
-| `compact` | context compaction |
-| `history` | session persistence |
-| `memory` | per-session memory |
-| `skills` | [Agent Skills](https://agentskills.io) |
+see [CONTRIBUTING.md](CONTRIBUTING.md) for plugin config details and development setup.

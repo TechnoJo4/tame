@@ -1,7 +1,7 @@
 set dotenv-load
 
 run:
-    deno run -A .\index.ts
+    deno run -A ./packages/core/index.ts
 
 gen-schemas:
-    deno run -A ./scripts/gen-plugin-schemas.ts
+    deno run -A ./packages/core/scripts/gen-plugin-schemas.ts
