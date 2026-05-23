@@ -7,7 +7,7 @@ import type { RPCPlugin } from "@tame/plugin-rpc/index";
 
 export interface ComponentDef {
 	tag: string;
-	src: string; // absolute filesystem path, served as /static/plugins/<plugin>/<basename>
+	src: string; // absolute filesystem path, .ts or .js
 }
 
 export interface Placement {
@@ -46,9 +46,11 @@ export class WebPlugin implements Plugin {
 	#placements: Placement[] = [];
 	#harness: IHarness | undefined;
 	#config: WebConfig;
+	#buildDir: string;
 
 	constructor(config: WebConfig) {
 		this.#config = config;
+		this.#buildDir = `${config.staticDir}/../.build`;
 	}
 
 	/** Resolve a component path relative to the calling plugin's directory. */
@@ -58,12 +60,50 @@ export class WebPlugin implements Plugin {
 
 	/** Register components and placements for a plugin. Called during init(). */
 	register(pluginId: string, components: ComponentDef[], placements: Placement[]): void {
+		const tsFiles: { src: string; tag: string }[] = [];
+
 		for (const c of components) {
-			const basename = c.src.split("/").pop()!;
-			const url = `/static/plugins/${pluginId}/${basename}`;
-			this.#components.set(c.tag, { src: c.src, url });
+			if (c.src.endsWith(".ts")) {
+				tsFiles.push({ src: c.src, tag: c.tag });
+			} else {
+				const basename = c.src.split("/").pop()!;
+				const url = `/static/plugins/${pluginId}/${basename}`;
+				this.#components.set(c.tag, { src: c.src, url });
+			}
 		}
+
+		if (tsFiles.length > 0) {
+			this.#transpile(pluginId, tsFiles);
+		}
+
 		this.#placements.push(...placements);
+	}
+
+	/** Transpile .ts component files to .js using esbuild. No bundling — just
+	 *  strip types and convert to ESM. Output goes to .build/plugins/<id>/. */
+	#transpile(pluginId: string, files: { src: string; tag: string }[]): void {
+		const outDir = `${this.#buildDir}/plugins/${pluginId}`;
+		try { Deno.mkdirSync(outDir, { recursive: true }); } catch { /* exists */ }
+
+		const args = [
+			...files.map((f) => f.src),
+			`--outdir=${outDir}`,
+			"--format=esm",
+		];
+
+		const proc = new Deno.Command("esbuild", { args, stdout: "null", stderr: "null" });
+		const { code } = proc.outputSync();
+		if (code !== 0) {
+			console.warn(`plugin-web: esbuild failed for plugin ${pluginId}, skipping transpile`);
+			return;
+		}
+
+		for (const { src, tag } of files) {
+			const basename = src.split("/").pop()!.replace(/\.ts$/, ".js");
+			const outPath = `${outDir}/${basename}`;
+			const url = `/static/plugins/${pluginId}/${basename}`;
+			this.#components.set(tag, { src: outPath, url });
+		}
 	}
 
 	async init(harness: IHarness) {
