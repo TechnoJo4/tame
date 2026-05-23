@@ -1,5 +1,5 @@
 import type { IAgent } from "@tame/sdk";
-import { Plugin } from "@tame/sdk";
+import type { Plugin } from "@tame/sdk";
 
 export interface Command {
     name: string;

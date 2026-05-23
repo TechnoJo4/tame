@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { TSchema, Static } from "typebox";
+import type { TSchema, Static } from "typebox";
 import { readConfig } from "./validate.ts";
 
 export const tameDataFolder = Deno.env.has("TAME_DATA")

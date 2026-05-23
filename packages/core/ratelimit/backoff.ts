@@ -1,4 +1,4 @@
-import { Ratelimiter } from "./ratelimit.ts";
+import type { Ratelimiter } from "./ratelimit.ts";
 
 export interface BackoffOnlyOptions {
 	errorMin: number;

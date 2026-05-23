@@ -1,5 +1,5 @@
-import { Static, TSchema } from "typebox";
-import Compile, { Validator } from "typebox/compile";
+import type { Static, TSchema } from "typebox";
+import Compile, { type Validator } from "typebox/compile";
 
 export class ValidationError extends Error {
 	constructor(message?: string, options?: ErrorOptions) {

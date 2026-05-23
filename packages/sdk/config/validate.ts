@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { Static, TSchema } from "typebox";
+import type { Static, TSchema } from "typebox";
 import { assertSchema } from "../util/validate.ts";
 
 export const readConfig = <T extends TSchema>(path: string, schema: T): Static<T> => {

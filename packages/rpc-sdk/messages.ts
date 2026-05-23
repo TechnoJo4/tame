@@ -1,4 +1,4 @@
-import { Type, Static } from "typebox";
+import { Type, type Static } from "typebox";
 import { StringEnum } from "@tame/sdk";
 
 export const eventSchema = Type.Object({

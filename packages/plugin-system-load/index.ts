@@ -1,5 +1,5 @@
 import type { IAgent } from "@tame/sdk";
-import { Plugin, Type } from "@tame/sdk";
+import { type Plugin, Type } from "@tame/sdk";
 import { promises as fs } from "node:fs";
 import type { Static } from "typebox";
 

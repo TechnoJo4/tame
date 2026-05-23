@@ -1,5 +1,5 @@
-import { Compile, Validator } from "typebox/compile";
-import { TSchema } from "typebox";
+import { Compile, type Validator } from "typebox/compile";
+import type { TSchema } from "typebox";
 import {
 	Thread,
 	Emitter,
@@ -8,11 +8,7 @@ import {
 	assertSchema,
 	type InferenceProvider,
 	type InputMessage,
-	type UserMessage,
-	type AssistantMessage,
 	type ToolUse,
-	type StopReason,
-	type MessageRequest,
 	type ToolResult,
 	type AnyTool,
 	type Tool,

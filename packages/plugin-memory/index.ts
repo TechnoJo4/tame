@@ -1,5 +1,5 @@
 import type { IAgent } from "@tame/sdk";
-import { Plugin, tool, Type } from "@tame/sdk";
+import { type Plugin, tool, Type } from "@tame/sdk";
 import type { IHarness } from "@tame/sdk";
 import type { HistoryPlugin } from "@tame/plugin-history/index";
 

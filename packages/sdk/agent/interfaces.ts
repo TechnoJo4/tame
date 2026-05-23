@@ -1,7 +1,7 @@
 import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason, MessageRequest, ToolResult } from "../llm/types.ts";
 import type { AnyTool } from "./tool.ts";
 import type { Plugin } from "./plugin.ts";
-import type { Emitter, Handler, Listener } from "../util/emitter.ts";
+import type { Handler, Listener } from "../util/emitter.ts";
 
 // ---- event types ----
 

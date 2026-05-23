@@ -1,5 +1,5 @@
 import * as acp from "@agentclientprotocol/sdk";
-import { Static, Type } from "typebox";
+import { type Static, Type } from "typebox";
 
 import type { IAgent, IHarness, Plugin, InputContent, InputMessage, ToolResult, ToolUse, AgentStopReason } from "@tame/sdk";
 import { tool } from "@tame/sdk";

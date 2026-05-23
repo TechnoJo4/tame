@@ -1,4 +1,4 @@
-import { Plugin, tool, Type, type IHarness } from "@tame/sdk";
+import { type Plugin, tool, Type, type IHarness } from "@tame/sdk";
 
 export const web_fetch = tool({
 	name: "web_fetch",

@@ -1,5 +1,5 @@
 /// <reference path="./rpc.d.ts" />
-import { Plugin, tameDataFolder, tameMsgMeta, type IAgent, type IHarness, type InputMessage, type TameMessageMeta } from "@tame/sdk";
+import { type Plugin, tameDataFolder, tameMsgMeta, type IAgent, type IHarness, type InputMessage, type TameMessageMeta } from "@tame/sdk";
 import { call } from "@tame/rpc-sdk";
 import { rpcSchema } from "./rpc-schema.ts";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";

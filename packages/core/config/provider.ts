@@ -1,8 +1,8 @@
 import { AnthropicMessagesProvider } from "../llm/messages.ts";
-import { InferenceProvider, StringEnum } from "@tame/sdk";
+import { type InferenceProvider, StringEnum } from "@tame/sdk";
 import { PriorityProvider } from "../llm/router.ts";
-import { Static, Type } from "typebox";
-import { Ratelimiter } from "../ratelimit/ratelimit.ts";
+import { type Static, Type } from "typebox";
+import type { Ratelimiter } from "../ratelimit/ratelimit.ts";
 import { SerialRatelimiter } from "../ratelimit/serial.ts";
 import { TokenBucketRatelimiter } from "../ratelimit/bucket.ts";
 import { BackoffOnlyRatelimiter } from "../ratelimit/backoff.ts";

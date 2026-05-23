@@ -1,7 +1,7 @@
-import { Compile, Validator } from "typebox/compile";
+import { Compile, type Validator } from "typebox/compile";
 import { assertSchema, type IAgent, type IHarness, type Plugin, type ToolUse, type ToolResult } from "@tame/sdk";
 import {
-	eventSchema,
+	type eventSchema,
 	rpcMsgSchema,
 	call,
 	baseRouteSchemas,

@@ -1,5 +1,5 @@
-import { RatelimitedProvider } from "./ratelimited.ts";
-import {
+import type { RatelimitedProvider } from "./ratelimited.ts";
+import type {
 	AssistantMessage,
 	InferenceProvider,
 	MessageRequest,

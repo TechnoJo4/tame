@@ -1,4 +1,4 @@
-import { Plugin, tool, Type, type IAgent, type IHarness } from "@tame/sdk";
+import { type Plugin, tool, Type, type IAgent, type IHarness } from "@tame/sdk";
 import type { ToolResult } from "@tame/sdk";
 
 // ---- agent definitions ----
@@ -223,10 +223,8 @@ export class SubagentsPlugin implements Plugin {
 	// ---- the subagent tool ----
 
 	#subagentTool(harness: IHarness) {
-		const self = this;
-
 		const agentList = () =>
-			[...self.#agents.values()]
+			[...this.#agents.values()]
 				.map((a) => `- ${a.type}: ${a.whenToUse}`)
 				.join("\n");
 
@@ -270,7 +268,7 @@ export class SubagentsPlugin implements Plugin {
 				),
 			}),
 			exec: async (args, parentAgent) => {
-				const setup = self.#setupSubagent(harness, parentAgent, args);
+				const setup = this.#setupSubagent(harness, parentAgent, args);
 				if ("status" in setup) return setup;
 
 				const { subagent, assistantTexts } = setup;
@@ -289,7 +287,7 @@ export class SubagentsPlugin implements Plugin {
 
 				// ---- async path ----
 				if (args.run_in_background) {
-					self.#tasks.set(subagent.id, {
+					this.#tasks.set(subagent.id, {
 						agent: subagent,
 						parentId: parentAgent.id,
 						description: args.description,
@@ -297,25 +295,25 @@ export class SubagentsPlugin implements Plugin {
 
 					// detach: when the subagent finishes, notify the parent
 					subagent.waitFor("idle").then((idle) => {
-						self.#tasks.delete(subagent.id);
+						this.#tasks.delete(subagent.id);
 						parentAgent.signal?.removeEventListener("abort", onParentAbort);
 
 						if (idle.stopReason === "error") {
-							self.#notify(parentAgent.id, args.description, "failed",
+							this.#notify(parentAgent.id, args.description, "failed",
 								"LLM error or max retries exceeded.");
 						} else if (idle.stopReason === "aborted") {
-							self.#notify(parentAgent.id, args.description, "failed",
+							this.#notify(parentAgent.id, args.description, "failed",
 								"Subagent was aborted.");
 						} else if (idle.stopReason === "refusal") {
-							self.#notify(parentAgent.id, args.description, "failed",
+							this.#notify(parentAgent.id, args.description, "failed",
 								assistantTexts.join("\n\n") || "Subagent refused the task.");
 						} else if (idle.stopReason !== "end_turn" && idle.stopReason !== "tool_use") {
-							self.#notify(parentAgent.id, args.description, "failed",
+							this.#notify(parentAgent.id, args.description, "failed",
 								`Subagent stopped unexpectedly: ${idle.stopReason}.`);
 						} else {
-							const toolCalls = self.#collectToolCalls(
+							const toolCalls = this.#collectToolCalls(
 								subagent.context,
-								self.#config.maxToolResultLength,
+								this.#config.maxToolResultLength,
 							);
 							const result = assistantTexts.join("\n\n") || "(no output)";
 							let text = result;
@@ -325,7 +323,7 @@ export class SubagentsPlugin implements Plugin {
 									.join(", ");
 								text += `\n\n_tools used: ${summary}_`;
 							}
-							self.#notify(parentAgent.id, args.description, "completed", text);
+							this.#notify(parentAgent.id, args.description, "completed", text);
 						}
 
 						subagent.abort();
@@ -376,9 +374,9 @@ export class SubagentsPlugin implements Plugin {
 						};
 					}
 
-					const toolCalls = self.#collectToolCalls(
+					const toolCalls = this.#collectToolCalls(
 						subagent.context,
-						self.#config.maxToolResultLength,
+						this.#config.maxToolResultLength,
 					);
 
 					return {
@@ -451,8 +449,6 @@ export class SubagentsPlugin implements Plugin {
 	// ---- kill_subagent tool ----
 
 	#killSubagentTool() {
-		const self = this;
-
 		return tool({
 			name: "kill_subagent",
 			desc: [
@@ -463,14 +459,14 @@ export class SubagentsPlugin implements Plugin {
 				agentId: Type.String({ description: "The agentId of the background subagent to kill." }),
 			}),
 			exec: async (args) => {
-				const task = self.#tasks.get(args.agentId);
+				const task = this.#tasks.get(args.agentId);
 				if (!task) {
 					return { status: "error", error: `No running subagent with id "${args.agentId}".` };
 				}
 
 				task.agent.abort();
-				self.#tasks.delete(args.agentId);
-				self.#notify(task.parentId, task.description, "failed", "Subagent was killed.");
+				this.#tasks.delete(args.agentId);
+				this.#notify(task.parentId, task.description, "failed", "Subagent was killed.");
 
 				return { status: "killed", agentId: args.agentId };
 			},

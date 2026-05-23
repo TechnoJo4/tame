@@ -1,5 +1,5 @@
-import { TSchema } from "typebox";
-import { tameMsgMeta } from "../util/symbols.ts";
+import type { TSchema } from "typebox";
+import type { tameMsgMeta } from "../util/symbols.ts";
 
 export interface CacheControl {
 	type: "ephemeral";

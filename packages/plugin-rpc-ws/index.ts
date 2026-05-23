@@ -1,6 +1,6 @@
-import { Type, Static } from "typebox";
-import { Plugin, type IHarness } from "@tame/sdk";
-import { RPCPlugin } from "@tame/plugin-rpc/index";
+import { Type, type Static } from "typebox";
+import type { Plugin, IHarness } from "@tame/sdk";
+import type { RPCPlugin } from "@tame/plugin-rpc/index";
 import { wsToStream } from "@tame/rpc-client/stream";
 
 export { wsToStream } from "@tame/rpc-client/stream";

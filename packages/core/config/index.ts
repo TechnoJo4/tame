@@ -1,8 +1,8 @@
 import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
-import { Static, TSchema, Type } from "typebox";
+import { type Static, Type } from "typebox";
 import { parseLLM, llmConfig } from "./provider.ts";
-import { InferenceProvider, readTameConfig, tameDataFolder } from "@tame/sdk";
+import { type InferenceProvider, readTameConfig, tameDataFolder } from "@tame/sdk";
 
 export const configSchema = Type.Object({
 	llm: llmConfig,

@@ -1,10 +1,10 @@
-import {
-	type RPCMessage,
-	type EventMessage,
-	type CallMessage,
-	type CallResultMessage,
-	type SubscriptionMessage,
-	type Stream,
+import type {
+	RPCMessage,
+	EventMessage,
+	CallMessage,
+	CallResultMessage,
+	SubscriptionMessage,
+	Stream,
 } from "@tame/rpc-sdk";
 
 /**
@@ -13,7 +13,6 @@ import {
  * Each method must have `input` and `output` shape for the conditional
  * types in call() to resolve.
  */
-// deno-lint-ignore no-empty-interface
 export interface RPCRegistry {
 	"@tame": {
 		newAgent: {

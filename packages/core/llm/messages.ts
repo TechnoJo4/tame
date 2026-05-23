@@ -1,5 +1,5 @@
 import { InferenceError } from "./error.ts";
-import { InferenceProvider, AssistantMessage, MessageRequest } from "@tame/sdk";
+import type { InferenceProvider, AssistantMessage, MessageRequest } from "@tame/sdk";
 
 export class AnthropicMessagesProvider implements InferenceProvider {
     #url: string;
