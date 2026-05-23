@@ -126,6 +126,8 @@ export class RPCController {
 		});
 		on("toolResult", (d) => {
 			applyToolResult(this.#host.items, d);
+			// mutation was in-place — bump reference so lit detects the change
+			this.#host.items = [...this.#host.items];
 			this.#host.requestUpdate();
 		});
 	}
