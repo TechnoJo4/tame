@@ -51,6 +51,14 @@ const DEFAULT_AGENT: AgentDefinition = {
 	].join("\n"),
 };
 
+// ---- async task tracking ----
+
+interface AsyncTask {
+	agent: IAgent;
+	parentId: string;
+	description: string;
+}
+
 // ---- plugin ----
 
 export class SubagentsPlugin implements Plugin {
@@ -59,6 +67,8 @@ export class SubagentsPlugin implements Plugin {
 
 	#config: SubagentsConfig;
 	#agents = new Map<string, AgentDefinition>();
+	#tasks = new Map<string, AsyncTask>();
+	#harness: IHarness | undefined;
 
 	constructor(config: SubagentsConfig) {
 		this.#config = config;
@@ -80,12 +90,134 @@ export class SubagentsPlugin implements Plugin {
 		return [...this.#agents.values()];
 	}
 
+	/** List IDs of currently running background subagents. */
+	listRunning(): string[] {
+		return [...this.#tasks.keys()];
+	}
+
 	async init(harness: IHarness) {
-		harness.addTools(this.#subagentTool(harness));
+		this.#harness = harness;
+		harness.addTools(this.#subagentTool(harness), this.#killSubagentTool());
 	}
 
 	newAgent(agent: IAgent) {
 		agent.pluginData.set(depthKey, 0);
+	}
+
+	// ---- notification injection ----
+
+	/** Fire a notification user message into the parent agent. */
+	#notify(agentId: string, description: string, status: "completed" | "failed", text: string) {
+		const parent = this.#harness?.getAgent(agentId);
+		if (!parent) return; // parent may have been GC'd
+
+		const header = status === "completed"
+			? `[Subagent "${description}" completed]`
+			: `[Subagent "${description}" failed]`;
+
+		parent.fire("userMessage", {
+			msg: {
+				role: "user",
+				content: [{ type: "text", text: `${header}\n\n${text}` }],
+			},
+		});
+	}
+
+	// ---- shared subagent setup ----
+
+	#setupSubagent(
+		harness: IHarness,
+		parentAgent: IAgent,
+		args: { description: string; prompt: string; subagent_type?: string },
+	): { subagent: IAgent; assistantTexts: string[] } | { status: "error"; error: string } {
+		const depth = (parentAgent.pluginData.get(depthKey) as number) ?? 0;
+		if (depth >= this.#config.maxDepth) {
+			return { status: "error", error: `Max subagent depth (${this.#config.maxDepth}) reached.` };
+		}
+
+		if (parentAgent.signal?.aborted) {
+			return { status: "error", error: "Parent agent was aborted." };
+		}
+
+		const def = args.subagent_type
+			? this.#agents.get(args.subagent_type)
+			: this.#agents.get("general-purpose");
+		if (!def) {
+			return {
+				status: "error",
+				error: `Unknown subagent type: "${args.subagent_type}". Available: ${[...this.#agents.keys()].join(", ")}`,
+			};
+		}
+
+		const systemPrompt = [
+			def.systemPrompt,
+			"",
+			`Your task: ${args.description}`,
+		].join("\n");
+
+		const subagent = harness.newAgent(parentAgent.llm, systemPrompt);
+		subagent.pluginData.set(depthKey, depth + 1);
+
+		// filter tools if the definition has an allowlist
+		if (def.tools) {
+			const allowed = new Set(def.tools);
+			for (const [name] of subagent.tools) {
+				if (!allowed.has(name)) subagent.tools.delete(name);
+			}
+		}
+
+		// prevent recursion: remove subagent tool at max depth
+		if (depth + 1 >= this.#config.maxDepth) {
+			subagent.tools.delete("subagent");
+			subagent.tools.delete("kill_subagent");
+		}
+
+		const assistantTexts: string[] = [];
+		subagent.after("assistantMessage", async (e) => {
+			const text = e.msg.content
+				.filter((c) => c.type === "text")
+				.map((c) => c.text)
+				.join("\n")
+				.trim();
+			if (text) assistantTexts.push(text);
+			return e;
+		});
+
+		return { subagent, assistantTexts };
+	}
+
+	/** Collect tool call summary from context. */
+	#collectToolCalls(
+		context: IAgent["context"],
+		maxLen: number,
+	): { name: string; result: string; error: boolean }[] {
+		const resultMap = new Map<string, ToolResult>();
+		for (const m of context) {
+			if (m.role !== "user") continue;
+			for (const c of m.content) {
+				if (c.type === "tool_result") resultMap.set(c.tool_use_id, c as ToolResult);
+			}
+		}
+
+		const toolCalls: { name: string; result: string; error: boolean }[] = [];
+		for (const msg of context) {
+			if (msg.role !== "assistant") continue;
+			for (const c of msg.content) {
+				if (c.type !== "tool_use") continue;
+				const rb = resultMap.get(c.id);
+				let resultText = rb?.content ?? "(no result)";
+				if (resultText.length > maxLen) {
+					resultText = resultText.slice(0, maxLen) +
+						`\n[... ${resultText.length - maxLen} more characters]`;
+				}
+				toolCalls.push({
+					name: c.name,
+					result: resultText,
+					error: rb?.is_error ?? false,
+				});
+			}
+		}
+		return toolCalls;
 	}
 
 	// ---- the subagent tool ----
@@ -115,6 +247,8 @@ export class SubagentsPlugin implements Plugin {
 				"- The subagent starts fresh — it doesn't see your conversation. Give it full context in the prompt.",
 				"- The subagent returns a single result. Summarize it for the user if needed.",
 				"- Launch multiple subagents concurrently by issuing several subagent calls in one message.",
+				"- Set run_in_background to true to run the subagent asynchronously. You'll be notified when it completes.",
+				"  Use this when you have independent work to do in parallel.",
 			].join("\n"),
 			args: Type.Object({
 				description: Type.String({ description: "A short (3-5 word) description of the task" }),
@@ -127,77 +261,25 @@ export class SubagentsPlugin implements Plugin {
 						description: "Type of agent to use. Omit for general-purpose.",
 					}),
 				),
+				run_in_background: Type.Optional(
+					Type.Boolean({
+						default: false,
+						description:
+							"Run asynchronously. Returns immediately with agentId; a notification is injected when the subagent finishes.",
+					}),
+				),
 			}),
 			exec: async (args, parentAgent) => {
-				const depth = (parentAgent.pluginData.get(depthKey) as number) ?? 0;
-				if (depth >= self.#config.maxDepth) {
-					return {
-						status: "error",
-						error: `Max subagent depth (${self.#config.maxDepth}) reached.`,
-					};
-				}
+				const setup = self.#setupSubagent(harness, parentAgent, args);
+				if ("status" in setup) return setup;
 
-				// abort check: don't spawn if parent is already cancelled
-				if (parentAgent.signal?.aborted) {
-					return { status: "error", error: "Parent agent was aborted." };
-				}
-
-				// resolve agent definition
-				const def = args.subagent_type
-					? self.#agents.get(args.subagent_type)
-					: self.#agents.get("general-purpose");
-				if (!def) {
-					return {
-						status: "error",
-						error:
-							`Unknown subagent type: "${args.subagent_type}". Available: ${[...self.#agents.keys()].join(", ")}`,
-					};
-				}
-
-				// build system prompt
-				const systemPrompt = [
-					def.systemPrompt,
-					"",
-					`Your task: ${args.description}`,
-				].join("\n");
-
-				// create subagent — inherits parent's LLM
-				const subagent = harness.newAgent(parentAgent.llm, systemPrompt);
-				subagent.pluginData.set(depthKey, depth + 1);
+				const { subagent, assistantTexts } = setup;
 
 				// propagate parent abort to subagent
 				const onParentAbort = () => subagent.abort();
 				parentAgent.signal?.addEventListener("abort", onParentAbort, { once: true });
 
-				// filter tools if the definition has an allowlist
-				if (def.tools) {
-					const allowed = new Set(def.tools);
-					for (const [name] of subagent.tools) {
-						if (!allowed.has(name)) subagent.tools.delete(name);
-					}
-				}
-
-				// prevent recursion: remove subagent tool at max depth
-				if (depth + 1 >= self.#config.maxDepth) {
-					subagent.tools.delete("subagent");
-				}
-
-				// collect text from each assistant message turn.
-				// this handler is never removed — the SDK's Emitter has no off().
-				// harmless because the agent is aborted in the finally block below,
-				// so no further events will fire on this emitter.
-				const assistantTexts: string[] = [];
-				subagent.after("assistantMessage", async (e) => {
-					const text = e.msg.content
-						.filter((c) => c.type === "text")
-						.map((c) => c.text)
-						.join("\n")
-						.trim();
-					if (text) assistantTexts.push(text);
-					return e;
-				});
-
-				// kick off the subagent
+				// kick off
 				subagent.fire("userMessage", {
 					msg: {
 						role: "user",
@@ -205,8 +287,61 @@ export class SubagentsPlugin implements Plugin {
 					},
 				});
 
+				// ---- async path ----
+				if (args.run_in_background) {
+					self.#tasks.set(subagent.id, {
+						agent: subagent,
+						parentId: parentAgent.id,
+						description: args.description,
+					});
+
+					// detach: when the subagent finishes, notify the parent
+					subagent.waitFor("idle").then((idle) => {
+						self.#tasks.delete(subagent.id);
+						parentAgent.signal?.removeEventListener("abort", onParentAbort);
+
+						if (idle.stopReason === "error") {
+							self.#notify(parentAgent.id, args.description, "failed",
+								"LLM error or max retries exceeded.");
+						} else if (idle.stopReason === "aborted") {
+							self.#notify(parentAgent.id, args.description, "failed",
+								"Subagent was aborted.");
+						} else if (idle.stopReason === "refusal") {
+							self.#notify(parentAgent.id, args.description, "failed",
+								assistantTexts.join("\n\n") || "Subagent refused the task.");
+						} else if (idle.stopReason !== "end_turn" && idle.stopReason !== "tool_use") {
+							self.#notify(parentAgent.id, args.description, "failed",
+								`Subagent stopped unexpectedly: ${idle.stopReason}.`);
+						} else {
+							const toolCalls = self.#collectToolCalls(
+								subagent.context,
+								self.#config.maxToolResultLength,
+							);
+							const result = assistantTexts.join("\n\n") || "(no output)";
+							let text = result;
+							if (toolCalls.length) {
+								const summary = toolCalls
+									.map((tc) => `${tc.name}${tc.error ? " (error)" : ""}`)
+									.join(", ");
+								text += `\n\n_tools used: ${summary}_`;
+							}
+							self.#notify(parentAgent.id, args.description, "completed", text);
+						}
+
+						subagent.abort();
+						subagent.pluginData.clear();
+					});
+
+					return {
+						status: "async_launched",
+						agentId: subagent.id,
+						description: args.description,
+						prompt: args.prompt,
+					};
+				}
+
+				// ---- sync path ----
 				try {
-					// wait for completion
 					const idle = await subagent.waitFor("idle");
 
 					if (idle.stopReason === "error") {
@@ -233,7 +368,6 @@ export class SubagentsPlugin implements Plugin {
 						};
 					}
 
-					// unrecognized stop reason (future SDK additions): treat as error
 					if (idle.stopReason !== "end_turn" && idle.stopReason !== "tool_use") {
 						return {
 							status: "error",
@@ -242,35 +376,10 @@ export class SubagentsPlugin implements Plugin {
 						};
 					}
 
-					// collect tool call summary — single pass: build a result map then pair
-					const resultMap = new Map<string, ToolResult>();
-					for (const m of subagent.context) {
-						if (m.role !== "user") continue;
-						for (const c of m.content) {
-							if (c.type === "tool_result") {
-								resultMap.set(c.tool_use_id, c as ToolResult);
-							}
-						}
-					}
-
-					const toolCalls: { name: string; result: string; error: boolean }[] = [];
-					for (const msg of subagent.context) {
-						if (msg.role !== "assistant") continue;
-						for (const c of msg.content) {
-							if (c.type !== "tool_use") continue;
-							const rb = resultMap.get(c.id);
-							let resultText = rb?.content ?? "(no result)";
-							if (resultText.length > self.#config.maxToolResultLength) {
-								resultText = resultText.slice(0, self.#config.maxToolResultLength) +
-									`\n[... ${resultText.length - self.#config.maxToolResultLength} more characters]`;
-							}
-							toolCalls.push({
-								name: c.name,
-								result: resultText,
-								error: rb?.is_error ?? false,
-							});
-						}
-					}
+					const toolCalls = self.#collectToolCalls(
+						subagent.context,
+						self.#config.maxToolResultLength,
+					);
 
 					return {
 						status: "completed",
@@ -280,10 +389,6 @@ export class SubagentsPlugin implements Plugin {
 					};
 				} finally {
 					parentAgent.signal?.removeEventListener("abort", onParentAbort);
-					// Abort the subagent so it can't process further events.
-					// Does not fully release plugin-level Map entries (memory, compact store
-					// the agent as a key with strong references). Those need a
-					// cleanupAgent lifecycle hook in the SDK Plugin interface.
 					subagent.abort();
 					subagent.pluginData.clear();
 				}
@@ -299,6 +404,8 @@ export class SubagentsPlugin implements Plugin {
 							if (parsed.status === "completed") {
 								const preview = parsed.result.slice(0, 120);
 								summary += ` — ${preview}${parsed.result.length > 120 ? "…" : ""}`;
+							} else if (parsed.status === "async_launched") {
+								summary += ` [background]`;
 							} else {
 								summary += ` — ${parsed.error}`;
 							}
@@ -319,6 +426,8 @@ export class SubagentsPlugin implements Plugin {
 										.join(", ");
 									text += `\n\n_${parsed.toolCalls.length} tool calls: ${summary}_`;
 								}
+							} else if (parsed.status === "async_launched") {
+								text = `Running in background (agentId: ${parsed.agentId})`;
 							} else {
 								text = `Error: ${parsed.error}`;
 							}
@@ -335,6 +444,42 @@ export class SubagentsPlugin implements Plugin {
 						}] : [],
 					};
 				},
+			},
+		});
+	}
+
+	// ---- kill_subagent tool ----
+
+	#killSubagentTool() {
+		const self = this;
+
+		return tool({
+			name: "kill_subagent",
+			desc: [
+				"Abort a running background subagent.",
+				"Use the agentId returned by the subagent tool's async_launched response.",
+			].join("\n"),
+			args: Type.Object({
+				agentId: Type.String({ description: "The agentId of the background subagent to kill." }),
+			}),
+			exec: async (args) => {
+				const task = self.#tasks.get(args.agentId);
+				if (!task) {
+					return { status: "error", error: `No running subagent with id "${args.agentId}".` };
+				}
+
+				task.agent.abort();
+				self.#tasks.delete(args.agentId);
+				self.#notify(task.parentId, task.description, "failed", "Subagent was killed.");
+
+				return { status: "killed", agentId: args.agentId };
+			},
+			view: {
+				compact: (args) => `Kill subagent ${args.agentId}`,
+				acp: (args) => ({
+					kind: "think",
+					title: `Kill subagent ${args.agentId}`,
+				}),
 			},
 		});
 	}
