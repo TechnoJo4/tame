@@ -76,11 +76,21 @@ tame-tool-fallback > .tool-output.error { color: #f66; }
 
 /* ---- composer ---- */
 tame-composer { display: block; border-top: 1px solid #333; padding: 12px; }
-tame-composer > .input {
-	width: 100%; min-height: 60px; background: #1a1a2e; color: #eee;
+tame-composer > .composer-row { display: flex; gap: 8px; align-items: flex-end; }
+tame-composer > .composer-row > .input {
+	flex: 1; min-height: 60px; background: #1a1a2e; color: #eee;
 	border: 1px solid #444; border-radius: 4px; padding: 8px;
 	font-family: inherit; font-size: 14px; resize: vertical;
 }
+tame-composer > .composer-row > .send-btn,
+tame-composer > .composer-row > .abort-btn {
+	flex-shrink: 0; width: 36px; height: 36px; border: 1px solid #444;
+	border-radius: 4px; cursor: pointer; font-size: 16px;
+}
+tame-composer > .composer-row > .send-btn { background: #1a1a2e; color: #6f6; }
+tame-composer > .composer-row > .send-btn:hover { background: #2a2a4e; }
+tame-composer > .composer-row > .abort-btn { background: #2e1a1a; color: #f66; }
+tame-composer > .composer-row > .abort-btn:hover { background: #4e2a2a; }
 
 /* ---- history (plugin) ---- */
 tame-history { display: block; }

@@ -6,12 +6,14 @@ export class TameShell extends LitElement {
 		items: { type: Array, state: true },
 		loading: { type: Boolean, state: true },
 		error: { type: String, state: true },
+		idle: { type: Boolean, state: true },
 		sidebarCollapsed: { type: Boolean, state: true },
 	};
 
 	declare items: ThreadItem[];
 	declare loading: boolean;
 	declare error: string | null;
+	declare idle: boolean;
 	declare sidebarCollapsed: boolean;
 
 	#controller = new RPCController(this);
@@ -21,6 +23,7 @@ export class TameShell extends LitElement {
 		this.items = [];
 		this.loading = true;
 		this.error = null;
+		this.idle = true;
 		this.sidebarCollapsed = false;
 	}
 
@@ -39,7 +42,7 @@ export class TameShell extends LitElement {
 				<tame-sidebar .controller=${this.#controller} .collapsed=${this.sidebarCollapsed}></tame-sidebar>
 				<main class="main">
 					<tame-thread .items=${this.items} .controller=${this.#controller}></tame-thread>
-					<tame-composer .controller=${this.#controller}></tame-composer>
+					<tame-composer .controller=${this.#controller} .idle=${this.idle}></tame-composer>
 				</main>
 			</div>
 		`;

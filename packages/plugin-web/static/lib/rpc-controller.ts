@@ -31,6 +31,7 @@ interface TameShellHost {
 	items: ThreadItem[];
 	loading: boolean;
 	error: string | null;
+	idle: boolean;
 	addController(c: RPCController): void;
 	requestUpdate(): void;
 }
@@ -108,6 +109,10 @@ export class RPCController implements WebController {
 			this.#host.items = [...this.#host.items];
 			this.#host.requestUpdate();
 		});
+		on("idle", () => {
+			this.#host.idle = true;
+			this.#host.requestUpdate();
+		});
 	}
 
 	/** Switch the displayed thread to a different agent. Keeps the old
@@ -138,9 +143,16 @@ export class RPCController implements WebController {
 
 	send(text: string) {
 		if (!this.#client || !this.agentId) return;
+		this.#host.idle = false;
+		this.#host.requestUpdate();
 		this.#client.emit(this.agentId, "userMessage", {
 			msg: { role: "user", content: [{ type: "text", text }] },
 		});
+	}
+
+	abort() {
+		if (!this.#client || !this.agentId) return;
+		this.#client.call("@tame", "abort", { id: this.agentId });
 	}
 
 	async viewToolCall(toolUseId: string): Promise<{ tag: string; props: Record<string, unknown> } | null> {
