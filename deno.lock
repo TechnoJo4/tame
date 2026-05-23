@@ -5,7 +5,6 @@
     "jsr:@std/path@^1.1.4": "1.1.4",
     "npm:@agentclientprotocol/sdk@*": "0.18.0_zod@4.3.6",
     "npm:js-tiktoken@*": "1.0.21",
-    "npm:tiktoken@^1.0.22": "1.0.22",
     "npm:typebox@^1.1.32": "1.1.32"
   },
   "jsr": {
@@ -35,9 +34,6 @@
         "base64-js"
       ]
     },
-    "tiktoken@1.0.22": {
-      "integrity": "sha512-PKvy1rVF1RibfF3JlXBSP0Jrcw2uq3yXdgcEXtKTYn3QJ/cBRBHDnrJ5jHky+MENZ6DIPwNUGWpkVx+7joCpNA=="
-    },
     "typebox@1.1.32": {
       "integrity": "sha512-cbGoj7BCxGcFDJ/RR7wbyMe9IkO2SeNhwLdZWQ+xRtun9+ze9iM1pBND4SoFAxgonuJYrCIWnEQ7sE4bMVDYHA=="
     },
@@ -48,7 +44,6 @@
   "workspace": {
     "dependencies": [
       "jsr:@std/path@^1.1.4",
-      "npm:tiktoken@^1.0.22",
       "npm:typebox@^1.1.32"
     ]
   }
