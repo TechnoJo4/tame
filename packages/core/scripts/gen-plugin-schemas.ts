@@ -4,14 +4,16 @@ import { readdir } from "node:fs/promises";
 const dir = import.meta.dirname;
 if (!dir) throw new Error("couldn't get import.meta.dirname");
 
-const pluginsDir = resolve(dir, "..", "plugins");
+const packagesDir = resolve(dir, "..", "..", "..");
 const outDir = resolve(dir, "..", "schemas", "plugins");
 
 await Deno.mkdir(outDir, { recursive: true });
 
 const pluginNames: string[] = [];
-for (const entry of await readdir(pluginsDir, { withFileTypes: true })) {
-	if (entry.isDirectory()) pluginNames.push(entry.name);
+for (const entry of await readdir(packagesDir, { withFileTypes: true })) {
+	if (entry.isDirectory() && entry.name.startsWith("plugin-")) {
+		pluginNames.push(entry.name.replace("plugin-", ""));
+	}
 }
 pluginNames.sort();
 
@@ -19,7 +21,7 @@ let count = 0;
 const schemas: Record<string, object> = {};
 
 for (const name of pluginNames) {
-	const mainPath = resolve(pluginsDir, name, "main.ts");
+	const mainPath = resolve(packagesDir, `plugin-${name}`, "main.ts");
 	let mod;
 	try {
 		mod = await import(toFileUrl(mainPath).toString());
