@@ -1,4 +1,5 @@
 {
+	"workspace": ["packages/*"],
 	"imports": {
 		"@std/path": "jsr:@std/path@^1.1.4",
 		"tiktoken": "npm:tiktoken@^1.0.22",
