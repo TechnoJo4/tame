@@ -154,7 +154,6 @@ shared deps managed via root `deno.json` imports:
 | import | source | purpose |
 |--------|--------|---------|
 | `@std/path` | jsr | path manipulation |
-| `tiktoken` | npm | token counting for compaction |
 | `typebox` | npm | runtime schema validation |
 
 the acp plugin additionally pulls `@agentclientprotocol/sdk` from npm at runtime.
