@@ -1,0 +1,5 @@
+{
+	"name": "@tame/rpc-sdk",
+	"version": "0.1.0",
+	"exports": "./index.ts"
+}
