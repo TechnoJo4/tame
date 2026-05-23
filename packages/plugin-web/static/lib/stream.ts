@@ -33,10 +33,23 @@ export function wsToStream(socket: WebSocket): Stream {
 		},
 	});
 
+	// Buffer writes until the socket opens, then flush.
+	const pending: RPCMessage[] = [];
+	let open = socket.readyState === WebSocket.OPEN;
+
+	socket.addEventListener("open", () => {
+		open = true;
+		for (const msg of pending) socket.send(JSON.stringify(msg));
+		pending.length = 0;
+	});
+
 	const writable = new WritableStream<RPCMessage>({
 		write(msg) {
-			if (socket.readyState !== WebSocket.OPEN) return;
-			socket.send(JSON.stringify(msg));
+			if (open) {
+				socket.send(JSON.stringify(msg));
+			} else {
+				pending.push(msg);
+			}
 		},
 		close() {
 			try { socket.close(); } catch { /* already closed */ }
