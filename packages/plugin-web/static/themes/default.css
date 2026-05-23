@@ -1,10 +1,32 @@
 /* tame default theme
    targets custom element tag names and attribute selectors.
-   no classes except for structural elements inside components. */
+   no classes except for structural elements inside components.
+
+   variables are the contract between themes and plugins — custom themes
+   redefine :root, and all components (including plugin CSS) follow. */
+
+/* ---- design tokens ---- */
+:root {
+	--tame-bg: #111;
+	--tame-surface: #1a1a2e;
+	--tame-surface-hover: #2a2a4e;
+	--tame-surface-alt: #0a0a14;
+	--tame-danger-surface: #2e1a1a;
+	--tame-danger-surface-hover: #4e2a2a;
+	--tame-border: #333;
+	--tame-border-light: #444;
+	--tame-text: #eee;
+	--tame-text-secondary: #ccc;
+	--tame-text-faint: #aaa;
+	--tame-text-muted: #888;
+	--tame-text-dim: #666;
+	--tame-danger: #f66;
+	--tame-success: #6f6;
+}
 
 /* ---- reset ---- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; font-family: system-ui, sans-serif; background: #111; color: #eee; }
+html, body { height: 100%; font-family: system-ui, sans-serif; background: var(--tame-bg); color: var(--tame-text); }
 
 /* ---- shell ---- */
 tame-shell { display: block; height: 100%; }
@@ -12,82 +34,82 @@ tame-shell > .layout { display: flex; height: 100%; }
 tame-shell > .layout > .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 tame-shell > .loading,
 tame-shell > .error { display: flex; align-items: center; justify-content: center; height: 100%; }
-tame-shell > .error { color: #f66; }
+tame-shell > .error { color: var(--tame-danger); }
 
 /* ---- sidebar ---- */
 tame-sidebar {
-	display: flex; flex-direction: column; width: 260px; border-right: 1px solid #333;
+	display: flex; flex-direction: column; width: 260px; border-right: 1px solid var(--tame-border);
 	overflow-y: auto; flex-shrink: 0; padding: 8px; transition: width 0.15s ease;
 }
 tame-sidebar[collapsed] { display: none; }
 
 tame-sidebar-toggle {
-	display: flex; flex-shrink: 0; width: 32px; border-right: 1px solid #333;
+	display: flex; flex-shrink: 0; width: 32px; border-right: 1px solid var(--tame-border);
 }
 tame-sidebar-toggle > .toggle {
-	flex: 1; border: none; background: none; color: #888; cursor: pointer; font-size: 14px;
+	flex: 1; border: none; background: none; color: var(--tame-text-muted); cursor: pointer; font-size: 14px;
 }
-tame-sidebar-toggle > .toggle:hover { color: #eee; background: #1a1a2e; }
+tame-sidebar-toggle > .toggle:hover { color: var(--tame-text); background: var(--tame-surface); }
 
 /* ---- thread ---- */
 tame-thread { display: block; flex: 1; overflow-y: auto; }
 
 /* ---- message ---- */
 tame-message { display: block; margin-bottom: 16px; padding: 8px; border-radius: 4px; }
-tame-message[data-role="user"] { background: #1a1a2e; }
+tame-message[data-role="user"] { background: var(--tame-surface); }
 tame-message > .role {
-	display: block; font-size: 11px; color: #888; margin-bottom: 4px; text-transform: uppercase;
+	display: block; font-size: 11px; color: var(--tame-text-muted); margin-bottom: 4px; text-transform: uppercase;
 }
 
 /* ---- markdown ---- */
 tame-markdown { display: block; line-height: 1.5; word-break: break-word; }
 tame-markdown p { margin: 4px 0; }
 tame-markdown pre {
-	background: #0a0a14; padding: 8px; border-radius: 4px;
+	background: var(--tame-surface-alt); padding: 8px; border-radius: 4px;
 	overflow-x: auto; font-size: 13px;
 }
 tame-markdown code {
-	background: #0a0a14; padding: 1px 4px; border-radius: 2px; font-size: 13px;
+	background: var(--tame-surface-alt); padding: 1px 4px; border-radius: 2px; font-size: 13px;
 }
 tame-markdown pre code {
 	background: none; padding: 0; border-radius: 0; font-size: inherit;
 }
 
 /* ---- thinking ---- */
-tame-message > details.thinking { color: #888; font-style: italic; margin: 8px 0; }
+tame-message > details.thinking { color: var(--tame-text-muted); font-style: italic; margin: 8px 0; }
 
 /* ---- tool view ---- */
 tame-tool-view { display: block; margin-bottom: 12px; }
-tame-tool-view > .loading { padding: 8px; color: #888; }
+tame-tool-view > .loading { padding: 8px; color: var(--tame-text-muted); }
 
 /* ---- tool fallback ---- */
 tame-tool-fallback {
 	display: block; margin: 0; padding: 8px;
-	border: 1px solid #444; border-radius: 4px; background: #0a0a14;
+	border: 1px solid var(--tame-border-light); border-radius: 4px; background: var(--tame-surface-alt);
 }
-tame-tool-fallback > .tool-label { display: block; font-size: 12px; color: #888; margin-bottom: 4px; }
-tame-tool-fallback > .tool-field { display: block; font-size: 12px; color: #ccc; margin-left: 8px; line-height: 1.4; }
-tame-tool-fallback > .tool-field b { color: #aaa; font-weight: 500; }
+tame-tool-fallback > .tool-label { display: block; font-size: 12px; color: var(--tame-text-muted); margin-bottom: 4px; }
+tame-tool-fallback > .tool-field { display: block; font-size: 12px; color: var(--tame-text-secondary); margin-left: 8px; line-height: 1.4; }
+tame-tool-fallback > .tool-field b { color: var(--tame-text-faint); font-weight: 500; }
 tame-tool-fallback > .tool-output {
-	margin-top: 8px; padding-top: 8px; border-top: 1px solid #333;
-	white-space: pre-wrap; font-size: 13px; color: #eee;
+	margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--tame-border);
+	white-space: pre-wrap; font-size: 13px; color: var(--tame-text);
 }
-tame-tool-fallback > .tool-output.error { color: #f66; }
+tame-tool-fallback > .tool-output.error { color: var(--tame-danger); }
 
 /* ---- composer ---- */
-tame-composer { display: block; border-top: 1px solid #333; padding: 12px; }
+tame-composer { display: block; border-top: 1px solid var(--tame-border); padding: 12px; }
 tame-composer > .composer-row { display: flex; gap: 8px; align-items: flex-end; }
 tame-composer > .composer-row > .input {
-	flex: 1; min-height: 60px; background: #1a1a2e; color: #eee;
-	border: 1px solid #444; border-radius: 4px; padding: 8px;
+	flex: 1; min-height: 60px; background: var(--tame-surface); color: var(--tame-text);
+	border: 1px solid var(--tame-border-light); border-radius: 4px; padding: 8px;
 	font-family: inherit; font-size: 14px; resize: vertical;
 }
 tame-composer > .composer-row > .send-btn,
 tame-composer > .composer-row > .abort-btn {
-	flex-shrink: 0; width: 36px; height: 36px; border: 1px solid #444;
+	flex-shrink: 0; width: 36px; height: 36px; border: 1px solid var(--tame-border-light);
 	border-radius: 4px; cursor: pointer; font-size: 16px;
 }
-tame-composer > .composer-row > .send-btn { background: #1a1a2e; color: #6f6; }
-tame-composer > .composer-row > .send-btn:hover { background: #2a2a4e; }
-tame-composer > .composer-row > .abort-btn { background: #2e1a1a; color: #f66; }
-tame-composer > .composer-row > .abort-btn:hover { background: #4e2a2a; }
+tame-composer > .composer-row > .send-btn { background: var(--tame-surface); color: var(--tame-success); }
+tame-composer > .composer-row > .send-btn:hover { background: var(--tame-surface-hover); }
+tame-composer > .composer-row > .abort-btn { background: var(--tame-danger-surface); color: var(--tame-danger); }
+tame-composer > .composer-row > .abort-btn:hover { background: var(--tame-danger-surface-hover); }
