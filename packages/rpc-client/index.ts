@@ -20,6 +20,18 @@ export interface RPCRegistry {
 			input: { id?: string; system?: string };
 			output: { id: string };
 		};
+		abort: {
+			input: { id: string };
+			output: Record<string, never>;
+		};
+		queueCompletion: {
+			input: { id: string };
+			output: Record<string, never>;
+		};
+		viewToolCall: {
+			input: { agent_id: string; tool_use_id: string; view: string };
+			output: unknown;
+		};
 	};
 }
 
@@ -65,6 +77,30 @@ export class RPCClient {
 			this.#send(msg).catch(reject);
 		});
 	}
+
+	// ---- base route conveniences ----
+
+	/** Create a new agent. */
+	newAgent(opts?: { id?: string; system?: string }): Promise<{ id: string }> {
+		return this.call("@tame", "newAgent", opts ?? {}) as Promise<{ id: string }>;
+	}
+
+	/** Abort an agent. */
+	abort(id: string): Promise<void> {
+		return this.call("@tame", "abort", { id }) as unknown as Promise<void>;
+	}
+
+	/** Queue a completion on an agent. */
+	queueCompletion(id: string): Promise<void> {
+		return this.call("@tame", "queueCompletion", { id }) as unknown as Promise<void>;
+	}
+
+	/** Resolve a tool call view. Returns the view result (tag + props, or undefined). */
+	viewToolCall(agent_id: string, tool_use_id: string, view: string): Promise<unknown> {
+		return this.call("@tame", "viewToolCall", { agent_id, tool_use_id, view });
+	}
+
+	// ---- subscriptions ----
 
 	/** Subscribe to events matching the filter. Returns an unsubscribe function.
 	 *  The server does coarse filtering; the client routes to matching callbacks. */

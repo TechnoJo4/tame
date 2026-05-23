@@ -1,5 +1,5 @@
 import { Compile, Validator } from "typebox/compile";
-import { assertSchema, type IAgent, type IHarness, type Plugin } from "@tame/sdk";
+import { assertSchema, type IAgent, type IHarness, type Plugin, type ToolUse, type ToolResult } from "@tame/sdk";
 import {
 	eventSchema,
 	rpcMsgSchema,
@@ -73,7 +73,57 @@ export class RPCPlugin implements Plugin {
 					const agent = harness.newAgent(undefined, system, id);
 					return { id: agent.id };
 				}
-			})
+			}),
+			abort: call({
+				...baseRouteSchemas.abort,
+				call: async ({ id }) => {
+					const agent = harness.getAgent(id);
+					if (!agent) throw new Error(`agent ${id} not found`);
+					agent.abort();
+					return {};
+				}
+			}),
+			queueCompletion: call({
+				...baseRouteSchemas.queueCompletion,
+				call: async ({ id }) => {
+					const agent = harness.getAgent(id);
+					if (!agent) throw new Error(`agent ${id} not found`);
+					agent.queueCompletion();
+					return {};
+				}
+			}),
+			viewToolCall: call({
+				...baseRouteSchemas.viewToolCall,
+				call: async ({ agent_id, tool_use_id, view }) => {
+					const agent = harness.getAgent(agent_id);
+					if (!agent) throw new Error(`agent ${agent_id} not found`);
+
+					let call: ToolUse | undefined;
+					for (const m of agent.context) {
+						for (const c of m.content) {
+							if (c.type === "tool_use" && c.id === tool_use_id) {
+								call = c;
+								break;
+							}
+						}
+						if (call) break;
+					}
+					if (!call) throw new Error(`tool_use ${tool_use_id} not found`);
+
+					let result: ToolResult | undefined;
+					for (const m of agent.context) {
+						for (const c of m.content) {
+							if (c.type === "tool_result" && c.tool_use_id === tool_use_id) {
+								result = c;
+								break;
+							}
+						}
+						if (result) break;
+					}
+
+					return agent.viewToolCall(view, call, result);
+				}
+			}),
 		});
 	}
 

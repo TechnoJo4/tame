@@ -18,5 +18,25 @@ export const baseRouteSchemas = {
 		output: Type.Object({
 			id: Type.String()
 		})
-	}
+	},
+	abort: {
+		input: Type.Object({
+			id: Type.String({ description: "The agent ID to abort." }),
+		}),
+		output: Type.Object({}, { additionalProperties: false }),
+	},
+	queueCompletion: {
+		input: Type.Object({
+			id: Type.String({ description: "The agent ID to queue a completion for." }),
+		}),
+		output: Type.Object({}, { additionalProperties: false }),
+	},
+	viewToolCall: {
+		input: Type.Object({
+			agent_id: Type.String({ description: "The agent ID." }),
+			tool_use_id: Type.String({ description: "The tool_use block ID to resolve a view for." }),
+			view: Type.String({ description: "The view name." }),
+		}),
+		output: Type.Any(),
+	},
 };
