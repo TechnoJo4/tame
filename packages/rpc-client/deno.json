@@ -1,0 +1,8 @@
+{
+	"name": "@tame/rpc-client",
+	"version": "0.1.0",
+	"exports": {
+		".": "./index.ts",
+		"./stream": "./stream.ts"
+	}
+}
