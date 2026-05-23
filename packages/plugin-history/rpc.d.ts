@@ -1,5 +1,5 @@
 import type { Static } from "typebox";
-import type { rpcSchema } from "./index.ts";
+import type { rpcSchema } from "./rpc-schema.ts";
 
 declare module "@tame/rpc-client" {
 	interface RPCRegistry {

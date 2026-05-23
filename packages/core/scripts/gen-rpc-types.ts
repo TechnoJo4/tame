@@ -19,13 +19,14 @@ let count = 0;
 
 for (const name of pluginNames) {
 	const pluginDir = resolve(packagesDir, `plugin-${name}`);
+	const schemaPath = resolve(pluginDir, "rpc-schema.ts");
 	const indexPath = resolve(pluginDir, "index.ts");
 
 	let mod;
 	try {
-		mod = await import(toFileUrl(indexPath).toString());
-	} catch (e) {
-		console.warn(`gen-rpc-types: skipping ${name}: could not import index.ts (${e instanceof Error ? e.message : e})`);
+		mod = await import(toFileUrl(schemaPath).toString());
+	} catch {
+		console.log(`gen-rpc-types: ${name}: no rpc-schema.ts, skipping`);
 		continue;
 	}
 
@@ -39,7 +40,7 @@ for (const name of pluginNames) {
 
 	// generate rpc.d.ts
 	let out = `import type { Static } from "typebox";\n`;
-	out += `import type { rpcSchema } from "./index.ts";\n\n`;
+	out += `import type { rpcSchema } from "./rpc-schema.ts";\n\n`;
 	out += `declare module "@tame/rpc-client" {\n`;
 	out += `\tinterface RPCRegistry {\n`;
 	out += `\t\t${JSON.stringify(name)}: {\n`;

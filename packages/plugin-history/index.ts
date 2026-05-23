@@ -1,7 +1,7 @@
 /// <reference path="./rpc.d.ts" />
 import { Plugin, tameDataFolder, tameMsgMeta, type IAgent, type IHarness, type InputMessage, type TameMessageMeta } from "@tame/sdk";
-import { Type } from "typebox";
-import { call, rpcMethod } from "@tame/rpc-sdk";
+import { call } from "@tame/rpc-sdk";
+import { rpcSchema } from "./rpc-schema.ts";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
 import { promises as fs } from "node:fs";
 import { resolve } from "@std/path";
@@ -24,29 +24,6 @@ export interface SessionInfo {
 	id: string;
 	title?: string;
 }
-
-export const rpcSchema = {
-	list: rpcMethod({
-		input: Type.Object({}),
-		output: Type.Object({
-			sessions: Type.Array(Type.Object({
-				id: Type.String(),
-				title: Type.Optional(Type.String()),
-			})),
-		}),
-	}),
-	load: rpcMethod({
-		input: Type.Object({ id: Type.String() }),
-		output: Type.Object({
-			id: Type.String(),
-			title: Type.Optional(Type.String()),
-			system: Type.String(),
-			context: Type.Array(Type.Any()),
-			history: Type.Array(Type.Any()),
-			extra: Type.Object({}, { additionalProperties: true }),
-		}),
-	}),
-};
 
 export type PersistedMessage = InputMessage & {
 	[tameMsgMeta]: undefined;
@@ -112,7 +89,10 @@ export class HistoryPlugin implements Plugin {
 			}),
 			load: call({
 				...rpcSchema.load,
-				call: async ({ id }) => await this.load(id),
+				call: async ({ id }) => {
+					const agent = await this.loadAgent(id);
+					return { id: agent.id };
+				},
 			}),
 		});
 	}
