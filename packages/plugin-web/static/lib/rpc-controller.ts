@@ -80,22 +80,15 @@ export class RPCController {
 	#subscribe() {
 		if (!this.#client || !this.agentId) return;
 
-		this.#unsubs.push(
-			this.#client.subscribe({ agent_id: this.agentId }, (msg) => {
-				switch (msg.event) {
-					case "userMessage":
-						this.#handleUserMessage(msg.data as any);
-						break;
-					case "assistantMessage":
-						this.#handleAssistantMessage(msg.data as any);
-						break;
-					case "toolResult":
-						this.#handleToolResult(msg.data as any);
-						break;
-				}
-				this.host.requestUpdate();
-			}),
-		);
+		const on = (event: string, handler: (data: Record<string, unknown>) => void) => {
+			this.#unsubs.push(
+				this.#client.subscribe({ agent_id: this.agentId, event }, (msg) => handler(msg.data as Record<string, unknown>)),
+			);
+		};
+
+		on("userMessage", (d) => { this.#handleUserMessage(d); this.host.requestUpdate(); });
+		on("assistantMessage", (d) => { this.#handleAssistantMessage(d); this.host.requestUpdate(); });
+		on("toolResult", (d) => { this.#handleToolResult(d); this.host.requestUpdate(); });
 	}
 
 	#handleUserMessage(data: { msg: any }) {

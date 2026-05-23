@@ -17,7 +17,7 @@ export class TameShell extends LitElement {
 			<div style="display:flex;height:100%">
 				<tame-sidebar .controller=${this.controller}></tame-sidebar>
 				<main style="flex:1;display:flex;flex-direction:column;min-width:0">
-					<tame-thread .controller=${this.controller}></tame-thread>
+					<tame-thread .controller=${this.controller} .messages=${this.controller.messages} style="flex:1;overflow-y:auto"></tame-thread>
 					<tame-composer .controller=${this.controller}></tame-composer>
 				</main>
 			</div>
