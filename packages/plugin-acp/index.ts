@@ -19,7 +19,7 @@ const unixListen = Type.Object({
 
 export const configSchema = Type.Object({
 	listen: Type.Union([tcpListen, unixListen]),
-	tools: Type.Boolean({ default: true })
+	tools: Type.Boolean({ default: false })
 });
 
 export type Config = Static<typeof configSchema>;
