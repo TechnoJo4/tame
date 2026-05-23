@@ -40,7 +40,7 @@ console.log("bundling shell...");
 const shellResult = await new Deno.Command("esbuild", {
 	args: [
 		`${dir}/static/shell.ts`,
-		"--bundle", "--minify",
+		"--bundle", "--minify", "--format=esm",
 		`--outfile=${staticDir}/shell.js`,
 		"--external:lit",
 	],
