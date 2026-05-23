@@ -182,6 +182,9 @@ export class RPCController {
 	getComponentSrc(tag: string): string | undefined {
 		return this.registry?.components[tag]?.src;
 	}
+
+	/** Exposed for plugin components that need to call RPC methods directly. */
+	get client(): RPCClient | null { return this.#client; }
 }
 
 // ---- event → item constructors ----

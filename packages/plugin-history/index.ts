@@ -3,6 +3,7 @@ import { type Plugin, tameDataFolder, tameMsgMeta, type IAgent, type IHarness, t
 import { call } from "@tame/rpc-sdk";
 import { rpcSchema } from "./rpc-schema.ts";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
+import type { WebPlugin } from "@tame/plugin-web/index";
 import { promises as fs } from "node:fs";
 import { resolve } from "@std/path";
 
@@ -95,6 +96,17 @@ export class HistoryPlugin implements Plugin {
 				},
 			}),
 		});
+
+		// register web component
+		const web = harness.getPlugin("web") as WebPlugin | undefined;
+		if (web) {
+			const dir = import.meta.dirname!;
+			web.register("history", [
+				{ tag: "tame-history", src: web.resolve(dir, "./web/history.ts") },
+			], [
+				{ location: "panel:sidebar", tag: "tame-history" },
+			]);
+		}
 	}
 
 	newAgent(agent: IAgent) {
