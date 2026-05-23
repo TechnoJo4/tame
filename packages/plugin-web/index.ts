@@ -22,11 +22,11 @@ export interface WebConfig {
 }
 
 export const configSchema = Type.Object({
-	listen: Type.Object({
-		hostname: Type.String(),
-		port: Type.Number(),
-	}),
-	staticDir: Type.String(),
+	listen: Type.Optional(Type.Object({
+		hostname: Type.Optional(Type.String()),
+		port: Type.Optional(Type.Number()),
+	})),
+	staticDir: Type.Optional(Type.String()),
 });
 
 interface RegistryEntry {

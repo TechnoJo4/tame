@@ -1,7 +1,17 @@
 import { readTameConfig } from "@tame/sdk";
-import { configSchema, WebPlugin } from "./index.ts";
+import { configSchema, type WebConfig, WebPlugin } from "./index.ts";
 
 export { configSchema } from "./index.ts";
 
-const config = readTameConfig("web.json", configSchema);
+const raw = readTameConfig("web.json", configSchema);
+const dir = import.meta.dirname!;
+
+const config: WebConfig = {
+	listen: {
+		hostname: raw.listen?.hostname ?? "127.0.0.1",
+		port: raw.listen?.port ?? 6780,
+	},
+	staticDir: raw.staticDir ?? `${dir}/static`,
+};
+
 export default new WebPlugin(config);
