@@ -29,12 +29,14 @@ interface RegistryEntry {
 interface Registry {
 	components: Record<string, { src: string }>;
 	placements: Placement[];
+	stylesheets: Record<string, string>; // pluginId → url
 }
 
 export class WebPlugin implements Plugin {
 	id = "web" as const;
 
 	#components = new Map<string, RegistryEntry>();
+	#stylesheets = new Map<string, string>(); // pluginId → url
 	#placements: Placement[] = [];
 	#harness: IHarness | undefined;
 	#config: WebConfig;
@@ -51,7 +53,7 @@ export class WebPlugin implements Plugin {
 	}
 
 	/** Register components and placements for a plugin. Called during init(). */
-	register(pluginId: string, components: ComponentDef[], placements: Placement[]): void {
+	register(pluginId: string, components: ComponentDef[], placements: Placement[], css?: string): void {
 		const tsFiles: { src: string; tag: string }[] = [];
 
 		for (const c of components) {
@@ -66,6 +68,16 @@ export class WebPlugin implements Plugin {
 
 		if (tsFiles.length > 0) {
 			this.#transpile(pluginId, tsFiles);
+		}
+
+		// copy CSS file to build output so it can be served
+		if (css) {
+			const outDir = `${this.#buildDir}/plugins/${pluginId}`;
+			try { Deno.mkdirSync(outDir, { recursive: true }); } catch { /* exists */ }
+			const basename = css.split("/").pop()!;
+			const outPath = `${outDir}/${basename}`;
+			try { Deno.copyFileSync(css, outPath); } catch { /* not found */ }
+			this.#stylesheets.set(pluginId, `/static/plugins/${pluginId}/${basename}`);
 		}
 
 		this.#placements.push(...placements);
@@ -114,17 +126,22 @@ export class WebPlugin implements Plugin {
 						tag: Type.String(),
 						props: Type.Optional(Type.Object({}, { additionalProperties: true })),
 					})),
+					stylesheets: Type.Record(Type.String(), Type.String()),
 				}),
 				call: async (): Promise<Registry> => {
 					const components: Record<string, { src: string }> = {};
 					for (const [tag, entry] of this.#components) {
 						components[tag] = { src: entry.url };
 					}
-					return { components, placements: this.#placements };
+					const stylesheets: Record<string, string> = {};
+					for (const [pluginId, url] of this.#stylesheets) {
+						stylesheets[pluginId] = url;
+					}
+					return { components, placements: this.#placements, stylesheets };
 				},
 			}),
 		});
 
-		serve(this.#config, this.#components, rpc);
+		serve(this.#config, this.#components, this.#stylesheets, rpc);
 	}
 }

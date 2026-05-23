@@ -107,7 +107,7 @@ export class HistoryPlugin implements Plugin {
 				{ tag: "tame-history", src: web.resolve(dir, "./web/history.ts") },
 			], [
 				{ location: "panel:sidebar", tag: "tame-history" },
-			]);
+			], web.resolve(dir, "./web/history.css"));
 		}
 	}
 

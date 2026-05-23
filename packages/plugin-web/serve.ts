@@ -10,6 +10,7 @@ interface RegistryEntry {
 export function serve(
 	config: WebConfig,
 	components: Map<string, RegistryEntry>,
+	stylesheets: Map<string, string>,
 	rpc: RPCPlugin,
 ): void {
 	Deno.serve({ hostname: config.listen.hostname, port: config.listen.port }, (request) => {
@@ -23,11 +24,11 @@ export function serve(
 		}
 
 		if (url.pathname.startsWith("/static/")) {
-			return serveStatic(url.pathname, config.staticDir, components);
+			return serveStatic(url.pathname, config.staticDir, components, stylesheets);
 		}
 
 		// SPA fallback — serve index.html for all other paths
-		return serveStatic("/static/index.html", config.staticDir, components);
+		return serveStatic("/static/index.html", config.staticDir, components, stylesheets);
 	});
 }
 
@@ -35,11 +36,21 @@ function serveStatic(
 	pathname: string,
 	staticDir: string,
 	components: Map<string, RegistryEntry>,
+	stylesheets: Map<string, string>,
 ): Response {
 	// Check registered plugin components first
 	for (const [, entry] of components) {
 		if (pathname === entry.url) {
 			return serveFile(entry.src, "application/javascript");
+		}
+	}
+
+	// Check registered stylesheets
+	for (const [, url] of stylesheets) {
+		if (pathname === url) {
+			// stylesheet paths are under .build/plugins/<id>/<file>.css
+			const filePath = url.replace(/^\/static\//, `${staticDir}/../.build/`);
+			return serveFile(filePath, "text/css");
 		}
 	}
 

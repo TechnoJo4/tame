@@ -6,6 +6,7 @@ interface ComponentEntry { src: string; }
 interface Registry {
 	components: Record<string, ComponentEntry>;
 	placements: Placement[];
+	stylesheets: Record<string, string>; // pluginId → url
 }
 
 // ---- thread item model ----
@@ -74,6 +75,7 @@ export class RPCController implements WebController {
 			this.registry = registry as unknown as Registry;
 			this.agentId = agent.id;
 			this.#host.loading = false;
+			this.#injectStylesheets();
 			this.#host.requestUpdate();
 			this.#subscribeTo(this.agentId);
 		} catch (e) {
@@ -113,6 +115,17 @@ export class RPCController implements WebController {
 			this.#host.idle = true;
 			this.#host.requestUpdate();
 		});
+	}
+
+	#injectStylesheets() {
+		if (!this.registry) return;
+		for (const [, url] of Object.entries(this.registry.stylesheets)) {
+			if (document.querySelector(`link[href="${url}"]`)) continue;
+			const link = document.createElement("link");
+			link.rel = "stylesheet";
+			link.href = url;
+			document.head.appendChild(link);
+		}
 	}
 
 	/** Switch the displayed thread to a different agent. Keeps the old
