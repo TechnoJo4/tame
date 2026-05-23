@@ -99,6 +99,14 @@ export class RPCClient {
 		return this.call("@tame", "viewToolCall", { agent_id, tool_use_id, view });
 	}
 
+	// ---- events ----
+
+	/** Send an event to the server. */
+	emit(agent_id: string | undefined, event: string, data: Record<string, unknown>, plugin?: string): void {
+		const msg: EventMessage = { type: "event", agent_id, event, data, plugin };
+		this.#send(msg).catch(() => {});
+	}
+
 	// ---- subscriptions ----
 
 	/** Subscribe to events matching the filter. Returns an unsubscribe function.
