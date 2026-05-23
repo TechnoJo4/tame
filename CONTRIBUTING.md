@@ -54,7 +54,6 @@ tame/
 │   │   ├── config/           # config parsing, llm provider setup
 │   │   ├── llm/              # inference provider implementations
 │   │   ├── ratelimit/        # rate limiter implementations
-│   │   ├── toolsets/         # legacy tool collections (to be removed)
 │   │   ├── schemas/          # generated plugin config schemas
 │   │   └── scripts/          # utility scripts
 │   ├── plugin-acp/       # agent client protocol

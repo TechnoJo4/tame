@@ -6,14 +6,12 @@ import { InferenceProvider, readTameConfig, tameDataFolder } from "@tame/sdk";
 
 export const configSchema = Type.Object({
 	llm: llmConfig,
-	toolsets: Type.Array(Type.String()),
 	plugins: Type.Array(Type.String()),
 	pluginSources: Type.Optional(Type.Array(Type.String())),
 });
 
 export interface Config {
 	llm: InferenceProvider;
-	toolsets: string[];
 	plugins: string[];
 	pluginSources: string[];
 }
@@ -21,7 +19,6 @@ export interface Config {
 export const parseConfig = (o: Static<typeof configSchema>): Config => {
 	return {
 		llm: parseLLM(o.llm),
-		toolsets: o.toolsets,
 		plugins: o.plugins,
 		pluginSources: o.pluginSources ?? [resolve(tameDataFolder, "plugins")],
 	};
