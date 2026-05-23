@@ -4,22 +4,39 @@ export class TameToolFallback extends LitElement {
 	static properties = {
 		name: { type: String },
 		input: { type: Object },
+		result: { type: String },
+		isError: { type: Boolean },
 	};
 
 	declare name: string;
 	declare input: Record<string, unknown>;
+	declare result: string | null;
+	declare isError: boolean;
 
 	createRenderRoot() { return this; }
 
 	willUpdate(changed: Map<string, unknown>) {
 		if (changed.has("name")) this.dataset.tool = this.name;
+		if (changed.has("result") && this.result !== null) {
+			this.dataset.hasResult = "";
+		}
 	}
 
 	render() {
+		const fields = Object.entries(this.input ?? {});
 		return html`
 			<span class="tool-label">tool: ${this.name}</span>
-			<pre class="tool-input">${JSON.stringify(this.input, null, 2)}</pre>
+			${fields.map(([k, v]) => html`<span class="tool-field"><b>${k}</b>: ${this.#fmt(v)}</span>`)}
+			${this.result !== null && this.result !== undefined ? html`
+				<pre class="tool-output${this.isError ? " error" : ""}">${this.result}</pre>
+			` : html``}
 		`;
+	}
+
+	#fmt(v: unknown): string {
+		if (typeof v === "string") return v;
+		if (v === null || v === undefined) return "";
+		return JSON.stringify(v);
 	}
 }
 customElements.define("tame-tool-fallback", TameToolFallback);

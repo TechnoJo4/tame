@@ -1,14 +1,14 @@
 import { LitElement, html } from "lit";
-import { RPCController } from "../lib/rpc-controller.ts";
+import { RPCController, type ThreadItem } from "../lib/rpc-controller.ts";
 
 export class TameShell extends LitElement {
 	static properties = {
-		messages: { type: Array, state: true },
+		items: { type: Array, state: true },
 		loading: { type: Boolean, state: true },
 		error: { type: String, state: true },
 	};
 
-	declare messages: any[];
+	declare items: ThreadItem[];
 	declare loading: boolean;
 	declare error: string | null;
 
@@ -16,7 +16,7 @@ export class TameShell extends LitElement {
 
 	constructor() {
 		super();
-		this.messages = [];
+		this.items = [];
 		this.loading = true;
 		this.error = null;
 	}
@@ -34,7 +34,7 @@ export class TameShell extends LitElement {
 			<div class="layout">
 				<tame-sidebar .controller=${this.#controller}></tame-sidebar>
 				<main class="main">
-					<tame-thread .messages=${this.messages} .controller=${this.#controller}></tame-thread>
+					<tame-thread .items=${this.items} .controller=${this.#controller}></tame-thread>
 					<tame-composer .controller=${this.#controller}></tame-composer>
 				</main>
 			</div>

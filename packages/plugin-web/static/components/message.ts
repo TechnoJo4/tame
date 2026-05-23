@@ -1,34 +1,31 @@
 import { LitElement, html } from "lit";
-import type { RPCController, Message, ContentBlock } from "../lib/rpc-controller.ts";
+import type { RPCController, MessageItem, TextOrThinking } from "../lib/rpc-controller.ts";
 
 export class TameMessage extends LitElement {
 	static properties = {
-		message: { type: Object },
-		index: { type: Number },
+		item: { type: Object },
 		controller: { type: Object },
 	};
 
-	declare message: Message;
-	declare index: number;
+	declare item: MessageItem;
 	declare controller: RPCController;
 
 	createRenderRoot() { return this; }
 
 	willUpdate(changed: Map<string, unknown>) {
-		if (changed.has("message")) {
-			this.dataset.role = this.message.role;
+		if (changed.has("item")) {
+			this.dataset.role = this.item.role;
 		}
 	}
 
 	render() {
-		const role = this.message.role;
 		return html`
-			<span class="role">${role}</span>
-			${this.message.content.map((block) => this.#renderBlock(block))}
+			<span class="role">${this.item.role}</span>
+			${this.item.content.map((block) => this.#renderBlock(block))}
 		`;
 	}
 
-	#renderBlock(block: ContentBlock) {
+	#renderBlock(block: TextOrThinking) {
 		switch (block.type) {
 			case "text":
 				return html`<tame-markdown .text=${block.text}></tame-markdown>`;
@@ -37,18 +34,6 @@ export class TameMessage extends LitElement {
 					<summary>thinking</summary>
 					<tame-markdown .text=${block.thinking}></tame-markdown>
 				</details>`;
-			case "tool_use":
-				return html`<tame-tool-view
-					.controller=${this.controller}
-					.toolUseId=${block.id}
-					.toolName=${block.name}
-					.toolInput=${block.input}
-				></tame-tool-view>`;
-			case "tool_result":
-				return html`<tame-tool-result
-					.content=${block.content}
-					.isError=${block.is_error}
-				></tame-tool-result>`;
 			default:
 				return html``;
 		}
@@ -64,12 +49,16 @@ class TameToolView extends LitElement {
 		toolUseId: { type: String },
 		toolName: { type: String },
 		toolInput: { type: Object },
+		result: { type: String },
+		isError: { type: Boolean },
 	};
 
 	declare controller: RPCController;
 	declare toolUseId: string;
 	declare toolName: string;
 	declare toolInput: Record<string, unknown>;
+	declare result: string | null;
+	declare isError: boolean;
 
 	#resolved: { tag: string; props: Record<string, unknown> } | null = null;
 	#loaded = false;
@@ -83,7 +72,7 @@ class TameToolView extends LitElement {
 
 	async #resolve() {
 		const result = await this.controller.viewToolCall(this.toolUseId);
-		if (result) {
+		if (result?.tag) {
 			this.#resolved = result;
 			const src = this.controller.getComponentSrc(result.tag);
 			if (src) {
@@ -99,11 +88,20 @@ class TameToolView extends LitElement {
 			return html`<div class="loading">loading tool view...</div>`;
 		}
 		if (!this.#resolved) {
-			return html`<tame-tool-fallback .name=${this.toolName} .input=${this.toolInput}></tame-tool-fallback>`;
+			return html`<tame-tool-fallback
+				.name=${this.toolName}
+				.input=${this.toolInput}
+				.result=${this.result ?? null}
+				.isError=${this.isError}
+			></tame-tool-fallback>`;
 		}
 		const { tag, props } = this.#resolved;
 		const el = document.createElement(tag) as any;
 		if (props) Object.assign(el, props);
+		if (this.result !== undefined) {
+			el.result = this.result;
+			el.isError = this.isError;
+		}
 		return el;
 	}
 }

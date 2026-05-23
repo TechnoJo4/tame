@@ -1,9 +1,7 @@
 import { RPCClient } from "./rpc-client.ts";
 import { wsToStream } from "./stream.ts";
 
-interface ComponentEntry {
-	src: string;
-}
+interface ComponentEntry { src: string; }
 
 interface Registry {
 	components: Record<string, ComponentEntry>;
@@ -16,19 +14,45 @@ interface Placement {
 	props?: Record<string, unknown>;
 }
 
+// ---- thread item model ----
+
+export type ThreadItem = MessageItem | ToolCallItem;
+
+export interface MessageItem {
+	type: "message";
+	role: "user" | "assistant";
+	content: TextOrThinking[];
+}
+
+export type TextOrThinking =
+	| { type: "text"; text: string }
+	| { type: "thinking"; thinking: string };
+
+export interface ToolCallItem {
+	type: "tool_call";
+	id: string;
+	name: string;
+	input: Record<string, unknown>;
+	result?: string;
+	isError?: boolean;
+}
+
+// ---- for backwards compat with tame-tool-view ----
+
 export interface Message {
 	role: "user" | "assistant";
 	content: ContentBlock[];
 }
 
 export type ContentBlock =
-	| { type: "text"; text: string }
-	| { type: "thinking"; thinking: string }
+	| TextOrThinking
 	| { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
 	| { type: "tool_result"; tool_use_id: string; content: string; is_error: boolean };
 
+// ---- controller ----
+
 interface TameShellHost {
-	messages: Message[];
+	items: ThreadItem[];
 	loading: boolean;
 	error: string | null;
 	addController(c: RPCController): void;
@@ -48,9 +72,7 @@ export class RPCController {
 		host.addController(this);
 	}
 
-	hostConnected() {
-		this.#connect();
-	}
+	hostConnected() { this.#connect(); }
 
 	hostDisconnected() {
 		this.#client?.close();
@@ -91,9 +113,18 @@ export class RPCController {
 			);
 		};
 
-		on("userMessage", (d) => { this.#host.messages = [...this.#host.messages, userMessage(d)]; this.#host.requestUpdate(); });
-		on("assistantMessage", (d) => { this.#host.messages = [...this.#host.messages, assistantMessage(d)]; this.#host.requestUpdate(); });
-		on("toolResult", (d) => { this.#host.messages = [...this.#host.messages, toolResultMessage(d)]; this.#host.requestUpdate(); });
+		on("userMessage", (d) => {
+			this.#host.items = [...this.#host.items, userItem(d)];
+			this.#host.requestUpdate();
+		});
+		on("assistantMessage", (d) => {
+			this.#host.items = [...this.#host.items, ...assistantItems(d)];
+			this.#host.requestUpdate();
+		});
+		on("toolResult", (d) => {
+			applyToolResult(this.#host.items, d);
+			this.#host.requestUpdate();
+		});
 	}
 
 	send(text: string) {
@@ -107,7 +138,8 @@ export class RPCController {
 		if (!this.#client || !this.agentId) return null;
 		try {
 			const result = await this.#client.viewToolCall(this.agentId, toolUseId, "web");
-			return result as { tag: string; props: Record<string, unknown> } | null;
+			if (!result || typeof result !== "object" || !("tag" in result)) return null;
+			return result as { tag: string; props: Record<string, unknown> };
 		} catch {
 			return null;
 		}
@@ -123,33 +155,65 @@ export class RPCController {
 	}
 }
 
-// ---- message constructors (pure functions, no 'this') ----
+// ---- event → item constructors ----
 
-function userMessage(data: { msg: { content: { type: string; text?: string }[] } }): Message {
-	const blocks: ContentBlock[] = [];
-	for (const c of data.msg.content) {
-		if (c.type === "text") blocks.push({ type: "text", text: c.text! });
-	}
-	return { role: "user", content: blocks };
+interface RawBlock {
+	type: string;
+	text?: string;
+	thinking?: string;
+	id?: string;
+	name?: string;
+	input?: Record<string, unknown>;
 }
 
-function assistantMessage(data: { msg: { content: { type: string; text?: string; thinking?: string; id?: string; name?: string; input?: Record<string, unknown> }[] } }): Message {
-	const blocks: ContentBlock[] = [];
+function userItem(data: { msg: { content: RawBlock[] } }): MessageItem {
+	const content: TextOrThinking[] = [];
 	for (const c of data.msg.content) {
-		if (c.type === "text") {
-			blocks.push({ type: "text", text: c.text! });
+		if (c.type === "text") content.push({ type: "text", text: c.text! });
+	}
+	return { type: "message", role: "user", content };
+}
+
+function assistantItems(data: { msg: { content: RawBlock[] } }): ThreadItem[] {
+	const items: ThreadItem[] = [];
+	const textBlocks: TextOrThinking[] = [];
+
+	for (const c of data.msg.content) {
+		if (c.type === "tool_use") {
+			// flush pending text blocks as a message
+			if (textBlocks.length > 0) {
+				items.push({ type: "message", role: "assistant", content: [...textBlocks] });
+				textBlocks.length = 0;
+			}
+			items.push({
+				type: "tool_call",
+				id: c.id!,
+				name: c.name!,
+				input: c.input!,
+			});
+		} else if (c.type === "text") {
+			textBlocks.push({ type: "text", text: c.text! });
 		} else if (c.type === "thinking") {
-			blocks.push({ type: "thinking", thinking: c.thinking! });
-		} else if (c.type === "tool_use") {
-			blocks.push({ type: "tool_use", id: c.id!, name: c.name!, input: c.input! });
+			textBlocks.push({ type: "thinking", thinking: c.thinking! });
 		}
 	}
-	return { role: "assistant", content: blocks };
+
+	// trailing text blocks
+	if (textBlocks.length > 0) {
+		items.push({ type: "message", role: "assistant", content: [...textBlocks] });
+	}
+
+	return items;
 }
 
-function toolResultMessage(data: { toolUse: string; error: boolean; result: string }): Message {
-	return {
-		role: "user",
-		content: [{ type: "tool_result", tool_use_id: data.toolUse, content: data.result, is_error: data.error }],
-	};
+function applyToolResult(items: ThreadItem[], data: { toolUse: string; error: boolean; result: string }) {
+	// walk backwards to find the matching tool_call (most recent first)
+	for (let i = items.length - 1; i >= 0; i--) {
+		const item = items[i];
+		if (item.type === "tool_call" && item.id === data.toolUse) {
+			item.result = data.result;
+			item.isError = data.error;
+			return;
+		}
+	}
 }

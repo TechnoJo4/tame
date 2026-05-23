@@ -6,7 +6,6 @@ import "./components/message.ts";
 import "./components/composer.ts";
 import "./components/markdown.ts";
 import "./components/tool-fallback.ts";
-import "./components/tool-result.ts";
 import "./lib/rpc-controller.ts";
 
 document.body.appendChild(document.createElement("tame-shell"));

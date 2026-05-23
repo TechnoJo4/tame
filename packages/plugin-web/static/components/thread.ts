@@ -1,21 +1,31 @@
 import { LitElement, html } from "lit";
-import type { RPCController, Message } from "../lib/rpc-controller.ts";
+import type { RPCController, ThreadItem } from "../lib/rpc-controller.ts";
 
 export class TameThread extends LitElement {
 	static properties = {
-		messages: { type: Array },
+		items: { type: Array },
 		controller: { type: Object },
 	};
 
-	declare messages: Message[];
+	declare items: ThreadItem[];
 	declare controller: RPCController;
 
 	createRenderRoot() { return this; }
 
 	render() {
-		return (this.messages ?? []).map(
-			(m, i) => html`<tame-message .message=${m} .index=${i} .controller=${this.controller}></tame-message>`,
-		);
+		return (this.items ?? []).map((item, i) => {
+			if (item.type === "tool_call") {
+				return html`<tame-tool-view
+					.controller=${this.controller}
+					.toolUseId=${item.id}
+					.toolName=${item.name}
+					.toolInput=${item.input}
+					.result=${item.result ?? null}
+					.isError=${item.isError ?? false}
+				></tame-tool-view>`;
+			}
+			return html`<tame-message .item=${item} .controller=${this.controller}></tame-message>`;
+		});
 	}
 }
 customElements.define("tame-thread", TameThread);
