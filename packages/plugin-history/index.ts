@@ -1,4 +1,8 @@
+/// <reference path="./rpc.d.ts" />
 import { Plugin, tameDataFolder, tameMsgMeta, type IAgent, type IHarness, type InputMessage, type TameMessageMeta } from "@tame/sdk";
+import { Type } from "typebox";
+import { call, rpcMethod } from "@tame/rpc-sdk";
+import type { RPCPlugin } from "@tame/plugin-rpc/index";
 import { promises as fs } from "node:fs";
 import { resolve } from "@std/path";
 
@@ -20,6 +24,29 @@ export interface SessionInfo {
 	id: string;
 	title?: string;
 }
+
+export const rpcSchema = {
+	list: rpcMethod({
+		input: Type.Object({}),
+		output: Type.Object({
+			sessions: Type.Array(Type.Object({
+				id: Type.String(),
+				title: Type.Optional(Type.String()),
+			})),
+		}),
+	}),
+	load: rpcMethod({
+		input: Type.Object({ id: Type.String() }),
+		output: Type.Object({
+			id: Type.String(),
+			title: Type.Optional(Type.String()),
+			system: Type.String(),
+			context: Type.Array(Type.Any()),
+			history: Type.Array(Type.Any()),
+			extra: Type.Object({}, { additionalProperties: true }),
+		}),
+	}),
+};
 
 export type PersistedMessage = InputMessage & {
 	[tameMsgMeta]: undefined;
@@ -76,6 +103,18 @@ export class HistoryPlugin implements Plugin {
 			await fs.mkdir(historyFolder);
 			await fs.writeFile(indexFile, JSON.stringify([]));
 		}
+
+		const rpc = harness.getPlugin<RPCPlugin>("rpc");
+		rpc?.register("history", {
+			list: call({
+				...rpcSchema.list,
+				call: async () => ({ sessions: await this.list() }),
+			}),
+			load: call({
+				...rpcSchema.load,
+				call: async ({ id }) => await this.load(id),
+			}),
+		});
 	}
 
 	newAgent(agent: IAgent) {

@@ -9,6 +9,10 @@ export interface CallDescription<I extends TSchema, O extends TSchema> {
 
 export const call = <I extends TSchema, O extends TSchema>(c: CallDescription<I, O>): CallDescription<I, O> => c;
 
+/** Capture input/output typebox schemas for codegen. Use {@link call} for
+ *  full call descriptions that include the implementation. */
+export const rpcMethod = <I extends TSchema, O extends TSchema>(s: { input: I; output: O }) => s;
+
 export const baseRouteSchemas = {
 	newAgent: {
 		input: Type.Object({

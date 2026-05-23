@@ -61,12 +61,12 @@ export class RPCClient {
 	/** Call an RPC method. Returns a promise that resolves with the result.
 	 *  Without codegen, use string literals and `unknown` types.
 	 *  With codegen, the RPCRegistry overload provides typed args/return. */
-	call(plugin: string, method: string, args: Record<string, unknown>): Promise<Record<string, unknown>>;
 	call<P extends keyof RPCRegistry, M extends string & keyof RPCRegistry[P]>(
 		plugin: P,
 		method: M,
 		args: RPCRegistry[P][M] extends { input: infer I } ? I : never,
 	): Promise<RPCRegistry[P][M] extends { output: infer O } ? O : never>;
+	call(plugin: string, method: string, args: Record<string, unknown>): Promise<Record<string, unknown>>;
 	call(plugin: string, method: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
 		const id = nextId();
 		const wirePlugin = plugin === "@tame" ? undefined : plugin;
