@@ -9,8 +9,10 @@ export interface WebController {
 	/** Create a fresh agent and switch to it. */
 	newChat(system?: string): Promise<void>;
 
-	/** The raw RPC client, for calling plugin-specific RPC methods. */
+	/** The raw RPC client, for calling plugin-specific RPC methods
+	 *  and subscribing to plugin events. */
 	readonly client: {
 		call(plugin: string, method: string, args: Record<string, unknown>): Promise<Record<string, unknown>>;
+		subscribe(filter: { agent_id?: string; plugin?: string; event?: string }, callback: (msg: { data: Record<string, unknown> }) => void): () => void;
 	} | null;
 }

@@ -70,6 +70,7 @@ export class HistoryPlugin implements Plugin {
 
 	#harness: IHarness | undefined;
 	#hooks = new Map<string, HistoryHook<unknown>>();
+	#rpc: RPCPlugin | undefined;
 
 	enabled?: true;
 
@@ -83,6 +84,7 @@ export class HistoryPlugin implements Plugin {
 		}
 
 		const rpc = harness.getPlugin<RPCPlugin>("rpc");
+		this.#rpc = rpc ?? undefined;
 		rpc?.register("history", {
 			list: call({
 				...rpcSchema.list,
@@ -163,7 +165,8 @@ export class HistoryPlugin implements Plugin {
 			else
 				index.push({ id: agent.id, title: getAgentHistory(agent).title });
 		}
-		await fs.writeFile(indexFile, JSON.stringify(index), { encoding: "utf-8" })
+		await fs.writeFile(indexFile, JSON.stringify(index), { encoding: "utf-8" });
+		this.#rpc?.emit({ type: "event", plugin: "history", event: "sessionsChanged", data: {} });
 	}
 
 	async list(): Promise<SessionInfo[]> {
@@ -187,7 +190,9 @@ export class HistoryPlugin implements Plugin {
 	}
 
 	async loadAgent(id: string): Promise<IAgent> {
-		return await this.historyToAgent(await this.load(id));
+		const agent = await this.historyToAgent(await this.load(id));
+		this.#rpc?.emit({ type: "event", plugin: "history", event: "sessionsChanged", data: {} });
+		return agent;
 	}
 
 	async historyToAgent(history: History): Promise<IAgent> {

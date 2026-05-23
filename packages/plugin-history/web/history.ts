@@ -13,14 +13,35 @@ export class TameHistory extends LitElement {
 	#sessions: SessionInfo[] = [];
 	#loading = true;
 	#loaded = false;
+	#unsub: (() => void) | null = null;
 
 	createRenderRoot() { return this; }
+
+	connectedCallback() {
+		super.connectedCallback();
+		this.#subscribe();
+	}
+
+	disconnectedCallback() {
+		super.disconnectedCallback();
+		this.#unsub?.();
+		this.#unsub = null;
+	}
 
 	updated(changed: Map<string, unknown>) {
 		if (changed.has("controller") && this.controller?.client && !this.#loaded) {
 			this.#loaded = true;
 			this.#load();
 		}
+	}
+
+	#subscribe() {
+		const client = this.controller?.client;
+		if (!client) return;
+		this.#unsub = client.subscribe(
+			{ plugin: "history", event: "sessionsChanged" },
+			() => this.#load(),
+		);
 	}
 
 	async #load() {
