@@ -75,6 +75,24 @@ tame/
 └── .docs/                # design docs
 ```
 
+## plugin loading
+
+plugins are resolved from the `plugins` array in `config.json`. resolution order:
+
+1. **direct path** — if the entry starts with `./` or `/`, it's treated as a filesystem path to a module with a default export (the plugin instance).
+2. **bare specifier** — if it contains `/` (e.g. `@tame/plugin-memory`), imported as-is as a Deno workspace package or npm/jsr package.
+3. **directory search** — otherwise, each directory in `pluginSources` (defaults to `[~/.tame/plugins]`) is searched for `<name>/main.ts`.
+4. **fallback** — tries `@tame/plugin-<name>` as a bare specifier.
+
+the `pluginSources` config field lets you add custom directories for your own plugins:
+
+```json
+{
+  "plugins": ["memory", "@tame/plugin-compact", "./my-custom-plugin/main.ts"],
+  "pluginSources": ["~/.tame/plugins", "~/dev/my-plugins"]
+}
+```
+
 ## plugin architecture
 
 each plugin directory contains:
