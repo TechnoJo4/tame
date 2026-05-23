@@ -1,4 +1,4 @@
-import * as acp from "npm:@agentclientprotocol/sdk";
+import * as acp from "@agentclientprotocol/sdk";
 import { Static, Type } from "typebox";
 
 import type { IAgent, IHarness, Plugin, InputContent, InputMessage, ToolResult, ToolUse, AgentStopReason } from "@tame/sdk";

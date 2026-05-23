@@ -4,6 +4,7 @@
     "jsr:@std/internal@^1.0.12": "1.0.12",
     "jsr:@std/path@^1.1.4": "1.1.4",
     "npm:@agentclientprotocol/sdk@*": "0.18.0_zod@4.3.6",
+    "npm:@agentclientprotocol/sdk@0.18": "0.18.0_zod@4.3.6",
     "npm:js-tiktoken@*": "1.0.21",
     "npm:typebox@^1.1.32": "1.1.32"
   },
@@ -45,6 +46,13 @@
     "dependencies": [
       "jsr:@std/path@^1.1.4",
       "npm:typebox@^1.1.32"
-    ]
+    ],
+    "members": {
+      "packages/plugin-acp": {
+        "dependencies": [
+          "npm:@agentclientprotocol/sdk@0.18"
+        ]
+      }
+    }
   }
 }
