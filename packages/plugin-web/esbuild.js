@@ -51,13 +51,13 @@ Deno.symlinkSync(buildDir + "/node_modules", bridgePath, "dir");
 
 // ---- helper ----
 
-const typeboxDir = `${buildDir}/node_modules/typebox`;
-
 function esbuild(args) {
 	return new Deno.Command("esbuild", {
 		args, cwd: dir, stdout: "inherit", stderr: "inherit",
 	}).output();
 }
+
+const typeboxDir = `${buildDir}/node_modules/typebox`;
 
 // ---- bundle lit ----
 
@@ -69,30 +69,34 @@ await esbuild([
 ]);
 console.log("  → static/lit.js");
 
-// ---- bundle typebox ----
+// ---- bundle typebox (main + compile in ONE file, shared internals) ----
+// if Compile lives in a separate bundle it gets its own copy of typebox
+// internals, and schemas built by Type from the main bundle won't validate
+// against validators from the compile bundle. bundling together fixes this.
 
-console.log("bundling typebox...");
+console.log("bundling typebox + typebox/compile...");
+
+// create a temp entry that re-exports both
+const typeboxEntry = `${buildDir}/typebox-combined.entry.ts`;
+Deno.writeTextFileSync(typeboxEntry, [
+	`export * from "typebox";`,
+	`export { Compile, Code, Validator } from "typebox/compile";`,
+	`export { default as compileDefault } from "typebox/compile";`,
+	``,
+].join("\n"));
+
 await esbuild([
-	`${typeboxDir}/build/index.mjs`,
+	typeboxEntry,
 	"--bundle", "--minify", "--format=esm",
 	`--outfile=${staticDir}/typebox.js`,
 ]);
-console.log("  → static/typebox.js");
-
-console.log("bundling typebox/compile...");
-await esbuild([
-	`${typeboxDir}/build/compile/index.mjs`,
-	"--bundle", "--minify", "--format=esm",
-	`--outfile=${staticDir}/typebox-compile.js`,
-	"--external:typebox",
-]);
-console.log("  → static/typebox-compile.js");
+Deno.removeSync(typeboxEntry);
+console.log("  → static/typebox.js (combined)");
 
 // ---- bundle @tame/rpc-client ----
 
 console.log("bundling @tame/rpc-client...");
 
-// create a temporary entry that re-exports both RPCClient and wsToStream
 const entryFile = `${buildDir}/tame-rpc-client.entry.ts`;
 Deno.writeTextFileSync(entryFile, [
 	`export { RPCClient } from "@tame/rpc-client";`,

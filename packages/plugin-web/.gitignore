@@ -1,6 +1,5 @@
 static/lit.js
 static/shell.js
 static/typebox.js
-static/typebox-compile.js
 static/tame-rpc-client.js
 .build/
