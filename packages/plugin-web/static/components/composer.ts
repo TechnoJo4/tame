@@ -2,6 +2,10 @@ import { LitElement, html } from "lit";
 import type { RPCController } from "../lib/rpc-controller.ts";
 
 export class TameComposer extends LitElement {
+	static properties = {
+		controller: { type: Object },
+	};
+
 	controller!: RPCController;
 
 	createRenderRoot() { return this; }

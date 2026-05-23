@@ -2,6 +2,10 @@ import { LitElement, html } from "lit";
 import type { RPCController } from "../lib/rpc-controller.ts";
 
 export class TameSidebar extends LitElement {
+	static properties = {
+		controller: { type: Object },
+	};
+
 	controller!: RPCController;
 	#loaded = new Set<string>();
 
@@ -22,7 +26,6 @@ export class TameSidebar extends LitElement {
 			this.#loaded.add(p.tag);
 			import(src).catch((e) => console.error(`failed to load ${p.tag}:`, e));
 		}
-		// create element with props — if not yet defined, customElements will upgrade when it is
 		const el = document.createElement(p.tag) as any;
 		if (p.props) Object.assign(el, p.props);
 		return el;

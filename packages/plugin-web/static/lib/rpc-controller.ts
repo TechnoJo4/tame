@@ -16,31 +16,35 @@ interface Placement {
 	props?: Record<string, unknown>;
 }
 
-interface Message {
+export interface Message {
 	role: "user" | "assistant";
 	content: ContentBlock[];
 }
 
-type ContentBlock =
+export type ContentBlock =
 	| { type: "text"; text: string }
 	| { type: "thinking"; thinking: string }
 	| { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
 	| { type: "tool_result"; tool_use_id: string; content: string; is_error: boolean };
 
+interface TameShellHost {
+	messages: Message[];
+	loading: boolean;
+	error: string | null;
+	addController(c: RPCController): void;
+	requestUpdate(): void;
+}
+
 export class RPCController {
-	host: any;
-
-	messages: Message[] = [];
-	loading = true;
-	error: string | null = null;
-	registry: Registry | null = null;
-	agentId: string | null = null;
-
+	#host: TameShellHost;
 	#client: RPCClient | null = null;
 	#unsubs: (() => void)[] = [];
 
-	constructor(host: any) {
-		this.host = host;
+	registry: Registry | null = null;
+	agentId: string | null = null;
+
+	constructor(host: TameShellHost) {
+		this.#host = host;
 		host.addController(this);
 	}
 
@@ -66,14 +70,11 @@ export class RPCController {
 
 			this.registry = registry as unknown as Registry;
 			this.agentId = agent.id;
-			this.loading = false;
-			this.host.requestUpdate();
-
+			this.#host.loading = false;
 			this.#subscribe();
 		} catch (e) {
-			this.error = e instanceof Error ? e.message : String(e);
-			this.loading = false;
-			this.host.requestUpdate();
+			this.#host.error = e instanceof Error ? e.message : String(e);
+			this.#host.loading = false;
 		}
 	}
 
@@ -82,54 +83,15 @@ export class RPCController {
 
 		const on = (event: string, handler: (data: Record<string, unknown>) => void) => {
 			this.#unsubs.push(
-				this.#client.subscribe({ agent_id: this.agentId, event }, (msg) => handler(msg.data as Record<string, unknown>)),
+				this.#client.subscribe({ agent_id: this.agentId, event }, (msg) =>
+					handler(msg.data as Record<string, unknown>),
+				),
 			);
 		};
 
-		on("userMessage", (d) => { this.#handleUserMessage(d); this.host.requestUpdate(); });
-		on("assistantMessage", (d) => { this.#handleAssistantMessage(d); this.host.requestUpdate(); });
-		on("toolResult", (d) => { this.#handleToolResult(d); this.host.requestUpdate(); });
-	}
-
-	#handleUserMessage(data: { msg: any }) {
-		const blocks: ContentBlock[] = [];
-		for (const c of data.msg.content) {
-			if (c.type === "text") {
-				blocks.push({ type: "text", text: c.text });
-			}
-		}
-		this.messages = [...this.messages, { role: "user", content: blocks }];
-	}
-
-	#handleAssistantMessage(data: { msg: any }) {
-		const blocks: ContentBlock[] = [];
-		for (const c of data.msg.content) {
-			if (c.type === "text") {
-				blocks.push({ type: "text", text: c.text });
-			} else if (c.type === "thinking") {
-				blocks.push({ type: "thinking", thinking: c.thinking });
-			} else if (c.type === "tool_use") {
-				blocks.push({
-					type: "tool_use",
-					id: c.id,
-					name: c.name,
-					input: c.input as Record<string, unknown>,
-				});
-			}
-		}
-		this.messages = [...this.messages, { role: "assistant", content: blocks }];
-	}
-
-	#handleToolResult(data: { toolUse: string; error: boolean; result: string }) {
-		this.messages = [...this.messages, {
-			role: "user",
-			content: [{
-				type: "tool_result",
-				tool_use_id: data.toolUse,
-				content: data.result,
-				is_error: data.error,
-			}],
-		}];
+		on("userMessage", (d) => this.#host.messages = [...this.#host.messages, userMessage(d)]);
+		on("assistantMessage", (d) => this.#host.messages = [...this.#host.messages, assistantMessage(d)]);
+		on("toolResult", (d) => this.#host.messages = [...this.#host.messages, toolResultMessage(d)]);
 	}
 
 	send(text: string) {
@@ -157,4 +119,35 @@ export class RPCController {
 	getComponentSrc(tag: string): string | undefined {
 		return this.registry?.components[tag]?.src;
 	}
+}
+
+// ---- message constructors (pure functions, no 'this') ----
+
+function userMessage(data: { msg: { content: { type: string; text?: string }[] } }): Message {
+	const blocks: ContentBlock[] = [];
+	for (const c of data.msg.content) {
+		if (c.type === "text") blocks.push({ type: "text", text: c.text! });
+	}
+	return { role: "user", content: blocks };
+}
+
+function assistantMessage(data: { msg: { content: { type: string; text?: string; thinking?: string; id?: string; name?: string; input?: Record<string, unknown> }[] } }): Message {
+	const blocks: ContentBlock[] = [];
+	for (const c of data.msg.content) {
+		if (c.type === "text") {
+			blocks.push({ type: "text", text: c.text! });
+		} else if (c.type === "thinking") {
+			blocks.push({ type: "thinking", thinking: c.thinking! });
+		} else if (c.type === "tool_use") {
+			blocks.push({ type: "tool_use", id: c.id!, name: c.name!, input: c.input! });
+		}
+	}
+	return { role: "assistant", content: blocks };
+}
+
+function toolResultMessage(data: { toolUse: string; error: boolean; result: string }): Message {
+	return {
+		role: "user",
+		content: [{ type: "tool_result", tool_use_id: data.toolUse, content: data.result, is_error: data.error }],
+	};
 }

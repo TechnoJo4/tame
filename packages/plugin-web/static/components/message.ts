@@ -1,23 +1,16 @@
 import { LitElement, html } from "lit";
-import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import type { RPCController } from "../lib/rpc-controller.ts";
-
-interface ContentBlock {
-	type: string;
-	text?: string;
-	thinking?: string;
-	id?: string;
-	name?: string;
-	input?: Record<string, unknown>;
-	tool_use_id?: string;
-	content?: string;
-	is_error?: boolean;
-}
+import type { RPCController, Message, ContentBlock } from "../lib/rpc-controller.ts";
 
 export class TameMessage extends LitElement {
-	controller!: RPCController;
-	message!: { role: string; content: ContentBlock[] };
+	static properties = {
+		message: { type: Object },
+		index: { type: Number },
+		controller: { type: Object },
+	};
+
+	message!: Message;
 	index!: number;
+	controller!: RPCController;
 
 	createRenderRoot() { return this; }
 
@@ -61,6 +54,13 @@ customElements.define("tame-message", TameMessage);
 // ---- <tame-tool-view> ----
 
 class TameToolView extends LitElement {
+	static properties = {
+		controller: { type: Object },
+		toolUseId: { type: String },
+		toolName: { type: String },
+		toolInput: { type: Object },
+	};
+
 	controller!: RPCController;
 	toolUseId!: string;
 	toolName!: string;
