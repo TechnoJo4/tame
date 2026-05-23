@@ -4,17 +4,9 @@ import { call } from "@tame/rpc-sdk";
 import { resolve } from "@std/path";
 import { serve } from "./serve.ts";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
+import type { ComponentDef, Placement } from "@tame/web-sdk/placement";
 
-export interface ComponentDef {
-	tag: string;
-	src: string; // absolute filesystem path, .ts or .js
-}
-
-export interface Placement {
-	location: string;
-	tag: string;
-	props?: Record<string, unknown>;
-}
+export type { ComponentDef, Placement } from "@tame/web-sdk/placement";
 
 export interface WebConfig {
 	listen: { hostname: string; port: number };

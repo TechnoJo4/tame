@@ -1,4 +1,5 @@
 import { RPCClient, wsToStream } from "@tame/rpc-client";
+import type { ThreadItem, MessageItem, ToolCallItem, TextOrThinking, WebController, Placement } from "@tame/web-sdk";
 
 interface ComponentEntry { src: string; }
 
@@ -7,36 +8,12 @@ interface Registry {
 	placements: Placement[];
 }
 
-interface Placement {
-	location: string;
-	tag: string;
-	props?: Record<string, unknown>;
-}
-
 // ---- thread item model ----
+// types imported from @tame/web-sdk
 
-export type ThreadItem = MessageItem | ToolCallItem;
+// ---- backwards compat ----
 
-export interface MessageItem {
-	type: "message";
-	role: "user" | "assistant";
-	content: TextOrThinking[];
-}
-
-export type TextOrThinking =
-	| { type: "text"; text: string }
-	| { type: "thinking"; thinking: string };
-
-export interface ToolCallItem {
-	type: "tool_call";
-	id: string;
-	name: string;
-	input: Record<string, unknown>;
-	result?: string;
-	isError?: boolean;
-}
-
-// ---- for backwards compat with tame-tool-view ----
+export type { ThreadItem, MessageItem, ToolCallItem, TextOrThinking } from "@tame/web-sdk";
 
 export interface Message {
 	role: "user" | "assistant";
@@ -58,7 +35,7 @@ interface TameShellHost {
 	requestUpdate(): void;
 }
 
-export class RPCController {
+export class RPCController implements WebController {
 	#host: TameShellHost;
 	#client: RPCClient | null = null;
 	#unsubs: (() => void)[] = [];

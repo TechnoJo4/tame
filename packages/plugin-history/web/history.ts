@@ -1,5 +1,5 @@
 import { LitElement, html } from "lit";
-import type { RPCController } from "@tame/plugin-web/static/lib/rpc-controller.ts";
+import type { WebController } from "@tame/web-sdk/controller";
 
 interface SessionInfo {
 	id: string;
@@ -8,7 +8,7 @@ interface SessionInfo {
 
 export class TameHistory extends LitElement {
 	static properties = { controller: { type: Object } };
-	declare controller: RPCController;
+	declare controller: WebController;
 
 	#sessions: SessionInfo[] = [];
 	#loading = true;

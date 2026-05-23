@@ -1,0 +1,10 @@
+{
+	"name": "@tame/web-sdk",
+	"version": "0.1.0",
+	"exports": {
+		".": "./mod.ts",
+		"./items": "./items.ts",
+		"./controller": "./controller.ts",
+		"./placement": "./placement.ts"
+	}
+}
