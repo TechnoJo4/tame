@@ -7,13 +7,13 @@ export class TameThread extends LitElement {
 		controller: { type: Object },
 	};
 
-	messages: Message[] = [];
-	controller!: RPCController;
+	declare messages: Message[];
+	declare controller: RPCController;
 
 	createRenderRoot() { return this; }
 
 	render() {
-		return this.messages.map(
+		return (this.messages ?? []).map(
 			(m, i) => html`<tame-message .message=${m} .index=${i} .controller=${this.controller}></tame-message>`,
 		);
 	}

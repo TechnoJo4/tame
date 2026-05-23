@@ -8,11 +8,18 @@ export class TameShell extends LitElement {
 		error: { type: String, state: true },
 	};
 
-	messages: any[] = [];
-	loading = true;
-	error: string | null = null;
+	declare messages: any[];
+	declare loading: boolean;
+	declare error: string | null;
 
 	#controller = new RPCController(this);
+
+	constructor() {
+		super();
+		this.messages = [];
+		this.loading = true;
+		this.error = null;
+	}
 
 	createRenderRoot() { return this; }
 

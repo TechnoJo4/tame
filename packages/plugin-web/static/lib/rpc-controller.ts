@@ -71,10 +71,12 @@ export class RPCController {
 			this.registry = registry as unknown as Registry;
 			this.agentId = agent.id;
 			this.#host.loading = false;
+			this.#host.requestUpdate();
 			this.#subscribe();
 		} catch (e) {
 			this.#host.error = e instanceof Error ? e.message : String(e);
 			this.#host.loading = false;
+			this.#host.requestUpdate();
 		}
 	}
 
@@ -89,9 +91,9 @@ export class RPCController {
 			);
 		};
 
-		on("userMessage", (d) => this.#host.messages = [...this.#host.messages, userMessage(d)]);
-		on("assistantMessage", (d) => this.#host.messages = [...this.#host.messages, assistantMessage(d)]);
-		on("toolResult", (d) => this.#host.messages = [...this.#host.messages, toolResultMessage(d)]);
+		on("userMessage", (d) => { this.#host.messages = [...this.#host.messages, userMessage(d)]; this.#host.requestUpdate(); });
+		on("assistantMessage", (d) => { this.#host.messages = [...this.#host.messages, assistantMessage(d)]; this.#host.requestUpdate(); });
+		on("toolResult", (d) => { this.#host.messages = [...this.#host.messages, toolResultMessage(d)]; this.#host.requestUpdate(); });
 	}
 
 	send(text: string) {

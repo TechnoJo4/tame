@@ -6,7 +6,7 @@ export class TameComposer extends LitElement {
 		controller: { type: Object },
 	};
 
-	controller!: RPCController;
+	declare controller: RPCController;
 
 	createRenderRoot() { return this; }
 
@@ -28,7 +28,7 @@ export class TameComposer extends LitElement {
 			const textarea = e.target as HTMLTextAreaElement;
 			const text = textarea.value.trim();
 			if (text) {
-				this.controller.send(text);
+				this.controller?.send(text);
 				textarea.value = "";
 			}
 		}

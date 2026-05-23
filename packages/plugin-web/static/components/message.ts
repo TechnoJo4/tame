@@ -8,9 +8,9 @@ export class TameMessage extends LitElement {
 		controller: { type: Object },
 	};
 
-	message!: Message;
-	index!: number;
-	controller!: RPCController;
+	declare message: Message;
+	declare index: number;
+	declare controller: RPCController;
 
 	createRenderRoot() { return this; }
 
@@ -61,10 +61,10 @@ class TameToolView extends LitElement {
 		toolInput: { type: Object },
 	};
 
-	controller!: RPCController;
-	toolUseId!: string;
-	toolName!: string;
-	toolInput!: Record<string, unknown>;
+	declare controller: RPCController;
+	declare toolUseId: string;
+	declare toolName: string;
+	declare toolInput: Record<string, unknown>;
 
 	#resolved: { tag: string; props: Record<string, unknown> } | null = null;
 	#loaded = false;

@@ -6,13 +6,13 @@ export class TameSidebar extends LitElement {
 		controller: { type: Object },
 	};
 
-	controller!: RPCController;
+	declare controller: RPCController;
 	#loaded = new Set<string>();
 
 	createRenderRoot() { return this; }
 
 	render() {
-		const placements = this.controller.getPlacements("panel:sidebar");
+		const placements = this.controller?.getPlacements("panel:sidebar") ?? [];
 		return html`
 			<aside style="width:260px;border-right:1px solid #333;overflow-y:auto;padding:8px;flex-shrink:0">
 				${placements.map((p) => this.#renderPlacement(p))}
