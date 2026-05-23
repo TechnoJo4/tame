@@ -35,6 +35,7 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 
 	llm: InferenceProvider;
 	system: string;
+	title?: string;
 	context: InputMessage[] = [];
 	tools = new Map<string, AnyTool>();
 	pluginData = new Map<symbol, unknown>();

@@ -31,6 +31,14 @@ export interface RPCRegistry {
 			input: { agent_id: string; tool_use_id: string; view: string };
 			output: unknown;
 		};
+		listAgents: {
+			input: {};
+			output: { agents: { id: string; title?: string }[] };
+		};
+		getAgentContext: {
+			input: { id: string };
+			output: { id: string; system: string; title?: string; context: Record<string, unknown>[] };
+		};
 	};
 }
 

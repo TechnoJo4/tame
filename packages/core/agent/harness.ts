@@ -46,6 +46,15 @@ export class Harness implements IHarness {
 		return this.#agents.get(id)?.deref();
 	}
 
+	listAgents(): { id: string; title?: string }[] {
+		const result: { id: string; title?: string }[] = [];
+		for (const [id, ref] of this.#agents) {
+			const agent = ref.deref();
+			if (agent) result.push({ id, title: agent.title });
+		}
+		return result;
+	}
+
 	cleanup() {
 		this.#agents.entries()
 			.filter(([_,v]) => !v.deref())

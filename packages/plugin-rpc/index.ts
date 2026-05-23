@@ -124,6 +124,26 @@ export class RPCPlugin implements Plugin {
 					return agent.viewToolCall(view, call, result);
 				}
 			}),
+			listAgents: call({
+				...baseRouteSchemas.listAgents,
+				call: async () => {
+					const agents = harness.listAgents();
+					return { agents };
+				}
+			}),
+			getAgentContext: call({
+				...baseRouteSchemas.getAgentContext,
+				call: async ({ id }) => {
+					const agent = harness.getAgent(id);
+					if (!agent) throw new Error(`agent ${id} not found`);
+					return {
+						id: agent.id,
+						system: agent.system,
+						title: agent.title,
+						context: agent.context as Record<string, unknown>[],
+					};
+				}
+			}),
 		});
 	}
 

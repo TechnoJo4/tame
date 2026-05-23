@@ -43,4 +43,22 @@ export const baseRouteSchemas = {
 		}),
 		output: Type.Any(),
 	},
+	listAgents: {
+		input: Type.Object({}),
+		output: Type.Object({
+			agents: Type.Array(Type.Object({
+				id: Type.String(),
+				title: Type.Optional(Type.String()),
+			})),
+		}),
+	},
+	getAgentContext: {
+		input: Type.Object({ id: Type.String() }),
+		output: Type.Object({
+			id: Type.String(),
+			system: Type.String(),
+			title: Type.Optional(Type.String()),
+			context: Type.Array(Type.Object({}, { additionalProperties: true })),
+		}),
+	},
 };
