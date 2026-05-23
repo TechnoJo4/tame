@@ -1,6 +1,6 @@
 import { messagesSchema, type RPCMessage, type Stream } from "@tame/rpc-sdk";
 import { Compile } from "typebox/compile";
-import { assertSchema } from "@tame/sdk";
+import { assertSchema } from "@tame/sdk/util/validate";
 
 const rpcMsgValidator = Compile(messagesSchema.rpcMessage);
 

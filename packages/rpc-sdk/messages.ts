@@ -1,5 +1,5 @@
 import { Type, type Static } from "typebox";
-import { StringEnum } from "@tame/sdk";
+import { StringEnum } from "@tame/sdk/util/string-enum";
 
 export const eventSchema = Type.Object({
 	type: Type.Literal("event"),

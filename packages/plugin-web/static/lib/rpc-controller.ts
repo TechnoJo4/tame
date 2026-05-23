@@ -1,5 +1,4 @@
-import { RPCClient } from "./rpc-client.ts";
-import { wsToStream } from "./stream.ts";
+import { RPCClient, wsToStream } from "@tame/rpc-client";
 
 interface ComponentEntry { src: string; }
 
