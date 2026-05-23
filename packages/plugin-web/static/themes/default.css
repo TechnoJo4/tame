@@ -17,9 +17,9 @@ tame-shell > .error { color: #f66; }
 /* ---- sidebar ---- */
 tame-sidebar {
 	display: flex; flex-direction: column; width: 260px; border-right: 1px solid #333;
-	overflow-y: auto; flex-shrink: 0; transition: width 0.15s ease;
+	overflow-y: auto; flex-shrink: 0; padding: 8px; transition: width 0.15s ease;
 }
-tame-sidebar[collapsed] { width: 32px; overflow: hidden; }
+tame-sidebar[collapsed] { width: 32px; overflow: hidden; padding: 4px; }
 tame-sidebar > .toggle {
 	flex-shrink: 0; height: 32px; border: none; border-bottom: 1px solid #333;
 	background: none; color: #888; cursor: pointer; font-size: 14px;
