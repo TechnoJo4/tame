@@ -9,22 +9,7 @@ interface Registry {
 	stylesheets: Record<string, string>; // pluginId → url
 }
 
-// ---- thread item model ----
-// types imported from @tame/web-sdk
-
-// ---- backwards compat ----
-
 export type { ThreadItem, MessageItem, ToolCallItem, TextOrThinking } from "@tame/web-sdk";
-
-export interface Message {
-	role: "user" | "assistant";
-	content: ContentBlock[];
-}
-
-export type ContentBlock =
-	| TextOrThinking
-	| { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
-	| { type: "tool_result"; tool_use_id: string; content: string; is_error: boolean };
 
 // ---- controller ----
 
@@ -37,6 +22,8 @@ interface TameShellHost {
 	requestUpdate(): void;
 }
 
+const PAGE_SIZE = 50;
+
 export class RPCController implements WebController {
 	#host: TameShellHost;
 	#client: RPCClient | null = null;
@@ -44,6 +31,13 @@ export class RPCController implements WebController {
 
 	registry: Registry | null = null;
 	agentId: string | null = null;
+
+	/** How many items from the end we've loaded. Grows with pagination
+	 *  and live events. Used as offset for the next getItems call. */
+	#totalLoaded = 0;
+
+	/** Total items in the agent context (from last getItems response). */
+	#totalItems = 0;
 
 	constructor(host: TameShellHost) {
 		this.#host = host;
@@ -54,7 +48,7 @@ export class RPCController implements WebController {
 
 	hostDisconnected() {
 		this.#client?.close();
-		for (const unsub of this.#unsubs) unsub();
+		this.#unsubscribeAll();
 	}
 
 	async #connect() {
@@ -77,7 +71,10 @@ export class RPCController implements WebController {
 			this.#host.loading = false;
 			this.#injectStylesheets();
 			this.#host.requestUpdate();
-			this.#subscribeTo(this.agentId);
+
+			// load initial items
+			await this.#loadItems(agent.id);
+			this.#subscribeTo(agent.id);
 		} catch (e) {
 			this.#host.error = e instanceof Error ? e.message : String(e);
 			this.#host.loading = false;
@@ -85,36 +82,65 @@ export class RPCController implements WebController {
 		}
 	}
 
+	#unsubscribeAll() {
+		for (const unsub of this.#unsubs) unsub();
+		this.#unsubs = [];
+	}
+
 	#subscribeTo(agentId: string) {
 		if (!this.#client) return;
+		this.#unsubscribeAll();
 
 		const on = (event: string, handler: (data: Record<string, unknown>) => void) => {
 			this.#unsubs.push(
-				this.#client!.subscribe({ agent_id: agentId, event }, (msg) => {
-					// only apply events for the currently-viewed agent
-					if (msg.agent_id !== this.agentId) return;
-					handler(msg.data as Record<string, unknown>);
-				}),
+				this.#client!.subscribe(
+					{ agent_id: agentId, plugin: "web", event },
+					(msg) => handler(msg.data as Record<string, unknown>),
+				),
 			);
 		};
 
 		on("userMessage", (d) => {
-			this.#host.items = [...this.#host.items, userItem(d)];
+			const item = (d as any).item as MessageItem | undefined;
+			if (!item) return;
+			this.#host.items = [...this.#host.items, item];
+			this.#totalLoaded++;
 			this.#host.requestUpdate();
 		});
+
 		on("assistantMessage", (d) => {
-			this.#host.items = [...this.#host.items, ...assistantItems(d)];
+			const items = (d as any).items as ThreadItem[] | undefined;
+			if (!items || items.length === 0) return;
+			this.#host.items = [...this.#host.items, ...items];
+			this.#totalLoaded += items.length;
 			this.#host.requestUpdate();
 		});
+
 		on("toolResult", (d) => {
-			applyToolResult(this.#host.items, d);
+			const { toolUseId, result, isError } = d as {
+				toolUseId: string; result: string; isError: boolean;
+			};
+			applyToolResult(this.#host.items, toolUseId, result, isError);
 			this.#host.items = [...this.#host.items];
 			this.#host.requestUpdate();
 		});
+
 		on("idle", () => {
 			this.#host.idle = true;
 			this.#host.requestUpdate();
 		});
+	}
+
+	async #loadItems(agentId: string, offset = 0): Promise<void> {
+		if (!this.#client) return;
+		const result = await this.#client.call("web", "getItems", {
+			id: agentId, offset, limit: PAGE_SIZE,
+		});
+		const items = (result as any).items as ThreadItem[];
+		const total = (result as any).total as number;
+		this.#host.items = items;
+		this.#totalLoaded = items.length;
+		this.#totalItems = total;
 	}
 
 	#injectStylesheets() {
@@ -128,22 +154,35 @@ export class RPCController implements WebController {
 		}
 	}
 
-	/** Switch the displayed thread to a different agent. Keeps the old
-	 *  agent's subscriptions alive (the agent stays in memory server-side).
-	 *  Caller is responsible for ensuring the agent is loaded (e.g. history
-	 *  plugin calls its own RPC to load persisted sessions before switching). */
+	/** Switch the displayed thread to a different agent. */
 	async switchAgent(id: string) {
 		if (!this.#client) return;
 		if (id === this.agentId) return;
 
-		// fetch context and populate the thread
-		const ctx = await this.#client.call("@tame", "getAgentContext", { id });
 		this.agentId = id;
-		this.#host.items = contextToItems(ctx.context as RawMessage[]);
-		this.#host.requestUpdate();
-
-		// subscribe to live events for this agent
+		await this.#loadItems(id);
 		this.#subscribeTo(id);
+		this.#host.requestUpdate();
+	}
+
+	/** Load more history (older items). Called when scrolling near the top. */
+	async loadMore(): Promise<boolean> {
+		if (!this.#client || !this.agentId) return false;
+		if (this.#totalLoaded >= this.#totalItems) return false; // all loaded
+
+		const result = await this.#client.call("web", "getItems", {
+			id: this.agentId,
+			offset: this.#totalLoaded,
+			limit: PAGE_SIZE,
+		});
+		const items = (result as any).items as ThreadItem[];
+		if (items.length === 0) return false;
+
+		// prepend older items
+		this.#host.items = [...items, ...this.#host.items];
+		this.#totalLoaded += items.length;
+		this.#host.requestUpdate();
+		return true;
 	}
 
 	/** Create a fresh agent and switch to it. */
@@ -167,17 +206,6 @@ export class RPCController implements WebController {
 		this.#client.call("@tame", "abort", { id: this.agentId });
 	}
 
-	async viewToolCall(toolUseId: string): Promise<{ tag: string; props: Record<string, unknown> } | null> {
-		if (!this.#client || !this.agentId) return null;
-		try {
-			const result = await this.#client.viewToolCall(this.agentId, toolUseId, "web");
-			if (!result || typeof result !== "object" || !("tag" in result)) return null;
-			return result as { tag: string; props: Record<string, unknown> };
-		} catch {
-			return null;
-		}
-	}
-
 	getPlacements(location: string): Placement[] {
 		if (!this.registry) return [];
 		return this.registry.placements.filter((p) => p.location === location);
@@ -191,111 +219,19 @@ export class RPCController implements WebController {
 	get client(): RPCClient | null { return this.#client; }
 }
 
-// ---- event → item constructors ----
+// ---- tool result application ----
 
-interface RawBlock {
-	type: string;
-	text?: string;
-	thinking?: string;
-	id?: string;
-	name?: string;
-	input?: Record<string, unknown>;
-}
-
-interface RawMessage {
-	role: string;
-	content: RawBlock[];
-}
-
-let _keyCounter = 0;
-function nextKey(): string { return `k${_keyCounter++}`; }
-function resetKeys(): void { _keyCounter = 0; }
-
-function userItem(data: { msg: { content: RawBlock[] } }): MessageItem {
-	const content: TextOrThinking[] = [];
-	for (const c of data.msg.content) {
-		if (c.type === "text") content.push({ type: "text", text: c.text! });
-	}
-	return { type: "message", role: "user", content, key: nextKey() };
-}
-
-function assistantItems(data: { msg: { content: RawBlock[] } }): ThreadItem[] {
-	return rawBlocksToItems(data.msg.content);
-}
-
-function contextToItems(messages: RawMessage[]): ThreadItem[] {
-	resetKeys();
-	const items: ThreadItem[] = [];
-	for (const msg of messages) {
-		if (msg.role === "user") {
-			for (const c of msg.content) {
-				if (c.type === "text") {
-					items.push({ type: "message", role: "user", content: [{ type: "text", text: c.text! }], key: nextKey() });
-				} else if (c.type === "tool_result") {
-					// find matching tool_call and attach result
-					for (let i = items.length - 1; i >= 0; i--) {
-						const item = items[i];
-						if (item.type === "tool_call" && item.id === (c as any).tool_use_id) {
-							item.result = (c as any).content ?? (c as any).result;
-							item.isError = !!(c as any).is_error;
-							break;
-						}
-					}
-				}
-			}
-		} else {
-			items.push(...rawBlocksToItems(msg.content));
-		}
-	}
-	return items;
-}
-
-function rawBlocksToItems(blocks: RawBlock[]): ThreadItem[] {
-	const items: ThreadItem[] = [];
-	const textBlocks: TextOrThinking[] = [];
-
-	for (const c of blocks) {
-		if (c.type === "tool_use") {
-			if (textBlocks.length > 0) {
-				items.push({ type: "message", role: "assistant", content: [...textBlocks], key: nextKey() });
-				textBlocks.length = 0;
-			}
-			items.push({
-				type: "tool_call",
-				id: c.id!,
-				name: c.name!,
-				input: c.input!,
-				key: c.id!,
-			});
-		} else if (c.type === "tool_result") {
-			for (let i = items.length - 1; i >= 0; i--) {
-				const item = items[i];
-				if (item.type === "tool_call" && item.id === (c as any).tool_use_id) {
-					item.result = (c as any).content ?? (c as any).result;
-					item.isError = !!(c as any).is_error;
-					break;
-				}
-			}
-		} else if (c.type === "text") {
-			textBlocks.push({ type: "text", text: c.text! });
-		} else if (c.type === "thinking") {
-			textBlocks.push({ type: "thinking", thinking: c.thinking! });
-		}
-	}
-
-	if (textBlocks.length > 0) {
-		items.push({ type: "message", role: "assistant", content: [...textBlocks], key: nextKey() });
-	}
-
-	return items;
-}
-
-function applyToolResult(items: ThreadItem[], data: { toolUse: string; error: boolean; result: string }) {
+function applyToolResult(
+	items: ThreadItem[],
+	toolUseId: string,
+	result: string,
+	isError: boolean,
+) {
 	for (let i = items.length - 1; i >= 0; i--) {
 		const item = items[i];
-		if (item.type === "tool_call" && item.id === data.toolUse) {
-			item.result = data.result;
-			item.isError = data.error;
+		if (item.type === "tool_call" && item.id === toolUseId) {
+			item.result = result;
+			item.isError = isError;
 			return;
 		}
 	}
