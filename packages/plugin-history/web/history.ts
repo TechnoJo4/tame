@@ -5,6 +5,7 @@ import type { WebController } from "@tame/web-sdk/controller";
 interface SessionInfo {
 	id: string;
 	title?: string;
+	lastMessageAt?: number;
 }
 
 export class TameHistory extends LitElement {
@@ -33,6 +34,7 @@ export class TameHistory extends LitElement {
 			this.#loaded = true;
 			this.#load();
 		}
+		this.#dispatchTitle();
 	}
 
 	#subscribe() {
@@ -58,6 +60,14 @@ export class TameHistory extends LitElement {
 		}
 	}
 
+	#dispatchTitle() {
+		const active = this.#sessions.find(s => s.id === this.controller?.agentId);
+		this.dispatchEvent(new CustomEvent("tame:session-title", {
+			detail: { title: active?.title || active?.id?.slice(0, 8) || "tame" },
+			bubbles: true, composed: true,
+		}));
+	}
+
 	render() {
 		return html`
 			<div class="history-header">
@@ -76,7 +86,7 @@ export class TameHistory extends LitElement {
 			<div class="history-list">
 				${this.#sessions.map((s) => html`
 					<button class="history-item${s.id === this.controller?.agentId ? " active" : ""}"
-						@click=${() => this.#switch(s.id)}>
+						@click=${() => this.#switch(s)}>
 						${s.title || s.id.slice(0, 8)}
 					</button>
 				`)}
@@ -84,8 +94,12 @@ export class TameHistory extends LitElement {
 		`;
 	}
 
-	#switch(id: string) {
-		this.controller?.switchAgent(id);
+	#switch(s: SessionInfo) {
+		this.controller?.switchAgent(s.id);
+		this.dispatchEvent(new CustomEvent("tame:session-title", {
+			detail: { title: s.title || s.id.slice(0, 8) },
+			bubbles: true, composed: true,
+		}));
 	}
 
 	#newChat() {

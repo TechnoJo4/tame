@@ -32,20 +32,3 @@ export class TameSidebar extends LitElement {
 	}
 }
 customElements.define("tame-sidebar", TameSidebar);
-
-// ---- toggle button (sibling to sidebar in the layout) ----
-
-export class TameSidebarToggle extends LitElement {
-	@property({ type: Boolean }) collapsed: boolean;
-
-	createRenderRoot() { return this; }
-
-	render() {
-		return html`<button class="toggle" @click=${this.#fire} title="${this.collapsed ? "expand" : "collapse"} sidebar">☰</button>`;
-	}
-
-	#fire() {
-		this.dispatchEvent(new CustomEvent("tame:sidebar-toggle", { bubbles: true, composed: true }));
-	}
-}
-customElements.define("tame-sidebar-toggle", TameSidebarToggle);
