@@ -91,6 +91,23 @@ tame-web-markdown code {
 tame-web-markdown pre code {
 	background: none; padding: 0; border-radius: 0; font-size: inherit;
 }
+tame-web-markdown h1, tame-web-markdown h2, tame-web-markdown h3,
+tame-web-markdown h4, tame-web-markdown h5, tame-web-markdown h6 {
+	margin: 8px 0 4px; font-weight: 600; line-height: 1.3;
+}
+tame-web-markdown h1 { font-size: 1.4em; }
+tame-web-markdown h2 { font-size: 1.25em; }
+tame-web-markdown h3 { font-size: 1.1em; }
+tame-web-markdown blockquote {
+	border-left: 3px solid var(--tame-border); padding-left: 12px;
+	margin: 8px 0; color: var(--tame-text-secondary);
+}
+tame-web-markdown ul, tame-web-markdown ol { padding-left: 20px; margin: 4px 0; }
+tame-web-markdown li { margin: 2px 0; }
+tame-web-markdown a { color: var(--tame-text-secondary); }
+tame-web-markdown hr { border: none; border-top: 1px solid var(--tame-border); margin: 12px 0; }
+tame-web-markdown img { max-width: 100%; border-radius: 4px; }
+tame-web-markdown del { opacity: 0.6; }
 
 /* ---- thinking ---- */
 tame-web-message > details.thinking { color: var(--tame-text-muted); font-style: italic; margin: 8px 0; }
