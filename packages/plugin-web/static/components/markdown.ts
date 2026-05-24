@@ -35,7 +35,7 @@ export class TameMarkdown extends LitElement {
 		return this.#renderNode(this.#root);
 	}
 
-	updated(changed: Map<string, unknown>) {
+	willUpdate(changed: Map<string, unknown>) {
 		if (changed.has("text")) {
 			try {
 				this.#root = fromMarkdown(this.text ?? "") as unknown as MdNode;
