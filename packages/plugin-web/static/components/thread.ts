@@ -51,4 +51,4 @@ export class TameThread extends LitElement {
 		});
 	}
 }
-customElements.define("tame-thread", TameThread);
+customElements.define("tame-web-thread", TameThread);

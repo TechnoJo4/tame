@@ -45,4 +45,4 @@ export class TameComposer extends LitElement {
 		this.controller?.abort();
 	}
 }
-customElements.define("tame-composer", TameComposer);
+customElements.define("tame-web-composer", TameComposer);

@@ -48,4 +48,4 @@ export class TameTopBar extends LitElement {
 		`;
 	}
 }
-customElements.define("tame-top-bar", TameTopBar);
+customElements.define("tame-web-top-bar", TameTopBar);

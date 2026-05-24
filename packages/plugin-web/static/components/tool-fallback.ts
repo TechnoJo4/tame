@@ -33,4 +33,4 @@ export class TameToolFallback extends LitElement {
 		return JSON.stringify(v);
 	}
 }
-customElements.define("tame-tool-fallback", TameToolFallback);
+customElements.define("tame-web-tool-fallback", TameToolFallback);

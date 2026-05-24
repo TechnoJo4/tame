@@ -216,7 +216,7 @@ every plugin web component receives these properties from the shell:
 | property | type | source |
 |----------|------|--------|
 | `controller` | `WebController` | set by the shell on all placed components |
-| `result` | `string \| null` | set by `tame-tool-view` on tool view components |
-| `isError` | `boolean` | set by `tame-tool-view` on tool view components |
+| `result` | `string \| null` | set by `tame-web-tool-view` on tool view components |
+| `isError` | `boolean` | set by `tame-web-tool-view` on tool view components |
 
 plus any `props` passed in the placement or tool view descriptor.

@@ -32,4 +32,4 @@ export class TameSidebar extends LitElement {
 		return el;
 	}
 }
-customElements.define("tame-sidebar", TameSidebar);
+customElements.define("tame-web-sidebar", TameSidebar);

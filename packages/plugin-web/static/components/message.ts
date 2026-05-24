@@ -98,4 +98,4 @@ class TameToolView extends LitElement {
 		return el;
 	}
 }
-customElements.define("tame-tool-view", TameToolView);
+customElements.define("tame-web-tool-view", TameToolView);

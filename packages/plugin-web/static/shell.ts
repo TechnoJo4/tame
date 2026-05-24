@@ -9,4 +9,4 @@ import "./components/markdown.ts";
 import "./components/tool-fallback.ts";
 import "./lib/rpc-controller.ts";
 
-document.body.appendChild(document.createElement("tame-shell"));
+document.body.appendChild(document.createElement("tame-web-shell"));

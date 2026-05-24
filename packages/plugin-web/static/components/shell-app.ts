@@ -38,16 +38,16 @@ export class TameShell extends LitElement {
 		}
 		return html`
 			<div class="layout">
-				<tame-sidebar .controller=${this.#controller} .collapsed=${this.sidebarCollapsed}></tame-sidebar>
+				<tame-web-sidebar .controller=${this.#controller} .collapsed=${this.sidebarCollapsed}></tame-web-sidebar>
 				<div class="main-column">
-					<tame-top-bar .controller=${this.#controller} .sidebarCollapsed=${this.sidebarCollapsed}></tame-top-bar>
+					<tame-web-top-bar .controller=${this.#controller} .sidebarCollapsed=${this.sidebarCollapsed}></tame-web-top-bar>
 					<main class="main">
-						<tame-thread .items=${this.items} .controller=${this.#controller}></tame-thread>
-						<tame-composer .controller=${this.#controller} .idle=${this.idle}></tame-composer>
+						<tame-web-thread .items=${this.items} .controller=${this.#controller}></tame-web-thread>
+						<tame-web-composer .controller=${this.#controller} .idle=${this.idle}></tame-web-composer>
 					</main>
 				</div>
 			</div>
 		`;
 	}
 }
-customElements.define("tame-shell", TameShell);
+customElements.define("tame-web-shell", TameShell);

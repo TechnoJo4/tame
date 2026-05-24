@@ -59,4 +59,4 @@ export class TameMarkdown extends LitElement {
 		return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 	}
 }
-customElements.define("tame-markdown", TameMarkdown);
+customElements.define("tame-web-markdown", TameMarkdown);

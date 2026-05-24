@@ -26,108 +26,108 @@
 html, body { height: 100%; font-family: system-ui, sans-serif; background: var(--tame-bg); color: var(--tame-text); }
 
 /* ---- shell ---- */
-tame-shell { display: block; height: 100%; }
-tame-shell > .layout { display: flex; height: 100%; }
-tame-shell > .loading,
-tame-shell > .error { display: flex; align-items: center; justify-content: center; height: 100%; }
-tame-shell > .error { color: var(--tame-danger); }
+tame-web-shell { display: block; height: 100%; }
+tame-web-shell > .layout { display: flex; height: 100%; }
+tame-web-shell > .loading,
+tame-web-shell > .error { display: flex; align-items: center; justify-content: center; height: 100%; }
+tame-web-shell > .error { color: var(--tame-danger); }
 
 /* ---- main column ---- */
-tame-shell > .layout > .main-column { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+tame-web-shell > .layout > .main-column { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
 /* ---- top bar ---- */
-tame-top-bar {
+tame-web-top-bar {
 	display: flex; align-items: center; flex-shrink: 0;
 	height: 36px; padding: 0 8px; border-bottom: 1px solid var(--tame-border);
 }
-tame-top-bar > .top-bar-left {
+tame-web-top-bar > .top-bar-left {
 	display: flex; align-items: center; gap: 4px; flex-shrink: 0;
 }
-tame-top-bar > .top-bar-center {
+tame-web-top-bar > .top-bar-center {
 	flex: 1; display: flex; align-items: center; justify-content: center;
 	min-width: 0; overflow: hidden;
 }
-tame-top-bar > .top-bar-right {
+tame-web-top-bar > .top-bar-right {
 	display: flex; align-items: center; gap: 4px; flex-shrink: 0;
 }
-tame-top-bar .top-bar-toggle {
+tame-web-top-bar .top-bar-toggle {
 	flex-shrink: 0; width: 28px; height: 28px; border: none; border-radius: 3px;
 	background: none; color: var(--tame-text-muted); cursor: pointer; font-size: 14px;
 }
-tame-top-bar .top-bar-toggle:hover {
+tame-web-top-bar .top-bar-toggle:hover {
 	color: var(--tame-text); background: var(--tame-surface);
 }
 
 /* ---- main (thread + composer) ---- */
-tame-shell > .layout > .main-column > .main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+tame-web-shell > .layout > .main-column > .main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 
 /* ---- sidebar ---- */
-tame-sidebar {
+tame-web-sidebar {
 	display: flex; flex-direction: column; width: 260px; border-right: 1px solid var(--tame-border);
 	overflow-y: auto; flex-shrink: 0; padding: 8px; transition: width 0.15s ease;
 }
-tame-sidebar[collapsed] { display: none; }
+tame-web-sidebar[collapsed] { display: none; }
 
 /* ---- thread ---- */
-tame-thread { display: block; flex: 1; overflow-y: auto; overflow-x: hidden; }
+tame-web-thread { display: block; flex: 1; overflow-y: auto; overflow-x: hidden; }
 
 /* ---- message ---- */
-tame-message { display: block; margin-bottom: 16px; padding: 8px; border-radius: 4px; }
-tame-message[data-role="user"] { background: var(--tame-surface); }
-tame-message > .role {
+tame-web-message { display: block; margin-bottom: 16px; padding: 8px; border-radius: 4px; }
+tame-web-message[data-role="user"] { background: var(--tame-surface); }
+tame-web-message > .role {
 	display: block; font-size: 11px; color: var(--tame-text-muted); margin-bottom: 4px; text-transform: uppercase;
 }
 
 /* ---- markdown ---- */
-tame-markdown { display: block; line-height: 1.5; word-break: break-word; }
-tame-markdown p { margin: 4px 0; }
-tame-markdown pre {
+tame-web-markdown { display: block; line-height: 1.5; word-break: break-word; }
+tame-web-markdown p { margin: 4px 0; }
+tame-web-markdown pre {
 	background: var(--tame-surface-alt); padding: 8px; border-radius: 4px;
 	overflow-x: auto; font-size: 13px;
 }
-tame-markdown code {
+tame-web-markdown code {
 	background: var(--tame-surface-alt); padding: 1px 4px; border-radius: 2px; font-size: 13px;
 }
-tame-markdown pre code {
+tame-web-markdown pre code {
 	background: none; padding: 0; border-radius: 0; font-size: inherit;
 }
 
 /* ---- thinking ---- */
-tame-message > details.thinking { color: var(--tame-text-muted); font-style: italic; margin: 8px 0; }
+tame-web-message > details.thinking { color: var(--tame-text-muted); font-style: italic; margin: 8px 0; }
 
 /* ---- tool view ---- */
-tame-tool-view { display: block; margin-bottom: 12px; }
-tame-tool-view > .loading { padding: 8px; color: var(--tame-text-muted); }
+tame-web-tool-view { display: block; margin-bottom: 12px; }
+tame-web-tool-view > .loading { padding: 8px; color: var(--tame-text-muted); }
 
 /* ---- tool fallback ---- */
-tame-tool-fallback {
+tame-web-tool-fallback {
 	display: block; margin: 0; padding: 8px; overflow: hidden;
 	border: 1px solid var(--tame-border-light); border-radius: 4px; background: var(--tame-surface-alt);
 }
-tame-tool-fallback > .tool-label { display: block; font-size: 12px; color: var(--tame-text-muted); margin-bottom: 4px; overflow-wrap: break-word; }
-tame-tool-fallback > .tool-field { display: block; font-size: 12px; color: var(--tame-text-secondary); margin-left: 8px; line-height: 1.4; overflow-wrap: break-word; }
-tame-tool-fallback > .tool-field b { color: var(--tame-text-faint); font-weight: 500; }
-tame-tool-fallback > .tool-output {
+tame-web-tool-fallback > .tool-label { display: block; font-size: 12px; color: var(--tame-text-muted); margin-bottom: 4px; overflow-wrap: break-word; }
+tame-web-tool-fallback > .tool-field { display: block; font-size: 12px; color: var(--tame-text-secondary); margin-left: 8px; line-height: 1.4; overflow-wrap: break-word; }
+tame-web-tool-fallback > .tool-field b { color: var(--tame-text-faint); font-weight: 500; }
+tame-web-tool-fallback > .tool-output {
 	margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--tame-border);
 	white-space: pre-wrap; font-size: 13px; color: var(--tame-text); overflow-wrap: break-word;
 }
-tame-tool-fallback > .tool-output.error { color: var(--tame-danger); }
+tame-web-tool-fallback > .tool-output.error { color: var(--tame-danger); }
 
 /* ---- composer ---- */
-tame-composer { display: block; border-top: 1px solid var(--tame-border); padding: 12px; }
-tame-composer > .composer-row { display: flex; gap: 8px; align-items: flex-end; }
-tame-composer > .composer-row > .input {
+tame-web-composer { display: block; border-top: 1px solid var(--tame-border); padding: 12px; }
+tame-web-composer > .composer-row { display: flex; gap: 8px; align-items: flex-end; }
+tame-web-composer > .composer-row > .input {
 	flex: 1; min-height: 60px; background: var(--tame-surface); color: var(--tame-text);
 	border: 1px solid var(--tame-border-light); border-radius: 4px; padding: 8px;
 	font-family: inherit; font-size: 14px; resize: vertical;
 }
-tame-composer > .composer-row > .send-btn,
-tame-composer > .composer-row > .abort-btn {
+tame-web-composer > .composer-row > .send-btn,
+tame-web-composer > .composer-row > .abort-btn {
 	flex-shrink: 0; width: 36px; height: 36px; border: none; border-radius: 4px;
 	background: none; cursor: pointer; font-size: 18px; line-height: 1;
 	align-self: center;
 }
-tame-composer > .composer-row > .send-btn { color: var(--tame-text-muted); }
-tame-composer > .composer-row > .send-btn:hover { color: var(--tame-success); }
-tame-composer > .composer-row > .abort-btn { color: var(--tame-text-muted); }
-tame-composer > .composer-row > .abort-btn:hover { color: var(--tame-danger); }
+tame-web-composer > .composer-row > .send-btn { color: var(--tame-text-muted); }
+tame-web-composer > .composer-row > .send-btn:hover { color: var(--tame-success); }
+tame-web-composer > .composer-row > .abort-btn { color: var(--tame-text-muted); }
+tame-web-composer > .composer-row > .abort-btn:hover { color: var(--tame-danger); }
