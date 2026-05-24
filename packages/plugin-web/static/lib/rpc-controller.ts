@@ -207,12 +207,16 @@ interface RawMessage {
 	content: RawBlock[];
 }
 
+let _keyCounter = 0;
+function nextKey(): string { return `k${_keyCounter++}`; }
+function resetKeys(): void { _keyCounter = 0; }
+
 function userItem(data: { msg: { content: RawBlock[] } }): MessageItem {
 	const content: TextOrThinking[] = [];
 	for (const c of data.msg.content) {
 		if (c.type === "text") content.push({ type: "text", text: c.text! });
 	}
-	return { type: "message", role: "user", content };
+	return { type: "message", role: "user", content, key: nextKey() };
 }
 
 function assistantItems(data: { msg: { content: RawBlock[] } }): ThreadItem[] {
@@ -220,12 +224,13 @@ function assistantItems(data: { msg: { content: RawBlock[] } }): ThreadItem[] {
 }
 
 function contextToItems(messages: RawMessage[]): ThreadItem[] {
+	resetKeys();
 	const items: ThreadItem[] = [];
 	for (const msg of messages) {
 		if (msg.role === "user") {
 			for (const c of msg.content) {
 				if (c.type === "text") {
-					items.push({ type: "message", role: "user", content: [{ type: "text", text: c.text! }] });
+					items.push({ type: "message", role: "user", content: [{ type: "text", text: c.text! }], key: nextKey() });
 				} else if (c.type === "tool_result") {
 					// find matching tool_call and attach result
 					for (let i = items.length - 1; i >= 0; i--) {
@@ -252,7 +257,7 @@ function rawBlocksToItems(blocks: RawBlock[]): ThreadItem[] {
 	for (const c of blocks) {
 		if (c.type === "tool_use") {
 			if (textBlocks.length > 0) {
-				items.push({ type: "message", role: "assistant", content: [...textBlocks] });
+				items.push({ type: "message", role: "assistant", content: [...textBlocks], key: nextKey() });
 				textBlocks.length = 0;
 			}
 			items.push({
@@ -260,10 +265,9 @@ function rawBlocksToItems(blocks: RawBlock[]): ThreadItem[] {
 				id: c.id!,
 				name: c.name!,
 				input: c.input!,
+				key: c.id!,
 			});
-			// tool results for this call are already in the context, paired up below
 		} else if (c.type === "tool_result") {
-			// find the matching tool_call and attach the result
 			for (let i = items.length - 1; i >= 0; i--) {
 				const item = items[i];
 				if (item.type === "tool_call" && item.id === (c as any).tool_use_id) {
@@ -280,7 +284,7 @@ function rawBlocksToItems(blocks: RawBlock[]): ThreadItem[] {
 	}
 
 	if (textBlocks.length > 0) {
-		items.push({ type: "message", role: "assistant", content: [...textBlocks] });
+		items.push({ type: "message", role: "assistant", content: [...textBlocks], key: nextKey() });
 	}
 
 	return items;

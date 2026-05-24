@@ -5,6 +5,7 @@
     "jsr:@std/path@^1.1.4": "1.1.4",
     "npm:@agentclientprotocol/sdk@*": "0.18.0_zod@4.3.6",
     "npm:@agentclientprotocol/sdk@0.18": "0.18.0_zod@4.3.6",
+    "npm:@lit-labs/virtualizer@^2.1.0": "2.1.1",
     "npm:@rollup/plugin-alias@5.1.1": "5.1.1_rollup@4.44.0",
     "npm:@rollup/plugin-node-resolve@16.0.1": "16.0.1_rollup@4.44.0",
     "npm:@rollup/plugin-swc@0.4.0": "0.4.0_@swc+core@1.13.2_rollup@4.44.0",
@@ -65,6 +66,13 @@
     },
     "@lit-labs/ssr-dom-shim@1.6.0": {
       "integrity": "sha512-VHb0ALPMTlgKjM6yIxxoQNnpKyUKLD04VzeQdsiXkMqkvYlAHxq9glGLmgbb889/1GsohSOAjvQYoiBppXFqrQ=="
+    },
+    "@lit-labs/virtualizer@2.1.1": {
+      "integrity": "sha512-JWxMwnlouLdwpw8spLTuax53WMnSP3xt0dCyxAS7GJr5Otda9MGgR/ghAdfwhSY75TmjbE1T2TqChwoGCw3ggw==",
+      "dependencies": [
+        "lit",
+        "tslib"
+      ]
     },
     "@lit/reactive-element@2.1.2": {
       "integrity": "sha512-pbCDiVMnne1lYUIaYNN5wrwQXDtHaYtg7YEFPeW+hws6U47WeFvISGUWekPGKWOP1ygrs0ef0o1VJMk1exos5A==",
@@ -763,6 +771,9 @@
       ],
       "bin": true
     },
+    "tslib@2.8.1": {
+      "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="
+    },
     "typebox@1.1.38": {
       "integrity": "sha512-pZ0aQPmMmXoUvSbeuWf/Hzsc+avNw/Zd6VeE8CFgkVGWyuHPJvqeJJDeJqLve+K70LvjYIoleGcoJHPT17cWoA=="
     },
@@ -813,6 +824,7 @@
       },
       "packages/plugin-web": {
         "dependencies": [
+          "npm:@lit-labs/virtualizer@^2.1.0",
           "npm:@rollup/plugin-alias@5.1.1",
           "npm:@rollup/plugin-node-resolve@16.0.1",
           "npm:@rollup/plugin-swc@0.4.0",
