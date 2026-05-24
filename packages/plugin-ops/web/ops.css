@@ -1,0 +1,89 @@
+/* ---- shared ops tool styles ---- */
+
+tame-ops-read, tame-ops-write, tame-ops-edit, tame-ops-exec { display: block; }
+
+.ops-label {
+	font-size: 12px; color: var(--tame-text-muted); display: block; margin-bottom: 4px;
+}
+.ops-label code {
+	font-size: 11px; background: var(--tame-surface); padding: 1px 4px; border-radius: 2px;
+}
+
+.ops-content {
+	font-size: 11px; color: var(--tame-text-secondary); white-space: pre-wrap;
+	max-height: 300px; overflow-y: auto; background: var(--tame-surface-alt);
+	padding: 6px 8px; border-radius: 4px; margin: 4px 0 0;
+}
+.ops-content.error { color: var(--tame-danger); border-left: 2px solid var(--tame-danger); }
+
+.ops-status {
+	font-size: 11px; color: var(--tame-text-dim); display: block; margin-top: 4px;
+}
+.ops-status.error { color: var(--tame-danger); }
+
+.ops-diff {
+	margin: 4px 0 0; display: flex; flex-direction: column; gap: 2px;
+}
+.ops-diff-old, .ops-diff-new {
+	font-size: 11px; padding: 4px 6px; border-radius: 3px; margin: 0; white-space: pre-wrap;
+}
+.ops-diff-old {
+	background: rgba(255,0,0,0.08); color: var(--tame-danger);
+}
+.ops-diff-new {
+	background: rgba(0,255,0,0.06); color: var(--tame-success, #4caf50);
+}
+
+/* ---- file explorer sidebar ---- */
+
+tame-ops-files { display: block; }
+tame-ops-files .files-header {
+	display: flex; align-items: center; justify-content: space-between;
+	padding: 4px 0; margin-bottom: 4px;
+}
+tame-ops-files .files-header .files-title {
+	font-size: 11px; color: var(--tame-text-muted); text-transform: uppercase; letter-spacing: 0.5px;
+}
+tame-ops-files .files-header .files-refresh {
+	width: 20px; height: 20px; border: 1px solid var(--tame-border-light); border-radius: 3px;
+	background: none; color: var(--tame-text-muted); cursor: pointer; font-size: 14px; line-height: 1;
+}
+tame-ops-files .files-header .files-refresh:hover { color: var(--tame-text); border-color: var(--tame-text-muted); }
+tame-ops-files .files-loading,
+tame-ops-files .files-empty { font-size: 12px; color: var(--tame-text-dim); padding: 4px 0; }
+
+tame-ops-files .files-tree { display: flex; flex-direction: column; }
+tame-ops-files .files-tree .files-dir,
+tame-ops-files .files-tree .files-file {
+	display: block; width: 100%; padding: 3px 4px; border: none; border-radius: 2px;
+	background: none; font-size: 12px; text-align: left; cursor: pointer;
+	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+tame-ops-files .files-tree .files-dir { color: var(--tame-text-secondary); }
+tame-ops-files .files-tree .files-dir:hover,
+tame-ops-files .files-tree .files-dir.open { background: var(--tame-surface); }
+tame-ops-files .files-tree .files-file { color: var(--tame-text-faint); }
+tame-ops-files .files-tree .files-file:hover { background: var(--tame-surface); color: var(--tame-text); }
+tame-ops-files .files-tree .files-file .files-size {
+	float: right; color: var(--tame-text-dim); font-size: 10px;
+}
+
+tame-ops-files .files-preview {
+	margin-top: 8px; border-top: 1px solid var(--tame-border); padding-top: 8px;
+}
+tame-ops-files .files-preview .files-preview-header {
+	display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;
+}
+tame-ops-files .files-preview .files-preview-path {
+	font-size: 11px; color: var(--tame-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+tame-ops-files .files-preview .files-preview-close {
+	width: 16px; height: 16px; border: none; background: none; color: var(--tame-text-muted);
+	cursor: pointer; font-size: 16px; line-height: 1; flex-shrink: 0;
+}
+tame-ops-files .files-preview .files-preview-close:hover { color: var(--tame-danger); }
+tame-ops-files .files-preview .files-preview-content {
+	font-size: 11px; color: var(--tame-text-secondary); white-space: pre-wrap;
+	max-height: 200px; overflow-y: auto; background: var(--tame-surface-alt);
+	padding: 4px 6px; border-radius: 3px; margin: 0;
+}

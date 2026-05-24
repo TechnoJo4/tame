@@ -2,8 +2,11 @@ import { Emitter, tool, Type, type IAgent, type IHarness, type Plugin } from "@t
 import { promises as fs } from "node:fs";
 import { spawn } from "node:child_process";
 import process from "node:process";
-import { dirname, resolve } from "@std/path";
+import { basename, dirname, join, resolve } from "@std/path";
 import type { Static } from "typebox";
+import type { WebPlugin } from "@tame/plugin-web/index";
+import type { RPCPlugin } from "@tame/plugin-rpc/index";
+import { call } from "@tame/rpc-sdk";
 
 export type Content =
 	| { type: "text"; text: string }
@@ -108,6 +111,10 @@ const getExecName = (args: string[]): string => {
 	return s === -1 ? a[0] : a[0].slice(0, s);
 };
 
+const stripAnsi = (s: string) =>
+	s.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "")
+	 .replace(/\x1b\].*?(\x07|\x1b\\)/g, "");
+
 const killTree = (pid: number) => {
 	try {
 		process.kill(-pid, "SIGKILL");
@@ -211,8 +218,8 @@ export class OpsPlugin implements Plugin {
 				opts.signal?.removeEventListener("abort", onAbort);
 
 				return {
-					stdout: stdout.join(""),
-					stderr: stderr.join(""),
+					stdout: stripAnsi(stdout.join("")),
+					stderr: stripAnsi(stderr.join("")),
 					exitCode: proc.exitCode ?? 1,
 				};
 			},
@@ -343,6 +350,10 @@ export class OpsPlugin implements Plugin {
 			},
 			view: {
 				compact: (args) => `Read ${args.path}`,
+				web: (args) => ({
+					tag: "tame-ops-read",
+					props: { path: contractHome(args.path), offset: args.offset, limit: args.limit },
+				}),
 				acp: (args, result) => ({
 					title: `Read ${contractHome(args.path)}`,
 					content: result ? [ {
@@ -374,6 +385,10 @@ export class OpsPlugin implements Plugin {
 			},
 			view: {
 				compact: (args) => `Write ${args.path}`,
+				web: (args) => ({
+					tag: "tame-ops-write",
+					props: { path: contractHome(args.path), content: args.content },
+				}),
 				acp: (args) => ({
 					kind: "edit",
 					title: `Write ${contractHome(args.path)}`,
@@ -411,6 +426,10 @@ export class OpsPlugin implements Plugin {
 			},
 			view: {
 				compact: (args) => `Edit ${args.path}`,
+				web: (args) => ({
+					tag: "tame-ops-edit",
+					props: { path: contractHome(args.path), oldString: args.oldString, newString: args.newString },
+				}),
 				acp: (args) => ({
 					title: `Edit ${contractHome(args.path)}`,
 				}),
@@ -450,6 +469,13 @@ export class OpsPlugin implements Plugin {
 				compact: ({ command }) => {
 					const cmd = this.normalizeCommand(command);
 					return `exec ${getExecName(cmd)}`;
+				},
+				web: ({ command, workdir }) => {
+					const cmd = stripShell(this.normalizeCommand(command));
+					return {
+						tag: "tame-ops-exec",
+						props: { command: cmd.join(" "), workdir },
+					};
 				},
 				acp: ({ command }, result) => {
 					if (!command) return;
@@ -493,6 +519,67 @@ export class OpsPlugin implements Plugin {
 			enabled.exec !== false ? this.#tools.exec : null,
 		].filter((t): t is NonNullable<typeof t> => t !== null);
 		harness.addTools(...tools);
+
+		// register web components
+		const web = harness.getPlugin("web") as WebPlugin | undefined;
+		if (web) {
+			const dir = import.meta.dirname!;
+			web.register("ops", [
+				{ tag: "tame-ops-read", src: web.resolve(dir, "./web/ops.ts") },
+				{ tag: "tame-ops-write", src: web.resolve(dir, "./web/ops.ts") },
+				{ tag: "tame-ops-edit", src: web.resolve(dir, "./web/ops.ts") },
+				{ tag: "tame-ops-exec", src: web.resolve(dir, "./web/ops.ts") },
+				{ tag: "tame-ops-files", src: web.resolve(dir, "./web/ops.ts") },
+			], [
+				{ location: "panel:sidebar", tag: "tame-ops-files" },
+			], web.resolve(dir, "./web/ops.css"));
+		}
+
+		// register RPC for files explorer
+		const rpc = harness.getPlugin<RPCPlugin>("rpc");
+		if (rpc) {
+			rpc.register("ops", {
+				listDir: call({
+					input: Type.Object({ path: Type.String() }),
+					output: Type.Object({
+						path: Type.String(),
+						name: Type.String(),
+						entries: Type.Array(Type.Object({
+							name: Type.String(),
+							isDir: Type.Boolean(),
+							size: Type.Number(),
+						})),
+					}),
+					call: async ({ path }) => {
+						const resolved = resolve(path);
+						const entries = await fs.readdir(resolved, { withFileTypes: true });
+						const result = await Promise.all(entries.map(async (e): Promise<{ name: string; isDir: boolean; size: number }> => {
+							const entryPath = join(resolved, e.name);
+							try {
+								const stat = await fs.stat(entryPath);
+								return { name: e.name, isDir: stat.isDirectory(), size: stat.size };
+							} catch {
+								return { name: e.name, isDir: false, size: 0 };
+							}
+						}));
+						result.sort((a, b) => {
+							if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
+							return a.name.localeCompare(b.name);
+						});
+						return { path: resolved, name: basename(resolved), entries: result };
+					},
+				}),
+				readFile: call({
+					input: Type.Object({ path: Type.String() }),
+					output: Type.Object({ content: Type.String() }),
+					call: async ({ path }) => {
+						const data = await this.#localEnv.read(path);
+						const text = new TextDecoder().decode(data);
+						return { content: text };
+					},
+				}),
+			});
+		}
 	}
 
 	newAgent(agent: IAgent) {
