@@ -117,11 +117,19 @@ export class WebPlugin implements Plugin {
 	}
 
 	async #buildShell(): Promise<void> {
-		const shellTs = `${this.#config.staticDir}/shell.ts`;
-		const shellJs = `${this.#config.staticDir}/shell.js`;
+		const staticDir = this.#config.staticDir;
+		const shellTs = `${staticDir}/shell.ts`;
+		const shellJs = `${staticDir}/shell.js`;
+		const litJs = `${staticDir}/lit.js`;
 
 		try {
 			const { rollup } = await import("rollup");
+
+			// if vendor bundles are missing (fresh clone), do a full build
+			try { Deno.statSync(litJs); } catch {
+				await this.#buildVendorBundles(rollup, staticDir);
+			}
+
 			const build = await rollup({
 				input: shellTs,
 				external: ["lit", "lit/decorators.js", "@tame/rpc-client", "typebox", "typebox/compile"],
@@ -135,6 +143,44 @@ export class WebPlugin implements Plugin {
 			await build.close();
 		} catch (e) {
 			console.warn("plugin-web: shell rebuild failed, using existing shell.js:", e);
+		}
+	}
+
+	async #buildVendorBundles(rollup: any, staticDir: string): Promise<void> {
+		// write entry files, bundle, then clean up. mirrors build.js.
+		const entry = (name: string, content: string) => {
+			Deno.writeTextFileSync(`${this.#buildDir}/${name}.entry.ts`, content);
+		};
+		entry("lit", `export * from "lit";\nexport * from "lit/decorators.js";\n`);
+		entry("typebox",
+			`export * from "typebox";\nexport { default } from "typebox";\n` +
+			`export { Compile, Code, Validator } from "typebox/compile";\n` +
+			`export { default as compileDefault } from "typebox/compile";\n`);
+		entry("tame-rpc-client",
+			`export { RPCClient } from "@tame/rpc-client";\n` +
+			`export { wsToStream } from "@tame/rpc-client/stream";\n`);
+
+		const bundle = async (name: string, externals: string[] = []) => {
+			const b = await rollup({
+				input: `${this.#buildDir}/${name}.entry.ts`,
+				external: externals,
+				plugins: basePlugins(this.#rootDir),
+			});
+			await b.write({
+				file: `${staticDir}/${name}.js`,
+				format: "esm",
+				plugins: externals.length === 0 ? [] : [terserPlugin],
+			});
+			await b.close();
+		};
+
+		await bundle("lit");
+		await bundle("typebox");
+		await bundle("tame-rpc-client", ["typebox", "typebox/compile"]);
+
+		// cleanup entry files
+		for (const name of ["lit", "typebox", "tame-rpc-client"]) {
+			try { Deno.removeSync(`${this.#buildDir}/${name}.entry.ts`); } catch { /* */ }
 		}
 	}
 
