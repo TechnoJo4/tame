@@ -4,5 +4,8 @@
 	"exports": {
 		".": "./main.ts",
 		"./index": "./index.ts"
+	},
+	"imports": {
+		"path": "node:path"
 	}
 }

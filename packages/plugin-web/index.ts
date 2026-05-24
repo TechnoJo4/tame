@@ -91,12 +91,11 @@ export class WebPlugin implements Plugin {
 		const outDir = `${this.#buildDir}/plugins/${pluginId}`;
 		try { Deno.mkdirSync(outDir, { recursive: true }); } catch { /* exists */ }
 
-		const { createRequire } = await import("node:module");
-		const req = createRequire(`${this.#buildDir}/package.json`);
-		const { rollup } = req("rollup");
-		const swcPlugin = req("@rollup/plugin-swc").default ?? req("@rollup/plugin-swc");
-		const resolvePlugin = req("@rollup/plugin-node-resolve").default ?? req("@rollup/plugin-node-resolve");
-		const aliasPlugin = req("@rollup/plugin-alias").default ?? req("@rollup/plugin-alias");
+		const mod = (p: string) => `${this.#buildDir}/node_modules/${p}`;
+		const { rollup } = await import(mod("rollup/dist/es/rollup.js"));
+		const swcPlugin = (await import(mod("@rollup/plugin-swc/dist/index.js"))).default;
+		const resolvePlugin = (await import(mod("@rollup/plugin-node-resolve/dist/index.js"))).default;
+		const aliasPlugin = (await import(mod("@rollup/plugin-alias/dist/index.js"))).default;
 
 		const swc = swcPlugin({ swc: swcOptions });
 		const alias = aliasPlugin({
