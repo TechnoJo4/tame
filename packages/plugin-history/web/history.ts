@@ -70,11 +70,13 @@ export class TameHistory extends LitElement {
 
 	render() {
 		return html`
-			<div class="history-header">
-				<span class="history-title">sessions</span>
-				<button class="history-new" @click=${this.#newChat} title="new chat">+</button>
-			</div>
-			${this.#loading ? html`<div class="history-loading">loading...</div>` : this.#renderList()}
+			<details class="history-details" open>
+				<summary class="history-header">
+					<span class="history-title">sessions</span>
+					<button class="history-new" @click=${this.#newChat} title="new chat">+</button>
+				</summary>
+				${this.#loading ? html`<div class="history-loading">loading...</div>` : this.#renderList()}
+			</details>
 		`;
 	}
 

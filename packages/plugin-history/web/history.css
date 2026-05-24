@@ -1,16 +1,19 @@
 tame-history { display: block; }
-tame-history .history-header {
+tame-history .history-details { margin: 0; }
+tame-history .history-details > summary {
 	display: flex; align-items: center; justify-content: space-between;
-	padding: 4px 0; margin-bottom: 4px;
+	padding: 4px 0; margin-bottom: 4px; cursor: pointer; list-style: none;
 }
-tame-history .history-header .history-title {
+tame-history .history-details > summary::-webkit-details-marker { display: none; }
+tame-history .history-details > summary::marker { display: none; content: ""; }
+tame-history .history-details > summary .history-title {
 	font-size: 11px; color: var(--tame-text-muted); text-transform: uppercase; letter-spacing: 0.5px;
 }
-tame-history .history-header .history-new {
+tame-history .history-details > summary .history-new {
 	width: 20px; height: 20px; border: 1px solid var(--tame-border-light); border-radius: 3px;
 	background: none; color: var(--tame-text-muted); cursor: pointer; font-size: 14px; line-height: 1;
 }
-tame-history .history-header .history-new:hover { color: var(--tame-text); border-color: var(--tame-text-muted); }
+tame-history .history-details > summary .history-new:hover { color: var(--tame-text); border-color: var(--tame-text-muted); }
 tame-history .history-loading,
 tame-history .history-empty { font-size: 12px; color: var(--tame-text-dim); padding: 4px 0; }
 tame-history .history-list { display: flex; flex-direction: column; gap: 2px; }
