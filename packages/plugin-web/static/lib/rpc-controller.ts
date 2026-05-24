@@ -129,13 +129,12 @@ export class RPCController implements WebController {
 	}
 
 	/** Switch the displayed thread to a different agent. Keeps the old
-	 *  agent's subscriptions alive (the agent stays in memory server-side). */
+	 *  agent's subscriptions alive (the agent stays in memory server-side).
+	 *  Caller is responsible for ensuring the agent is loaded (e.g. history
+	 *  plugin calls its own RPC to load persisted sessions before switching). */
 	async switchAgent(id: string) {
 		if (!this.#client) return;
 		if (id === this.agentId) return;
-
-		// ensure agent is loaded into memory (no-op if already there)
-		await this.#client.call("history", "load", { id });
 
 		// fetch context and populate the thread
 		const ctx = await this.#client.call("@tame", "getAgentContext", { id });

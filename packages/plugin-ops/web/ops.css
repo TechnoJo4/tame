@@ -2,35 +2,75 @@
 
 tame-ops-read, tame-ops-write, tame-ops-edit, tame-ops-exec { display: block; }
 
-.ops-label {
+tame-ops-read .ops-label,
+tame-ops-write .ops-label,
+tame-ops-edit .ops-label,
+tame-ops-exec .ops-label {
 	font-size: 12px; color: var(--tame-text-muted); display: block; margin-bottom: 4px;
 }
-.ops-label code {
+tame-ops-read .ops-label code,
+tame-ops-write .ops-label code,
+tame-ops-edit .ops-label code,
+tame-ops-exec .ops-label code {
 	font-size: 11px; background: var(--tame-surface); padding: 1px 4px; border-radius: 2px;
 }
 
-.ops-content {
+tame-ops-read .ops-content,
+tame-ops-write .ops-content,
+tame-ops-edit .ops-content,
+tame-ops-exec .ops-content {
 	font-size: 11px; color: var(--tame-text-secondary); white-space: pre-wrap;
 	max-height: 300px; overflow-y: auto; background: var(--tame-surface-alt);
 	padding: 6px 8px; border-radius: 4px; margin: 4px 0 0;
 }
-.ops-content.error { color: var(--tame-danger); border-left: 2px solid var(--tame-danger); }
+tame-ops-read .ops-content.error,
+tame-ops-write .ops-content.error,
+tame-ops-edit .ops-content.error,
+tame-ops-exec .ops-content.error {
+	color: var(--tame-danger); border-left: 2px solid var(--tame-danger);
+}
 
-.ops-status {
+tame-ops-read .ops-status,
+tame-ops-write .ops-status,
+tame-ops-edit .ops-status,
+tame-ops-exec .ops-status {
 	font-size: 11px; color: var(--tame-text-dim); display: block; margin-top: 4px;
 }
-.ops-status.error { color: var(--tame-danger); }
+tame-ops-read .ops-status.error,
+tame-ops-write .ops-status.error,
+tame-ops-edit .ops-status.error,
+tame-ops-exec .ops-status.error {
+	color: var(--tame-danger);
+}
 
-.ops-diff {
+tame-ops-read .ops-diff,
+tame-ops-write .ops-diff,
+tame-ops-edit .ops-diff,
+tame-ops-exec .ops-diff {
 	margin: 4px 0 0; display: flex; flex-direction: column; gap: 2px;
 }
-.ops-diff-old, .ops-diff-new {
+tame-ops-read .ops-diff-old,
+tame-ops-write .ops-diff-old,
+tame-ops-edit .ops-diff-old,
+tame-ops-exec .ops-diff-old,
+tame-ops-read .ops-diff-new,
+tame-ops-write .ops-diff-new,
+tame-ops-edit .ops-diff-new,
+tame-ops-exec .ops-diff-new {
 	font-size: 11px; padding: 4px 6px; border-radius: 3px; margin: 0; white-space: pre-wrap;
 }
-.ops-diff-old {
-	background: rgba(255,0,0,0.08); color: var(--tame-danger);
+tame-ops-read .ops-diff-old,
+tame-ops-write .ops-diff-old,
+tame-ops-edit .ops-diff-old,
+tame-ops-exec .ops-diff-old {
+	background: color-mix(in srgb, var(--tame-danger) 8%, transparent);
+	color: var(--tame-danger);
 }
-.ops-diff-new {
-	background: rgba(0,255,0,0.06); color: var(--tame-success, #4caf50);
+tame-ops-read .ops-diff-new,
+tame-ops-write .ops-diff-new,
+tame-ops-edit .ops-diff-new,
+tame-ops-exec .ops-diff-new {
+	background: color-mix(in srgb, var(--tame-success) 6%, transparent);
+	color: var(--tame-success);
 }
 

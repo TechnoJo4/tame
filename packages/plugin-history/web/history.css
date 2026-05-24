@@ -24,3 +24,10 @@ tame-history .history-list .history-item {
 }
 tame-history .history-list .history-item:hover { background: var(--tame-surface); }
 tame-history .history-list .history-item.active { background: var(--tame-surface); color: var(--tame-text); }
+
+/* ---- session title ---- */
+tame-session-title { display: block; }
+tame-session-title > .session-title {
+	font-size: 13px; color: var(--tame-text-secondary);
+	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}

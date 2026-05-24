@@ -95,8 +95,9 @@ export class TameHistory extends LitElement {
 		`;
 	}
 
-	#switch(s: SessionInfo) {
-		this.controller?.switchAgent(s.id);
+	async #switch(s: SessionInfo) {
+		await this.controller?.client?.call("history", "load", { id: s.id });
+		await this.controller?.switchAgent(s.id);
 	}
 
 	#newChat() {
