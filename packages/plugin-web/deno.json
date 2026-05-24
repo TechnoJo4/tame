@@ -15,6 +15,8 @@
 		"@rollup/plugin-node-resolve": "npm:@rollup/plugin-node-resolve@16.0.1",
 		"@rollup/plugin-alias": "npm:@rollup/plugin-alias@5.1.1",
 		"@rollup/plugin-terser": "npm:@rollup/plugin-terser@0.4.4",
-		"mdast-util-from-markdown": "npm:mdast-util-from-markdown@^2"
+		"mdast-util-from-markdown": "npm:mdast-util-from-markdown@^2",
+		"micromark-extension-gfm-table": "npm:micromark-extension-gfm-table@^2",
+		"mdast-util-gfm-table": "npm:mdast-util-gfm-table@^2"
 	}
 }

@@ -2,6 +2,8 @@ import { LitElement, html } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { property } from "lit/decorators.js";
 import { fromMarkdown } from "mdast-util-from-markdown";
+import { gfmTable } from "micromark-extension-gfm-table";
+import { gfmTableFromMarkdown } from "mdast-util-gfm-table";
 
 // ---- mdast node types we handle ----
 
@@ -38,11 +40,45 @@ export class TameMarkdown extends LitElement {
 	willUpdate(changed: Map<string, unknown>) {
 		if (changed.has("text")) {
 			try {
-				this.#root = fromMarkdown(this.text ?? "") as unknown as MdNode;
+				const root = fromMarkdown(this.text ?? "", {
+					extensions: [gfmTable()],
+					mdastExtensions: [gfmTableFromMarkdown()],
+				}) as unknown as MdNode;
+				this.#annotateTables(root);
+				this.#root = root;
 			} catch {
 				this.#root = { type: "root", children: [{ type: "paragraph", children: [{ type: "text", value: this.text ?? "" }] }] };
 			}
 		}
+	}
+
+	// Annotate table cells with alignment and header flag so #renderNode
+	// doesn't need to thread parent context through the recursive walk.
+	#annotateTables(root: MdNode) {
+		const walk = (node: MdNode, inHead: boolean) => {
+			if (node.type === "table" && node.children) {
+				const align = (node as Record<string, unknown>).align as (string | null)[] | undefined;
+				for (const section of node.children) {
+					const isHead = section.type === "tableHead";
+					if (section.children) {
+						for (const row of section.children) {
+							if (row.type === "tableRow" && row.children && align) {
+								for (let i = 0; i < row.children.length; i++) {
+									const cell = row.children[i] as Record<string, unknown>;
+									cell._align = align[i] ?? null;
+									cell._header = isHead;
+								}
+							}
+						}
+					}
+				}
+			}
+			if (node.children) {
+				const nextHead = node.type === "tableHead" ? true : node.type === "tableBody" ? false : inHead;
+				for (const child of node.children) walk(child, nextHead);
+			}
+		};
+		walk(root, false);
 	}
 
 	// ---- mdast → Lit templates ----
@@ -86,6 +122,19 @@ export class TameMarkdown extends LitElement {
 
 			case "listItem":
 				return html`<li>${(node.children ?? []).map((c) => this.#renderNode(c))}</li>`;
+
+			case "table":
+				return html`<table>${(node.children ?? []).map((c) => this.#renderNode(c))}</table>`;
+
+			case "tableRow":
+				return html`<tr>${(node.children ?? []).map((c) => this.#renderNode(c))}</tr>`;
+
+			case "tableCell": {
+				const style = (node as Record<string, unknown>)._align
+					? `text-align: ${(node as Record<string, unknown>)._align}`
+					: "";
+				return html`<td style=${style} ?data-header=${(node as Record<string, unknown>)._header === true}>${(node.children ?? []).map((c) => this.#renderNode(c))}</td>`;
+			}
 
 			case "blockquote":
 				return html`<blockquote>${(node.children ?? []).map((c) => this.#renderNode(c))}</blockquote>`;
