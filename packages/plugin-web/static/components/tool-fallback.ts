@@ -1,17 +1,11 @@
 import { LitElement, html } from "lit";
+import { property } from "lit/decorators.js";
 
 export class TameToolFallback extends LitElement {
-	static properties = {
-		name: { type: String },
-		input: { type: Object },
-		result: { type: String },
-		isError: { type: Boolean },
-	};
-
-	declare name: string;
-	declare input: Record<string, unknown>;
-	declare result: string | null;
-	declare isError: boolean;
+	@property({ type: String }) name: string;
+	@property({ type: Object }) input: Record<string, unknown>;
+	@property({ type: String }) result: string | null;
+	@property({ type: Boolean }) isError: boolean;
 
 	createRenderRoot() { return this; }
 

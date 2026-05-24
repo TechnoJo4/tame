@@ -1,17 +1,12 @@
 import { LitElement, html } from "lit";
+import { property } from "lit/decorators.js";
 import type { RPCController, ThreadItem } from "../lib/rpc-controller.ts";
 
 export class TameThread extends LitElement {
-	static properties = {
-		items: { type: Array },
-		controller: { type: Object },
-	};
-
-	declare items: ThreadItem[];
-	declare controller: RPCController;
+	@property({ type: Array }) items: ThreadItem[];
+	@property({ type: Object }) controller: RPCController;
 
 	#pinned = true;
-	#scrollHandler: (() => void) | null = null;
 
 	createRenderRoot() { return this; }
 
@@ -27,13 +22,12 @@ export class TameThread extends LitElement {
 
 	updated(changed: Map<string, unknown>) {
 		if (changed.has("items") && this.#pinned) {
-			// defer until child elements finish rendering (markdown sets innerHTML)
 			requestAnimationFrame(() => this.#scrollToBottom());
 		}
 	}
 
 	#onScroll = () => {
-		const threshold = 48; // px from bottom to consider "pinned"
+		const threshold = 48;
 		this.#pinned = this.scrollTop + this.clientHeight >= this.scrollHeight - threshold;
 	};
 

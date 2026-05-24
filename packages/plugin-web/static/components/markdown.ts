@@ -1,8 +1,8 @@
 import { LitElement, html } from "lit";
+import { property } from "lit/decorators.js";
 
 export class TameMarkdown extends LitElement {
-	static properties = { text: { type: String } };
-	declare text: string;
+	@property({ type: String }) text: string;
 
 	createRenderRoot() { return this; }
 

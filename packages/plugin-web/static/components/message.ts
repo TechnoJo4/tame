@@ -1,14 +1,10 @@
 import { LitElement, html } from "lit";
+import { property } from "lit/decorators.js";
 import type { RPCController, MessageItem, TextOrThinking } from "../lib/rpc-controller.ts";
 
 export class TameMessage extends LitElement {
-	static properties = {
-		item: { type: Object },
-		controller: { type: Object },
-	};
-
-	declare item: MessageItem;
-	declare controller: RPCController;
+	@property({ type: Object }) item: MessageItem;
+	@property({ type: Object }) controller: RPCController;
 
 	createRenderRoot() { return this; }
 
@@ -21,7 +17,7 @@ export class TameMessage extends LitElement {
 	render() {
 		const visible = this.item.content.filter((block) => {
 			if (block.type === "thinking") return block.thinking?.trim();
-			return true; // text blocks always visible
+			return true;
 		});
 		if (visible.length === 0) return html``;
 		return html`
@@ -50,21 +46,12 @@ customElements.define("tame-message", TameMessage);
 // ---- <tame-tool-view> ----
 
 class TameToolView extends LitElement {
-	static properties = {
-		controller: { type: Object },
-		toolUseId: { type: String },
-		toolName: { type: String },
-		toolInput: { type: Object },
-		result: { type: String },
-		isError: { type: Boolean },
-	};
-
-	declare controller: RPCController;
-	declare toolUseId: string;
-	declare toolName: string;
-	declare toolInput: Record<string, unknown>;
-	declare result: string | null;
-	declare isError: boolean;
+	@property({ type: Object }) controller: RPCController;
+	@property({ type: String }) toolUseId: string;
+	@property({ type: String }) toolName: string;
+	@property({ type: Object }) toolInput: Record<string, unknown>;
+	@property({ type: String }) result: string | null;
+	@property({ type: Boolean }) isError: boolean;
 
 	#resolved: { tag: string; props: Record<string, unknown> } | null = null;
 	#loaded = false;

@@ -59,14 +59,23 @@ function esbuild(args) {
 
 const typeboxDir = `${buildDir}/node_modules/typebox`;
 
-// ---- bundle lit ----
+// ---- bundle lit (with decorators) ----
 
 console.log("bundling lit...");
+
+const litEntry = `${buildDir}/lit.entry.ts`;
+Deno.writeTextFileSync(litEntry, [
+	`export * from "lit";`,
+	`export * from "lit/decorators.js";`,
+	``,
+].join("\n"));
+
 await esbuild([
-	`${buildDir}/node_modules/lit/index.js`,
+	litEntry,
 	"--bundle", "--minify", "--format=esm",
 	`--outfile=${staticDir}/lit.js`,
 ]);
+Deno.removeSync(litEntry);
 console.log("  → static/lit.js");
 
 // ---- bundle typebox (main + compile in ONE file, shared internals) ----

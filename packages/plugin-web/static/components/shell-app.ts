@@ -1,20 +1,13 @@
 import { LitElement, html } from "lit";
+import { property } from "lit/decorators.js";
 import { RPCController, type ThreadItem } from "../lib/rpc-controller.ts";
 
 export class TameShell extends LitElement {
-	static properties = {
-		items: { type: Array, state: true },
-		loading: { type: Boolean, state: true },
-		error: { type: String, state: true },
-		idle: { type: Boolean, state: true },
-		sidebarCollapsed: { type: Boolean, state: true },
-	};
-
-	declare items: ThreadItem[];
-	declare loading: boolean;
-	declare error: string | null;
-	declare idle: boolean;
-	declare sidebarCollapsed: boolean;
+	@property({ type: Array, state: true }) items: ThreadItem[];
+	@property({ type: Boolean, state: true }) loading: boolean;
+	@property({ type: String, state: true }) error: string | null;
+	@property({ type: Boolean, state: true }) idle: boolean;
+	@property({ type: Boolean, state: true }) sidebarCollapsed: boolean;
 
 	#controller = new RPCController(this);
 

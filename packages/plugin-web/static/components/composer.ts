@@ -1,14 +1,10 @@
 import { LitElement, html } from "lit";
+import { property } from "lit/decorators.js";
 import type { RPCController } from "../lib/rpc-controller.ts";
 
 export class TameComposer extends LitElement {
-	static properties = {
-		controller: { type: Object },
-		idle: { type: Boolean },
-	};
-
-	declare controller: RPCController;
-	declare idle: boolean;
+	@property({ type: Object }) controller: RPCController;
+	@property({ type: Boolean }) idle: boolean;
 
 	createRenderRoot() { return this; }
 

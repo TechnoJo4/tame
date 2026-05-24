@@ -1,14 +1,11 @@
 import { LitElement, html } from "lit";
+import { property } from "lit/decorators.js";
 import type { RPCController } from "../lib/rpc-controller.ts";
 
 export class TameSidebar extends LitElement {
-	static properties = {
-		controller: { type: Object },
-		collapsed: { type: Boolean, reflect: true },
-	};
+	@property({ type: Object }) controller: RPCController;
+	@property({ type: Boolean, reflect: true }) collapsed: boolean;
 
-	declare controller: RPCController;
-	declare collapsed: boolean;
 	#loaded = new Set<string>();
 
 	createRenderRoot() { return this; }
@@ -36,8 +33,7 @@ customElements.define("tame-sidebar", TameSidebar);
 // ---- toggle button (sibling to sidebar in the layout) ----
 
 export class TameSidebarToggle extends LitElement {
-	static properties = { collapsed: { type: Boolean } };
-	declare collapsed: boolean;
+	@property({ type: Boolean }) collapsed: boolean;
 
 	createRenderRoot() { return this; }
 

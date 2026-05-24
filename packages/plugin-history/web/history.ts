@@ -1,15 +1,14 @@
 import { LitElement, html } from "lit";
+import { property } from "lit/decorators.js";
 import type { WebController } from "@tame/web-sdk/controller";
 
 interface SessionInfo {
 	id: string;
 	title?: string;
-	lastMessageAt?: number;
 }
 
 export class TameHistory extends LitElement {
-	static properties = { controller: { type: Object } };
-	declare controller: WebController;
+	@property({ type: Object }) controller: WebController;
 
 	#sessions: SessionInfo[] = [];
 	#loading = true;
@@ -50,8 +49,7 @@ export class TameHistory extends LitElement {
 		if (!client) return;
 		try {
 			const result = await client.call("history", "list", {});
-			this.#sessions = ((result as any).sessions ?? [])
-				.sort((a: SessionInfo, b: SessionInfo) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0));
+			this.#sessions = (result as any).sessions ?? [];
 		} catch (e) {
 			console.error("tame-history: failed to list sessions", e);
 		} finally {
