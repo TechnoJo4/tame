@@ -20,7 +20,7 @@ export class TameHistory extends LitElement {
 
 	connectedCallback() {
 		super.connectedCallback();
-		this.#subscribe();
+		this.#setup();
 	}
 
 	disconnectedCallback() {
@@ -30,15 +30,18 @@ export class TameHistory extends LitElement {
 	}
 
 	updated(changed: Map<string, unknown>) {
-		if (changed.has("controller") && this.controller?.client && !this.#loaded) {
-			this.#loaded = true;
-			this.#load();
+		if (changed.has("controller")) {
+			this.#setup();
 		}
 	}
 
-	#subscribe() {
+	/** Called from both connectedCallback and updated to ensure controller
+	 *  is wired up regardless of which fires first. Idempotent. */
+	#setup() {
 		const client = this.controller?.client;
-		if (!client) return;
+		if (!client || this.#loaded) return;
+		this.#loaded = true;
+
 		this.#unsub = client.subscribe(
 			{ plugin: "history", event: "sessionsChanged" },
 			(msg) => {
@@ -49,10 +52,11 @@ export class TameHistory extends LitElement {
 				this.requestUpdate();
 			},
 		);
+
+		this.#load(client);
 	}
 
-	async #load() {
-		const client = this.controller?.client;
+	async #load(client = this.controller?.client) {
 		if (!client) return;
 		try {
 			const result = await client.call("history", "list", {});

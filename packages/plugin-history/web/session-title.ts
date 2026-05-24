@@ -20,6 +20,7 @@ export class TameHistorySessionTitle extends LitElement {
 
 	connectedCallback() {
 		super.connectedCallback();
+		this.#setup();
 	}
 
 	disconnectedCallback() {
@@ -29,24 +30,30 @@ export class TameHistorySessionTitle extends LitElement {
 	}
 
 	updated(changed: Map<string, unknown>) {
-		if (changed.has("controller") && this.controller?.client && !this.#loaded) {
-			this.#loaded = true;
-			const client = this.controller.client;
-			this.#unsub = client.subscribe(
-				{ plugin: "history", event: "sessionsChanged" },
-				(msg) => {
-					const sessions: SessionInfo[] = (msg.data as any)?.sessions ?? [];
-					this.#updateTitle(sessions);
-				},
-			);
-			this.#fetchInitial();
+		if (changed.has("controller")) {
+			this.#setup();
 		}
-
 		// agentId is set externally by the shell on every render — re-fetch
 		// when it changes so the title follows agent switches.
 		if (changed.has("agentId") && this.agentId && this.#loaded) {
 			this.#fetchInitial();
 		}
+	}
+
+	/** Wire up controller. Idempotent — only runs once. */
+	#setup() {
+		const client = this.controller?.client;
+		if (!client || this.#loaded) return;
+		this.#loaded = true;
+
+		this.#unsub = client.subscribe(
+			{ plugin: "history", event: "sessionsChanged" },
+			(msg) => {
+				const sessions: SessionInfo[] = (msg.data as any)?.sessions ?? [];
+				this.#updateTitle(sessions);
+			},
+		);
+		this.#fetchInitial();
 	}
 
 	async #fetchInitial() {
