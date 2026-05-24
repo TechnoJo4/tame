@@ -1,5 +1,7 @@
 import { LitElement, html } from "lit";
 import { property } from "lit/decorators.js";
+import { consume } from "@lit/context";
+import { agentIdContext } from "@tame/agent-context";
 import type { WebController } from "@tame/web-sdk/controller";
 
 interface SessionInfo {
@@ -10,7 +12,8 @@ interface SessionInfo {
 
 export class TameHistorySessionTitle extends LitElement {
 	@property({ type: Object }) controller: WebController;
-	@property({ type: String }) agentId: string | null;
+	@consume({ context: agentIdContext, subscribe: true })
+	agentId: string | null;
 
 	#title = "tame";
 	#loaded = false;
@@ -33,8 +36,8 @@ export class TameHistorySessionTitle extends LitElement {
 		if (changed.has("controller")) {
 			this.#setup();
 		}
-		// agentId is set externally by the shell on every render — re-fetch
-		// when it changes so the title follows agent switches.
+		// agentId comes from context — re-fetch when it changes so the
+		// title follows agent switches.
 		if (changed.has("agentId") && this.agentId && this.#loaded) {
 			this.#fetchInitial();
 		}
@@ -63,8 +66,7 @@ export class TameHistorySessionTitle extends LitElement {
 	}
 
 	#updateTitle(sessions: SessionInfo[]) {
-		const id = this.agentId ?? this.controller?.agentId;
-		const active = sessions.find(s => s.id === id);
+		const active = sessions.find(s => s.id === this.agentId);
 		this.#title = active?.title || active?.id?.slice(0, 8) || "tame";
 		this.requestUpdate();
 	}

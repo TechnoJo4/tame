@@ -18,6 +18,7 @@ interface TameShellHost {
 	loading: boolean;
 	error: string | null;
 	idle: boolean;
+	agentId: string | null;
 	addController(c: RPCController): void;
 	requestUpdate(): void;
 	updateComplete: Promise<boolean>;
@@ -71,6 +72,7 @@ export class RPCController implements WebController {
 
 			this.registry = registry as unknown as Registry;
 			this.agentId = agent.id;
+			this.#host.agentId = agent.id;
 			this.#host.loading = false;
 			this.#injectStylesheets();
 			this.#host.requestUpdate();
@@ -165,12 +167,14 @@ export class RPCController implements WebController {
 
 		const oldId = this.agentId;
 		this.agentId = id;
+		this.#host.agentId = id;
 
 		try {
 			await this.#loadItems(id);
 		} catch {
 			// rollback on failure — don't leave agentId pointing at an unloaded agent
 			this.agentId = oldId;
+			this.#host.agentId = oldId;
 			return;
 		}
 		this.#subscribeTo(id);

@@ -3,6 +3,7 @@ import { property } from "lit/decorators.js";
 import { ContextProvider } from "@lit/context";
 import { settingsStoreContext } from "../lib/settings-context.ts";
 import { LocalSettingsStore } from "../lib/settings-store.ts";
+import { agentIdContext } from "@tame/agent-context";
 import { RPCController, type ThreadItem } from "../lib/rpc-controller.ts";
 
 export class TameShell extends LitElement {
@@ -12,9 +13,11 @@ export class TameShell extends LitElement {
 	@property({ type: Boolean, state: true }) idle: boolean;
 	@property({ type: Boolean, state: true }) sidebarCollapsed: boolean;
 	@property({ type: Boolean, state: true }) settingsOpen: boolean;
+	@property({ type: String, state: true }) agentId: string | null = null;
 
 	#settingsStore = new LocalSettingsStore();
 	#settingsProvider: ContextProvider<typeof settingsStoreContext>;
+	#agentProvider: ContextProvider<typeof agentIdContext>;
 
 	#controller = new RPCController(this);
 
@@ -30,6 +33,10 @@ export class TameShell extends LitElement {
 			context: settingsStoreContext,
 			initialValue: this.#settingsStore,
 		});
+		this.#agentProvider = new ContextProvider(this, {
+			context: agentIdContext,
+			initialValue: null,
+		});
 	}
 
 	createRenderRoot() { return this; }
@@ -42,6 +49,12 @@ export class TameShell extends LitElement {
 		this.addEventListener("toggle-settings", () => {
 			this.settingsOpen = !this.settingsOpen;
 		});
+	}
+
+	willUpdate(changed: Map<string, unknown>) {
+		if (changed.has("agentId")) {
+			this.#agentProvider.setValue(this.agentId);
+		}
 	}
 
 	render() {

@@ -26,7 +26,6 @@ export class TameSidebar extends LitElement {
 		// defer controller assignment until element is upgraded (import may still be in flight)
 		customElements.whenDefined(p.tag).then(() => {
 			el.controller = this.controller;
-			el.agentId = this.controller.agentId;
 			if (p.props) Object.assign(el, p.props);
 		});
 		return el;

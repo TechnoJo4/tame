@@ -1,5 +1,7 @@
 import { LitElement, html } from "lit";
 import { property } from "lit/decorators.js";
+import { consume } from "@lit/context";
+import { agentIdContext } from "@tame/agent-context";
 import type { WebController } from "@tame/web-sdk/controller";
 
 interface SessionInfo {
@@ -10,6 +12,8 @@ interface SessionInfo {
 
 export class TameHistory extends LitElement {
 	@property({ type: Object }) controller: WebController;
+	@consume({ context: agentIdContext, subscribe: true })
+	agentId: string | null;
 
 	#sessions: SessionInfo[] = [];
 	#loading = true;
@@ -90,7 +94,7 @@ export class TameHistory extends LitElement {
 		return html`
 			<div class="history-list">
 				${this.#sessions.map((s) => html`
-					<button class="history-item${s.id === this.controller?.agentId ? " active" : ""}"
+					<button class="history-item${s.id === this.agentId ? " active" : ""}"
 						@click=${() => this.#switch(s)}>
 						${s.title || s.id.slice(0, 8)}
 					</button>

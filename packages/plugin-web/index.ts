@@ -100,7 +100,7 @@ export class WebPlugin implements Plugin {
 			try {
 				const build = await rollup({
 					input: src,
-					external: [/^lit/, /^@tame\/web-sdk/, /^typebox/],
+					external: [/^lit/, /^@lit\//, /^@tame\/web-sdk/, /^typebox/, /^@tame\/agent-context/],
 					plugins: basePlugins(this.#rootDir),
 				});
 				const basename = src.split("/").pop()!.replace(/\.ts$/, ".js");
@@ -124,18 +124,19 @@ export class WebPlugin implements Plugin {
 		const shellJs = `${staticDir}/shell.js`;
 		const litJs = `${staticDir}/lit.js`;
 		const litContextJs = `${staticDir}/lit-context.js`;
+		const agentContextJs = `${staticDir}/agent-context.js`;
 
 		try {
 			const { rollup } = await import("rollup");
 
 			// if vendor bundles are missing (fresh clone), do a full build
-			try { Deno.statSync(litJs); Deno.statSync(litContextJs); } catch {
+			try { Deno.statSync(litJs); Deno.statSync(litContextJs); Deno.statSync(agentContextJs); } catch {
 				await this.#buildVendorBundles(rollup, staticDir);
 			}
 
 			const build = await rollup({
 				input: shellTs,
-				external: ["lit", "lit/decorators.js", "lit/directive.js", "lit/async-directive.js", "@lit/context", "@tame/rpc-client", "typebox", "typebox/compile"],
+				external: ["lit", "lit/decorators.js", "lit/directive.js", "lit/async-directive.js", "@lit/context", "@tame/rpc-client", "@tame/agent-context", "typebox", "typebox/compile"],
 				plugins: basePlugins(this.#rootDir),
 			});
 			await build.write({
@@ -163,6 +164,7 @@ export class WebPlugin implements Plugin {
 			`export { RPCClient } from "@tame/rpc-client";\n` +
 			`export { wsToStream } from "@tame/rpc-client/stream";\n`);
 		entry("lit-context", `export { createContext, ContextProvider, ContextConsumer, ContextEvent, provide, consume } from "@lit/context";\n`);
+		entry("agent-context", `export { agentIdContext } from "${staticDir}/lib/agent-context.ts";\n`);
 
 		const bundle = async (name: string, externals: string[] = [], noMinify = false) => {
 			const b = await rollup({
@@ -182,9 +184,10 @@ export class WebPlugin implements Plugin {
 		await bundle("typebox");
 		await bundle("tame-rpc-client", ["typebox", "typebox/compile"]);
 		await bundle("lit-context", ["lit"], true);
+		await bundle("agent-context", ["lit", "@lit/context"]);
 
 		// cleanup entry files
-		for (const name of ["lit", "typebox", "tame-rpc-client", "lit-context"]) {
+		for (const name of ["lit", "typebox", "tame-rpc-client", "lit-context", "agent-context"]) {
 			try { Deno.removeSync(`${this.#buildDir}/${name}.entry.ts`); } catch { /* */ }
 		}
 	}

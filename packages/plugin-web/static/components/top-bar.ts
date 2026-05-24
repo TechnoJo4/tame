@@ -25,7 +25,6 @@ export class TameTopBar extends LitElement {
 			const el = document.createElement(p.tag) as any;
 			customElements.whenDefined(p.tag).then(() => {
 				el.controller = this.controller;
-				el.agentId = this.controller.agentId;
 				if (p.props) Object.assign(el, p.props);
 			});
 			return el;

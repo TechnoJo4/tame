@@ -3,4 +3,5 @@ static/lit-context.js
 static/shell.js
 static/typebox.js
 static/tame-rpc-client.js
+static/agent-context.js
 .build/
