@@ -139,6 +139,7 @@ await esbuild([
 	"--external:@tame/rpc-client",
 	"--external:typebox",
 	"--external:typebox/compile",
+	"--supported:decorators=true",
 ]);
 console.log("  → static/shell.js");
 

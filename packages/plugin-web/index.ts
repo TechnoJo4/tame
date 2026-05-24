@@ -93,6 +93,7 @@ export class WebPlugin implements Plugin {
 			...files.map((f) => f.src),
 			`--outdir=${outDir}`,
 			"--format=esm",
+			"--supported:decorators=true",
 		];
 
 		const proc = new Deno.Command("esbuild", { args, stdout: "null", stderr: "null" });
