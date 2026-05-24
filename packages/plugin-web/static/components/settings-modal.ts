@@ -64,12 +64,14 @@ export class TameSettingsModal extends LitElement {
 			this.#loaded.add(p.tag);
 			import(src).catch((e) => console.error(`failed to load ${p.tag}:`, e));
 		}
+		const el = document.createElement(p.tag) as any;
+		customElements.whenDefined(p.tag).then(() => {
+			el.controller = this.controller;
+			if (p.props) Object.assign(el, p.props);
+		});
 		return html`
 			<tame-web-settings-form pluginId=${pluginId}>
-				<${p.tag}
-					.controller=${this.controller}
-					pluginId=${pluginId}
-				></${p.tag}>
+				${el}
 			</tame-web-settings-form>
 		`;
 	}

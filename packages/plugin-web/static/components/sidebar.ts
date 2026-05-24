@@ -22,12 +22,14 @@ export class TameSidebar extends LitElement {
 			this.#loaded.add(p.tag);
 			import(src).catch((e) => console.error(`failed to load ${p.tag}:`, e));
 		}
-		// use lit template so lit can reuse the DOM element across renders
-		// instead of destroying/recreating it each time
-		return html`<${p.tag}
-			.controller=${this.controller}
-			.agentId=${this.controller.agentId}
-		></${p.tag}>`;
+		const el = document.createElement(p.tag) as any;
+		// defer controller assignment until element is upgraded (import may still be in flight)
+		customElements.whenDefined(p.tag).then(() => {
+			el.controller = this.controller;
+			el.agentId = this.controller.agentId;
+			if (p.props) Object.assign(el, p.props);
+		});
+		return el;
 	}
 }
 customElements.define("tame-web-sidebar", TameSidebar);

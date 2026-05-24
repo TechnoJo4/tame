@@ -22,10 +22,13 @@ export class TameTopBar extends LitElement {
 				this.#loaded.add(p.tag);
 				import(src).catch((e) => console.error(`failed to load ${p.tag}:`, e));
 			}
-			return html`<${p.tag}
-				.controller=${this.controller}
-				.agentId=${this.controller.agentId}
-			></${p.tag}>`;
+			const el = document.createElement(p.tag) as any;
+			customElements.whenDefined(p.tag).then(() => {
+				el.controller = this.controller;
+				el.agentId = this.controller.agentId;
+				if (p.props) Object.assign(el, p.props);
+			});
+			return el;
 		});
 	}
 
