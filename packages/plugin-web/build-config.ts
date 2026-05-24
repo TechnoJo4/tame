@@ -15,7 +15,10 @@ export const swcOptions = {
 		parser: { syntax: "typescript" as const, decorators: true },
 		transform: { decoratorVersion: "2021-12" as const },
 		target: "es2022" as const,
-		loose: false,
+		// loose: class field assignment uses = instead of [[Define]].
+		// [[Define]] semantics create own data properties that shadow
+		// @property accessors on the prototype — Lit reactivity dies.
+		loose: true,
 	},
 };
 
