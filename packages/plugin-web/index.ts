@@ -92,6 +92,7 @@ export class WebPlugin implements Plugin {
 		const swcPlugin = (await import("@rollup/plugin-swc")).default;
 		const resolvePlugin = (await import("@rollup/plugin-node-resolve")).default;
 		const aliasPlugin = (await import("@rollup/plugin-alias")).default;
+		const terserPlugin = (await import("@rollup/plugin-terser")).default;
 
 		const swc = (swcPlugin as any)({ swc: swcOptions });
 		const alias = (aliasPlugin as any)({
@@ -108,7 +109,11 @@ export class WebPlugin implements Plugin {
 					plugins: [alias, (resolvePlugin as any)({ browser: true, extensions: resolveExtensions }), swc],
 				});
 				const basename = src.split("/").pop()!.replace(/\.ts$/, ".js");
-				await build.write({ file: `${outDir}/${basename}`, format: "esm" });
+				await build.write({
+					file: `${outDir}/${basename}`,
+					format: "esm",
+					plugins: [(terserPlugin as any)()],
+				});
 				await build.close();
 				const url = `/static/plugins/${pluginId}/${basename}`;
 				this.#components.set(tag, { src: `${outDir}/${basename}`, url });

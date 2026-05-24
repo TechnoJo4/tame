@@ -23,8 +23,11 @@ export class TameSidebar extends LitElement {
 			import(src).catch((e) => console.error(`failed to load ${p.tag}:`, e));
 		}
 		const el = document.createElement(p.tag) as any;
-		el.controller = this.controller;
-		if (p.props) Object.assign(el, p.props);
+		// defer controller assignment until element is upgraded (import may still be in flight)
+		customElements.whenDefined(p.tag).then(() => {
+			el.controller = this.controller;
+			if (p.props) Object.assign(el, p.props);
+		});
 		return el;
 	}
 }
