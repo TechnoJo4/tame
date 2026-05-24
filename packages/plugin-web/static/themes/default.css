@@ -37,17 +37,30 @@ tame-shell > .layout > .main-column { flex: 1; display: flex; flex-direction: co
 
 /* ---- top bar ---- */
 tame-shell > .layout > .main-column > .top-bar {
-	display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+	display: flex; align-items: center; flex-shrink: 0;
 	height: 36px; padding: 0 8px; border-bottom: 1px solid var(--tame-border);
 }
-tame-shell > .layout > .main-column > .top-bar > .top-bar-toggle {
+tame-shell > .layout > .main-column > .top-bar > .top-bar-left {
+	display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+}
+tame-shell > .layout > .main-column > .top-bar > .top-bar-center {
+	flex: 1; display: flex; align-items: center; justify-content: center;
+	min-width: 0; overflow: hidden;
+}
+tame-shell > .layout > .main-column > .top-bar > .top-bar-right {
+	display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+}
+tame-shell > .layout > .main-column > .top-bar .top-bar-toggle {
 	flex-shrink: 0; width: 28px; height: 28px; border: none; border-radius: 3px;
 	background: none; color: var(--tame-text-muted); cursor: pointer; font-size: 14px;
 }
-tame-shell > .layout > .main-column > .top-bar > .top-bar-toggle:hover {
+tame-shell > .layout > .main-column > .top-bar .top-bar-toggle:hover {
 	color: var(--tame-text); background: var(--tame-surface);
 }
-tame-shell > .layout > .main-column > .top-bar > .top-bar-title {
+
+/* ---- session title (plugin component, placed in topbar:center) ---- */
+tame-session-title { display: block; }
+tame-session-title > .session-title {
 	font-size: 13px; color: var(--tame-text-secondary);
 	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }

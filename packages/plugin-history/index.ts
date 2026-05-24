@@ -102,14 +102,16 @@ export class HistoryPlugin implements Plugin {
 			}),
 		});
 
-		// register web component
+		// register web components
 		const web = harness.getPlugin("web") as WebPlugin | undefined;
 		if (web) {
 			const dir = import.meta.dirname!;
 			web.register("history", [
 				{ tag: "tame-history", src: web.resolve(dir, "./web/history.ts") },
+				{ tag: "tame-session-title", src: web.resolve(dir, "./web/session-title.ts") },
 			], [
 				{ location: "panel:sidebar", tag: "tame-history" },
+				{ location: "topbar:center", tag: "tame-session-title" },
 			], web.resolve(dir, "./web/history.css"));
 		}
 	}
@@ -174,7 +176,7 @@ export class HistoryPlugin implements Plugin {
 			}
 		}
 		await fs.writeFile(indexFile, JSON.stringify(index), { encoding: "utf-8" });
-		this.#rpc?.emit({ type: "event", plugin: "history", event: "sessionsChanged", data: {} });
+		this.#emitSessionsChanged(index);
 	}
 
 	async list(): Promise<SessionInfo[]> {
@@ -213,8 +215,12 @@ export class HistoryPlugin implements Plugin {
 		const existing = this.#harness?.getAgent(id);
 		if (existing) return existing;
 		const agent = await this.historyToAgent(await this.load(id));
-		this.#rpc?.emit({ type: "event", plugin: "history", event: "sessionsChanged", data: {} });
+		await this.#emitSessionsChanged(await this.list());
 		return agent;
+	}
+
+	async #emitSessionsChanged(sessions: SessionInfo[]) {
+		this.#rpc?.emit({ type: "event", plugin: "history", event: "sessionsChanged", data: { sessions } });
 	}
 
 	async historyToAgent(history: History): Promise<IAgent> {

@@ -34,7 +34,6 @@ export class TameHistory extends LitElement {
 			this.#loaded = true;
 			this.#load();
 		}
-		this.#dispatchTitle();
 	}
 
 	#subscribe() {
@@ -42,7 +41,13 @@ export class TameHistory extends LitElement {
 		if (!client) return;
 		this.#unsub = client.subscribe(
 			{ plugin: "history", event: "sessionsChanged" },
-			() => this.#load(),
+			(msg) => {
+				const sessions: SessionInfo[] = (msg.data as any)?.sessions ?? [];
+				sessions.sort((a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0));
+				this.#sessions = sessions;
+				this.#loading = false;
+				this.requestUpdate();
+			},
 		);
 	}
 
@@ -60,14 +65,6 @@ export class TameHistory extends LitElement {
 			this.#loading = false;
 			this.requestUpdate();
 		}
-	}
-
-	#dispatchTitle() {
-		const active = this.#sessions.find(s => s.id === this.controller?.agentId);
-		this.dispatchEvent(new CustomEvent("tame:session-title", {
-			detail: { title: active?.title || active?.id?.slice(0, 8) || "tame" },
-			bubbles: true, composed: true,
-		}));
 	}
 
 	render() {
@@ -100,10 +97,6 @@ export class TameHistory extends LitElement {
 
 	#switch(s: SessionInfo) {
 		this.controller?.switchAgent(s.id);
-		this.dispatchEvent(new CustomEvent("tame:session-title", {
-			detail: { title: s.title || s.id.slice(0, 8) },
-			bubbles: true, composed: true,
-		}));
 	}
 
 	#newChat() {
