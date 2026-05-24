@@ -7,8 +7,10 @@ this file is for your context if you're working on this repo (human or agent)
 tame is a minimal ai agent harness written in typescript targeting the deno runtime.
 
 core tenets:
+
 - **slim core**: it's just a pure agent loop. no tools. no interface. bring your own I/O.
 - **isolation**: if you don't want a feature, disable the plugin and it doesn't exist anymore. no feature-flag-like dead code. each plugin has its own config file.
+- **make it your own**: you should be able to do practically anything with plugins. make tame what you want it to be!
 
 core concepts:
 

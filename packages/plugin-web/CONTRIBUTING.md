@@ -6,10 +6,8 @@ if you come at this like a normal frontend, you'll break the isolation that make
 
 ## the mental model
 
-```
-plugin-web:  provides the shell + placement slots + theme variables
-plugin-*:    owns a domain concept → provides components, styles, RPC methods
-```
+plugin-web: provides the shell + placement slots + theme variables
+other plugins: own a domain concept → provide components, styles, RPC methods
 
 plugin-web is the *only* plugin that puts `<div>` on screen unprompted. every other piece of ui arrives because some plugin registered a component at a placement. if you find yourself adding markup or styles for something that isn't a shell concern (layout, composition, routing), stop — it belongs in the plugin that owns that concept.
 
@@ -28,10 +26,10 @@ calling `client.call("@tame", ...)` is fine — core tame is always present, and
 the shell owns these things directly (they appear in `shell-app.ts`):
 - the layout grid (sidebar + main column)
 - the top bar with left/center/right slots
-- the thread area (`<tame-thread>`)
-- the composer (`<tame-composer>`)
-- the markdown renderer (`<tame-markdown>`)
-- the tool fallback view (`<tame-tool-fallback>`)
+- the thread area (`<tame-web-thread>`)
+- the composer (`<tame-web-composer>`)
+- the markdown renderer (`<tame-web-markdown>`)
+- the tool fallback view (`<tame-web-tool-fallback>`)
 
 everything else must arrive via `web.register()` from the plugin that owns the concept. if you're adding a new piece of ui, ask: which plugin owns this concept? add the component there, then register it with a placement. if it's truly shell-level (e.g. a resize handle, a theme toggle, a keyboard shortcut handler), it belongs in `static/` and must not depend on any plugin.
 
@@ -39,14 +37,13 @@ everything else must arrive via `web.register()` from the plugin that owns the c
 
 all custom element tag names follow the pattern `tame-{plugin}-{thing}`. the plugin prefix is mandatory — it prevents collisions and makes ownership obvious in the dom:
 
-```
-tame-history-session-title  ✓
-tame-ops-read                ✓
-tame-session-title           ✗ (which plugin owns this?)
-tame-read                    ✗ (too generic, will collide)
-```
+good:
+- `tame-web-composer`
+- `tame-history-session-title`
 
-the shell's own components use bare `tame-{thing}` without a plugin prefix: `tame-shell`, `tame-sidebar`, `tame-thread`, `tame-message`, `tame-composer`, `tame-markdown`, `tame-tool-view`, `tame-tool-fallback`. these are reserved.
+bad:
+- `tame-session-title` (which plugin owns this?)
+- `tame-read` (too generic, will collide)
 
 ### 4. components and attributes above divs and classes
 
