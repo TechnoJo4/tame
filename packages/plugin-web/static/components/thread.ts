@@ -1,5 +1,5 @@
 import { LitElement, html } from "lit";
-import { property, query } from "lit/decorators.js";
+import { property } from "lit/decorators.js";
 import type { LitVirtualizer } from "@lit-labs/virtualizer";
 import { RangeChangedEvent, UnpinnedEvent } from "@lit-labs/virtualizer/events.js";
 import type { RPCController, ThreadItem, ToolCallItem, MessageItem } from "../lib/rpc-controller.ts";
@@ -8,7 +8,7 @@ export class TameThread extends LitElement {
 	@property({ type: Array }) items: ThreadItem[];
 	@property({ type: Object }) controller: RPCController;
 
-	@query("lit-virtualizer") #virtualizer!: LitVirtualizer;
+	#virtualizer: LitVirtualizer | null = null;
 
 	#pinned = true;
 	#layout: Record<string, unknown> = {};
@@ -26,7 +26,8 @@ export class TameThread extends LitElement {
 	}
 
 	firstUpdated() {
-		// attach scroll listener to the virtualizer (scroll events don't bubble)
+		// query the virtualizer manually — decorator on private field breaks swc
+		this.#virtualizer = this.querySelector("lit-virtualizer") as LitVirtualizer;
 		this.#virtualizer?.addEventListener("scroll", this.#onScroll, { passive: true });
 	}
 

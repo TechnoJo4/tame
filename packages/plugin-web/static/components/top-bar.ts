@@ -44,8 +44,13 @@ export class TameTopBar extends LitElement {
 			</div>
 			<div class="top-bar-right">
 				${this.#renderPlacements("topbar:right")}
+				<button class="top-bar-gear" @click=${this.#openSettings} title="settings">⚙</button>
 			</div>
 		`;
+	}
+
+	#openSettings() {
+		this.dispatchEvent(new CustomEvent("toggle-settings", { bubbles: true, composed: true }));
 	}
 }
 customElements.define("tame-web-top-bar", TameTopBar);

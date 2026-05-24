@@ -1,4 +1,5 @@
 static/lit.js
+static/lit-context.js
 static/shell.js
 static/typebox.js
 static/tame-rpc-client.js

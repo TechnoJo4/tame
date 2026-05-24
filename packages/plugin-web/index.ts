@@ -123,18 +123,19 @@ export class WebPlugin implements Plugin {
 		const shellTs = `${staticDir}/shell.ts`;
 		const shellJs = `${staticDir}/shell.js`;
 		const litJs = `${staticDir}/lit.js`;
+		const litContextJs = `${staticDir}/lit-context.js`;
 
 		try {
 			const { rollup } = await import("rollup");
 
 			// if vendor bundles are missing (fresh clone), do a full build
-			try { Deno.statSync(litJs); } catch {
+			try { Deno.statSync(litJs); Deno.statSync(litContextJs); } catch {
 				await this.#buildVendorBundles(rollup, staticDir);
 			}
 
 			const build = await rollup({
 				input: shellTs,
-				external: ["lit", "lit/decorators.js", "@tame/rpc-client", "typebox", "typebox/compile"],
+				external: ["lit", "lit/decorators.js", "lit/directive.js", "lit/async-directive.js", "@lit/context", "@tame/rpc-client", "typebox", "typebox/compile"],
 				plugins: basePlugins(this.#rootDir),
 			});
 			await build.write({
@@ -153,7 +154,7 @@ export class WebPlugin implements Plugin {
 		const entry = (name: string, content: string) => {
 			Deno.writeTextFileSync(`${this.#buildDir}/${name}.entry.ts`, content);
 		};
-		entry("lit", `export * from "lit";\nexport * from "lit/decorators.js";\n`);
+		entry("lit", `export * from "lit";\nexport * from "lit/decorators.js";\nexport * from "lit/directive.js";\nexport * from "lit/async-directive.js";\n`);
 		entry("typebox",
 			`export * from "typebox";\nexport { default } from "typebox";\n` +
 			`export { Compile, Code, Validator } from "typebox/compile";\n` +
@@ -161,8 +162,9 @@ export class WebPlugin implements Plugin {
 		entry("tame-rpc-client",
 			`export { RPCClient } from "@tame/rpc-client";\n` +
 			`export { wsToStream } from "@tame/rpc-client/stream";\n`);
+		entry("lit-context", `export { createContext, ContextProvider, ContextConsumer, provide, consume } from "@lit/context";\n`);
 
-		const bundle = async (name: string, externals: string[] = []) => {
+		const bundle = async (name: string, externals: string[] = [], noMinify = false) => {
 			const b = await rollup({
 				input: `${this.#buildDir}/${name}.entry.ts`,
 				external: externals,
@@ -171,7 +173,7 @@ export class WebPlugin implements Plugin {
 			await b.write({
 				file: `${staticDir}/${name}.js`,
 				format: "esm",
-				plugins: externals.length === 0 ? [] : [terserPlugin],
+				plugins: (externals.length === 0 || noMinify) ? [] : [terserPlugin],
 			});
 			await b.close();
 		};
@@ -179,9 +181,10 @@ export class WebPlugin implements Plugin {
 		await bundle("lit");
 		await bundle("typebox");
 		await bundle("tame-rpc-client", ["typebox", "typebox/compile"]);
+		await bundle("lit-context", ["lit"], true);
 
 		// cleanup entry files
-		for (const name of ["lit", "typebox", "tame-rpc-client"]) {
+		for (const name of ["lit", "typebox", "tame-rpc-client", "lit-context"]) {
 			try { Deno.removeSync(`${this.#buildDir}/${name}.entry.ts`); } catch { /* */ }
 		}
 	}
@@ -243,6 +246,14 @@ export class WebPlugin implements Plugin {
 				},
 			}),
 		});
+
+		// register web's own settings component at the settings modal placement
+		const dir = import.meta.dirname!;
+		await this.register("web", [
+			{ tag: "tame-web-settings", src: this.resolve(dir, "./static/components/web-settings.ts") },
+		], [
+			{ location: "modal:settings", tag: "tame-web-settings", props: { pluginId: "web" } },
+		]);
 
 		serve(this.#config, this.#components, this.#stylesheets, rpc);
 	}

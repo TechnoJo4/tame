@@ -17,16 +17,19 @@ try { Deno.mkdirSync(buildDir); } catch { /* */ }
 
 async function bundle(input, outfile, opts = {}) {
 	const externals = opts.externals ?? [];
-	const plugins = externals.length === 0 ? minPlugins(rootDir) : basePlugins(rootDir);
+	const noMinify = opts.noMinify ?? false;
+	const plugins = noMinify
+		? basePlugins(rootDir)
+		: externals.length === 0 ? minPlugins(rootDir) : basePlugins(rootDir);
 	const b = await rollup({ input, external: externals, plugins });
-	// terser in output for bundles that don't inline it (externals present → shared deps, min at output)
-	await b.write({ file: outfile, format: "esm", plugins: externals.length === 0 ? [] : [terserPlugin] });
+	const outputPlugins = noMinify ? [] : externals.length === 0 ? [] : [terserPlugin];
+	await b.write({ file: outfile, format: "esm", plugins: outputPlugins });
 	await b.close();
 }
 
 // ---- entry files ----
 
-writeFileSync(`${buildDir}/lit.entry.ts`, `export * from "lit";\nexport * from "lit/decorators.js";\n`);
+writeFileSync(`${buildDir}/lit.entry.ts`, `export * from "lit";\nexport * from "lit/decorators.js";\nexport * from "lit/directive.js";\nexport * from "lit/async-directive.js";\n`);
 writeFileSync(`${buildDir}/typebox.entry.ts`,
 	`export * from "typebox";\nexport { default } from "typebox";\n` +
 	`export { Compile, Code, Validator } from "typebox/compile";\n` +
@@ -34,6 +37,7 @@ writeFileSync(`${buildDir}/typebox.entry.ts`,
 writeFileSync(`${buildDir}/tame-rpc-client.entry.ts`,
 	`export { RPCClient } from "@tame/rpc-client";\n` +
 	`export { wsToStream } from "@tame/rpc-client/stream";\n`);
+writeFileSync(`${buildDir}/lit-context.entry.ts`, `export { createContext, ContextProvider, ContextConsumer, provide, consume } from "@lit/context";\n`);
 
 // ---- bundle ----
 
@@ -46,8 +50,13 @@ await bundle(`${buildDir}/tame-rpc-client.entry.ts`, `${staticDir}/tame-rpc-clie
 	externals: ["typebox", "typebox/compile"],
 });
 console.log("  → static/tame-rpc-client.js");
+await bundle(`${buildDir}/lit-context.entry.ts`, `${staticDir}/lit-context.js`, {
+	externals: ["lit"],
+	noMinify: true,
+});
+console.log("  → static/lit-context.js");
 await bundle(`${dir}/static/shell.ts`, `${staticDir}/shell.js`, {
-	externals: ["lit", "lit/decorators.js", "@tame/rpc-client", "typebox", "typebox/compile"],
+	externals: ["lit", "lit/decorators.js", "lit/directive.js", "lit/async-directive.js", "@lit/context", "@tame/rpc-client", "typebox", "typebox/compile"],
 });
 console.log("  → static/shell.js");
 
@@ -55,5 +64,6 @@ console.log("  → static/shell.js");
 rmSync(`${buildDir}/lit.entry.ts`);
 rmSync(`${buildDir}/typebox.entry.ts`);
 rmSync(`${buildDir}/tame-rpc-client.entry.ts`);
+rmSync(`${buildDir}/lit-context.entry.ts`);
 
 console.log("build done.");
