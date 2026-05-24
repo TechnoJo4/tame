@@ -52,8 +52,10 @@ class TameToolView extends LitElement {
 	@property({ type: Object }) toolInput: Record<string, unknown>;
 	@property({ type: String }) result: string | null;
 	@property({ type: Boolean }) isError: boolean;
+	/** Pre-resolved view metadata from the server. When set, the component
+	 *  is created directly without an RPC round-trip. */
+	@property({ type: Object }) view: { tag: string; props: Record<string, unknown> } | null;
 
-	#resolved: { tag: string; props: Record<string, unknown> } | null = null;
 	#loaded = false;
 
 	createRenderRoot() { return this; }
@@ -64,13 +66,11 @@ class TameToolView extends LitElement {
 	}
 
 	async #resolve() {
-		const result = await this.controller.viewToolCall(this.toolUseId);
-		if (result?.tag) {
-			this.#resolved = result;
-			const src = this.controller.getComponentSrc(result.tag);
-			if (src) {
-				await import(src).catch(() => {});
-			}
+		// If view metadata was pre-resolved server-side (getItems / web events),
+		// use it directly. Otherwise fall back to the RPC for backward compat.
+		if (this.view?.tag) {
+			const src = this.controller?.getComponentSrc(this.view.tag);
+			if (src) await import(src).catch(() => {});
 		}
 		this.#loaded = true;
 		this.requestUpdate();
@@ -80,22 +80,24 @@ class TameToolView extends LitElement {
 		if (!this.#loaded) {
 			return html`<div class="loading">loading tool view...</div>`;
 		}
-		if (!this.#resolved) {
-			return html`<tame-web-tool-fallback
-				.name=${this.toolName}
-				.input=${this.toolInput}
-				.result=${this.result ?? null}
-				.isError=${this.isError}
-			></tame-web-tool-fallback>`;
+		// use pre-resolved view if available
+		if (this.view?.tag) {
+			const { tag, props } = this.view;
+			const el = document.createElement(tag) as any;
+			if (props) Object.assign(el, props);
+			if (this.result !== undefined) {
+				el.result = this.result;
+				el.isError = this.isError;
+			}
+			return el;
 		}
-		const { tag, props } = this.#resolved;
-		const el = document.createElement(tag) as any;
-		if (props) Object.assign(el, props);
-		if (this.result !== undefined) {
-			el.result = this.result;
-			el.isError = this.isError;
-		}
-		return el;
+		// fallback: no pre-resolved view
+		return html`<tame-web-tool-fallback
+			.name=${this.toolName}
+			.input=${this.toolInput}
+			.result=${this.result ?? null}
+			.isError=${this.isError}
+		></tame-web-tool-fallback>`;
 	}
 }
 customElements.define("tame-web-tool-view", TameToolView);
