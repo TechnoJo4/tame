@@ -4,6 +4,7 @@
 		"@std/path": "jsr:@std/path@^1.1.4",
 		"typebox": "npm:typebox@^1.1.32"
 	},
+	"nodeModulesDir": "auto",
 	"lint": {
 		"rules": {
 			"exclude": ["require-await", "no-explicit-any"]

@@ -1,8 +1,13 @@
 // Build script for plugin-web.
-// Installs npm deps, then invokes rollup via CLI with a generated config.
+// Uses rollup JS API with swc. Dependencies declared in deno.json.
+// Plugin components are transpiled separately by index.ts at server start.
 
-import { writeFileSync, mkdirSync, rmSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { writeFileSync, rmSync } from "node:fs";
+import { rollup } from "rollup";
+import swc from "@rollup/plugin-swc";
+import resolve from "@rollup/plugin-node-resolve";
+import alias from "@rollup/plugin-alias";
+import terser from "@rollup/plugin-terser";
 import { swcOptions, tameAliasPattern, resolveExtensions } from "./build-config.ts";
 
 const dir = import.meta.dirname;
@@ -12,104 +17,56 @@ const staticDir = `${dir}/static`;
 const buildDir = `${dir}/.build`;
 const rootDir = `${dir}/../..`;
 
-// ---- install npm deps ----
-
-try { mkdirSync(buildDir); } catch { /* */ }
-
-writeFileSync(`${buildDir}/package.json`, JSON.stringify({
-	type: "module",
-	dependencies: {
-		lit: "3.3.3",
-		typebox: "1.1.38",
-		rollup: "4.44.0",
-		"@rollup/plugin-swc": "0.4.0",
-		"@rollup/plugin-node-resolve": "16.0.1",
-		"@rollup/plugin-alias": "5.1.1",
-		"@rollup/plugin-terser": "0.4.4",
-	},
-}));
-
-console.log("installing npm deps...");
-execSync("npm install --prefix " + buildDir, { cwd: dir, stdio: "inherit" });
-
-// ---- generate rollup config and run ----
-
-const rollupConfig = `
-import swc from "@rollup/plugin-swc";
-import resolve from "@rollup/plugin-node-resolve";
-import alias from "@rollup/plugin-alias";
-import terser from "@rollup/plugin-terser";
-
-const swcOptions = ${JSON.stringify(swcOptions)};
-const tameAliasPattern = ${tameAliasPattern};
-const resolveExt = ${JSON.stringify(resolveExtensions)};
+try { Deno.mkdirSync(buildDir); } catch { /* */ }
 
 const swcPlugin = swc({ swc: swcOptions });
 
 const tameAlias = alias({
 	entries: [
-		{ find: tameAliasPattern, replacement: "${rootDir}/packages/$1" },
+		{ find: tameAliasPattern, replacement: `${rootDir}/packages/$1` },
 	],
 });
 
-const typeboxDir = "${buildDir}/node_modules/typebox";
+const sharedPlugins = [tameAlias, resolve({ browser: true, extensions: resolveExtensions }), swcPlugin];
+const minPlugins = [...sharedPlugins, terser()];
 
-export default [
-	// ---- lit (with decorators) ----
-	{
-		input: "${buildDir}/lit.entry.ts",
-		output: { file: "${staticDir}/lit.js", format: "esm" },
-		plugins: [resolve({ browser: true, extensions: resolveExt }), swcPlugin, terser()],
-	},
-	// ---- typebox (main + compile combined) ----
-	{
-		input: "${buildDir}/typebox.entry.ts",
-		output: { file: "${staticDir}/typebox.js", format: "esm" },
-		plugins: [resolve({ browser: true }), swcPlugin, terser()],
-	},
-	// ---- @tame/rpc-client ----
-	{
-		input: "${buildDir}/tame-rpc-client.entry.ts",
-		output: { file: "${staticDir}/tame-rpc-client.js", format: "esm" },
-		external: ["typebox", "typebox/compile"],
-		plugins: [tameAlias, resolve({ browser: true, extensions: resolveExt }), swcPlugin, terser()],
-	},
-	// ---- shell ----
-	{
-		input: "${dir}/static/shell.ts",
-		output: { file: "${staticDir}/shell.js", format: "esm" },
-		external: ["lit", "lit/decorators.js", "@tame/rpc-client", "typebox", "typebox/compile"],
-		plugins: [tameAlias, resolve({ browser: true, extensions: resolveExt }), swcPlugin, terser()],
-	},
-];
-`;
+async function bundle(input, outfile, opts = {}) {
+	const externals = opts.externals ?? [];
+	const b = await rollup({ input, external: externals, plugins: externals.length === 0 ? minPlugins : sharedPlugins });
+	await b.write({ file: outfile, format: "esm", plugins: externals.length === 0 ? [] : [terser()] });
+	await b.close();
+}
 
-writeFileSync(`${buildDir}/rollup.config.mjs`, rollupConfig);
-
-// ---- create entry files ----
+// ---- entry files ----
 
 writeFileSync(`${buildDir}/lit.entry.ts`, `export * from "lit";\nexport * from "lit/decorators.js";\n`);
-
 writeFileSync(`${buildDir}/typebox.entry.ts`,
 	`export * from "typebox";\nexport { default } from "typebox";\n` +
 	`export { Compile, Code, Validator } from "typebox/compile";\n` +
 	`export { default as compileDefault } from "typebox/compile";\n`);
-
 writeFileSync(`${buildDir}/tame-rpc-client.entry.ts`,
 	`export { RPCClient } from "@tame/rpc-client";\n` +
 	`export { wsToStream } from "@tame/rpc-client/stream";\n`);
 
-// ---- run rollup ----
+// ---- bundle ----
 
 console.log("bundling...");
-execSync(`${buildDir}/node_modules/.bin/rollup -c ${buildDir}/rollup.config.mjs`, {
-	cwd: dir, stdio: "inherit",
+await bundle(`${buildDir}/lit.entry.ts`, `${staticDir}/lit.js`);
+console.log("  → static/lit.js");
+await bundle(`${buildDir}/typebox.entry.ts`, `${staticDir}/typebox.js`);
+console.log("  → static/typebox.js");
+await bundle(`${buildDir}/tame-rpc-client.entry.ts`, `${staticDir}/tame-rpc-client.js`, {
+	externals: ["typebox", "typebox/compile"],
 });
+console.log("  → static/tame-rpc-client.js");
+await bundle(`${dir}/static/shell.ts`, `${staticDir}/shell.js`, {
+	externals: ["lit", "lit/decorators.js", "@tame/rpc-client", "typebox", "typebox/compile"],
+});
+console.log("  → static/shell.js");
 
-// ---- cleanup entry files ----
+// ---- cleanup ----
 rmSync(`${buildDir}/lit.entry.ts`);
 rmSync(`${buildDir}/typebox.entry.ts`);
 rmSync(`${buildDir}/tame-rpc-client.entry.ts`);
-rmSync(`${buildDir}/rollup.config.mjs`);
 
 console.log("build done.");

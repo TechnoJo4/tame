@@ -5,7 +5,7 @@ import { resolve } from "@std/path";
 import { serve } from "./serve.ts";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
 import type { ComponentDef, Placement } from "@tame/web-sdk/placement";
-import { swcOptions, tameAliasPattern, resolveExtensions } from "./build-config.ts";
+import { swcOptions } from "./build-config.ts";
 
 export type { ComponentDef, Placement } from "@tame/web-sdk/placement";
 
@@ -84,18 +84,14 @@ export class WebPlugin implements Plugin {
 		this.#placements.push(...placements);
 	}
 
-	/** Transpile .ts component files to .js using rollup + swc — same
-	 *  config as the main build, so decorators etc. stay consistent.
-	 *  Output goes to .build/plugins/<id>/. */
 	async #transpile(pluginId: string, files: { src: string; tag: string }[]): Promise<void> {
 		const outDir = `${this.#buildDir}/plugins/${pluginId}`;
 		try { Deno.mkdirSync(outDir, { recursive: true }); } catch { /* exists */ }
 
-		const mod = (p: string) => `${this.#buildDir}/node_modules/${p}`;
-		const { rollup } = await import(mod("rollup/dist/es/rollup.js"));
-		const swcPlugin = (await import(mod("@rollup/plugin-swc/dist/index.js"))).default;
-		const resolvePlugin = (await import(mod("@rollup/plugin-node-resolve/dist/index.js"))).default;
-		const aliasPlugin = (await import(mod("@rollup/plugin-alias/dist/index.js"))).default;
+		const { rollup } = await import("rollup");
+		const swcPlugin = (await import("@rollup/plugin-swc")).default;
+		const resolvePlugin = (await import("@rollup/plugin-node-resolve")).default;
+		const aliasPlugin = (await import("@rollup/plugin-alias")).default;
 
 		const swc = swcPlugin({ swc: swcOptions });
 		const alias = aliasPlugin({
