@@ -8,8 +8,9 @@ interface SessionInfo {
 	lastMessageAt?: number;
 }
 
-export class TameSessionTitle extends LitElement {
+export class TameHistorySessionTitle extends LitElement {
 	@property({ type: Object }) controller: WebController;
+	@property({ type: String }) agentId: string | null;
 
 	#title = "tame";
 	#loaded = false;
@@ -40,6 +41,12 @@ export class TameSessionTitle extends LitElement {
 			);
 			this.#fetchInitial();
 		}
+
+		// agentId is set externally by the shell on every render — re-fetch
+		// when it changes so the title follows agent switches.
+		if (changed.has("agentId") && this.agentId && this.#loaded) {
+			this.#fetchInitial();
+		}
 	}
 
 	async #fetchInitial() {
@@ -49,7 +56,8 @@ export class TameSessionTitle extends LitElement {
 	}
 
 	#updateTitle(sessions: SessionInfo[]) {
-		const active = sessions.find(s => s.id === this.controller?.agentId);
+		const id = this.agentId ?? this.controller?.agentId;
+		const active = sessions.find(s => s.id === id);
 		this.#title = active?.title || active?.id?.slice(0, 8) || "tame";
 		this.requestUpdate();
 	}
@@ -58,4 +66,4 @@ export class TameSessionTitle extends LitElement {
 		return html`<span class="session-title">${this.#title}</span>`;
 	}
 }
-customElements.define("tame-session-title", TameSessionTitle);
+customElements.define("tame-history-session-title", TameHistorySessionTitle);

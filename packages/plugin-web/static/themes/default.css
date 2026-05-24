@@ -36,25 +36,25 @@ tame-shell > .error { color: var(--tame-danger); }
 tame-shell > .layout > .main-column { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
 /* ---- top bar ---- */
-tame-shell > .layout > .main-column > .top-bar {
+tame-top-bar {
 	display: flex; align-items: center; flex-shrink: 0;
 	height: 36px; padding: 0 8px; border-bottom: 1px solid var(--tame-border);
 }
-tame-shell > .layout > .main-column > .top-bar > .top-bar-left {
+tame-top-bar > .top-bar-left {
 	display: flex; align-items: center; gap: 4px; flex-shrink: 0;
 }
-tame-shell > .layout > .main-column > .top-bar > .top-bar-center {
+tame-top-bar > .top-bar-center {
 	flex: 1; display: flex; align-items: center; justify-content: center;
 	min-width: 0; overflow: hidden;
 }
-tame-shell > .layout > .main-column > .top-bar > .top-bar-right {
+tame-top-bar > .top-bar-right {
 	display: flex; align-items: center; gap: 4px; flex-shrink: 0;
 }
-tame-shell > .layout > .main-column > .top-bar .top-bar-toggle {
+tame-top-bar .top-bar-toggle {
 	flex-shrink: 0; width: 28px; height: 28px; border: none; border-radius: 3px;
 	background: none; color: var(--tame-text-muted); cursor: pointer; font-size: 14px;
 }
-tame-shell > .layout > .main-column > .top-bar .top-bar-toggle:hover {
+tame-top-bar .top-bar-toggle:hover {
 	color: var(--tame-text); background: var(--tame-surface);
 }
 
@@ -69,7 +69,7 @@ tame-sidebar {
 tame-sidebar[collapsed] { display: none; }
 
 /* ---- thread ---- */
-tame-thread { display: block; flex: 1; overflow-y: auto; }
+tame-thread { display: block; flex: 1; overflow-y: auto; overflow-x: hidden; }
 
 /* ---- message ---- */
 tame-message { display: block; margin-bottom: 16px; padding: 8px; border-radius: 4px; }

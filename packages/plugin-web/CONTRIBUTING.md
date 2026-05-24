@@ -40,10 +40,10 @@ everything else must arrive via `web.register()` from the plugin that owns the c
 all custom element tag names follow the pattern `tame-{plugin}-{thing}`. the plugin prefix is mandatory — it prevents collisions and makes ownership obvious in the dom:
 
 ```
-tame-history-button     ✓
-tame-ops-read           ✓
-tame-session-title      ✗ (which plugin owns this?)
-tame-read               ✗ (too generic, will collide)
+tame-history-session-title  ✓
+tame-ops-read                ✓
+tame-session-title           ✗ (which plugin owns this?)
+tame-read                    ✗ (too generic, will collide)
 ```
 
 the shell's own components use bare `tame-{thing}` without a plugin prefix: `tame-shell`, `tame-sidebar`, `tame-thread`, `tame-message`, `tame-composer`, `tame-markdown`, `tame-tool-view`, `tame-tool-fallback`. these are reserved.
@@ -80,7 +80,7 @@ every component must use **css custom properties** exclusively for colors. a cus
 ### 6. plugin-owned concepts stay in the plugin
 
 if plugin-history owns the concept of "an agent has a title," then:
-- the `tame-history-title` component lives in `plugin-history/web/`
+- the `tame-history-session-title` component lives in `plugin-history/web/`
 - the css for it lives in `plugin-history/web/history.css`
 - no other plugin references it, subscribes to its events, or calls its RPC methods
 

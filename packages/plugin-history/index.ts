@@ -108,10 +108,10 @@ export class HistoryPlugin implements Plugin {
 			const dir = import.meta.dirname!;
 			web.register("history", [
 				{ tag: "tame-history", src: web.resolve(dir, "./web/history.ts") },
-				{ tag: "tame-session-title", src: web.resolve(dir, "./web/session-title.ts") },
+				{ tag: "tame-history-session-title", src: web.resolve(dir, "./web/session-title.ts") },
 			], [
 				{ location: "panel:sidebar", tag: "tame-history" },
-				{ location: "topbar:center", tag: "tame-session-title" },
+				{ location: "topbar:center", tag: "tame-history-session-title" },
 			], web.resolve(dir, "./web/history.css"));
 		}
 	}
