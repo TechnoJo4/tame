@@ -5,7 +5,7 @@ import { resolve } from "@std/path";
 import { serve } from "./serve.ts";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
 import type { ComponentDef, Placement } from "@tame/web-sdk/placement";
-import { swcOptions } from "./build-config.ts";
+import { swcOptions, tameAliasPattern, resolveExtensions } from "./build-config.ts";
 
 export type { ComponentDef, Placement } from "@tame/web-sdk/placement";
 
@@ -93,8 +93,8 @@ export class WebPlugin implements Plugin {
 		const resolvePlugin = (await import("@rollup/plugin-node-resolve")).default;
 		const aliasPlugin = (await import("@rollup/plugin-alias")).default;
 
-		const swc = swcPlugin({ swc: swcOptions });
-		const alias = aliasPlugin({
+		const swc = (swcPlugin as any)({ swc: swcOptions });
+		const alias = (aliasPlugin as any)({
 			entries: [
 				{ find: tameAliasPattern, replacement: `${this.#buildDir}/../../packages/$1` },
 			],
@@ -105,7 +105,7 @@ export class WebPlugin implements Plugin {
 				const build = await rollup({
 					input: src,
 					external: [/^lit/, /^@tame\/web-sdk/, /^typebox/],
-					plugins: [alias, resolvePlugin({ browser: true, extensions: resolveExtensions }), swc],
+					plugins: [alias, (resolvePlugin as any)({ browser: true, extensions: resolveExtensions }), swc],
 				});
 				const basename = src.split("/").pop()!.replace(/\.ts$/, ".js");
 				await build.write({ file: `${outDir}/${basename}`, format: "esm" });
