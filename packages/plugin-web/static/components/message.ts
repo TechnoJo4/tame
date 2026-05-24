@@ -30,6 +30,7 @@ export class TameMessage extends LitElement {
 			case "text":
 				return html`<tame-markdown .text=${block.text}></tame-markdown>`;
 			case "thinking":
+				if (!block.thinking?.trim()) return html``;
 				return html`<details class="thinking">
 					<summary>thinking</summary>
 					<tame-markdown .text=${block.thinking}></tame-markdown>
