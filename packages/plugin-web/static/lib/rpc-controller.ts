@@ -224,11 +224,21 @@ function contextToItems(messages: RawMessage[]): ThreadItem[] {
 	const items: ThreadItem[] = [];
 	for (const msg of messages) {
 		if (msg.role === "user") {
-			const content: TextOrThinking[] = [];
 			for (const c of msg.content) {
-				if (c.type === "text") content.push({ type: "text", text: c.text! });
+				if (c.type === "text") {
+					items.push({ type: "message", role: "user", content: [{ type: "text", text: c.text! }] });
+				} else if (c.type === "tool_result") {
+					// find matching tool_call and attach result
+					for (let i = items.length - 1; i >= 0; i--) {
+						const item = items[i];
+						if (item.type === "tool_call" && item.id === (c as any).tool_use_id) {
+							item.result = (c as any).content ?? (c as any).result;
+							item.isError = !!(c as any).is_error;
+							break;
+						}
+					}
+				}
 			}
-			if (content.length > 0) items.push({ type: "message", role: "user", content });
 		} else {
 			items.push(...rawBlocksToItems(msg.content));
 		}
