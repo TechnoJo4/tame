@@ -1,4 +1,4 @@
-import type { InputMessage, ToolUse, ToolResult, IAgent } from "@tame/sdk";
+import type { InputMessage, ToolResult, IAgent } from "@tame/sdk";
 import type { ThreadItem, MessageItem, ToolCallItem, TextOrThinking } from "@tame/web-sdk";
 
 // ---- context → items conversion ----
