@@ -255,8 +255,10 @@ export class OpsPlugin implements Plugin {
 		this.emitter.after("write", async (e) => {
 			if (e.result) return e;
 			const env = getEnv(e.agent);
+			let existed = false;
+			try { await env.read(e.path); existed = true; } catch {}
 			await env.write(e.path, e.content);
-			e.result = `${e.path}: successfully created.`;
+			e.result = existed ? "ok" : `${e.path}: successfully created.`;
 			return e;
 		});
 
