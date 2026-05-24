@@ -1,4 +1,4 @@
-import type { Plugin, IHarness } from "@tame/sdk";
+import type { Plugin, IHarness, IAgent } from "@tame/sdk";
 import { Type } from "typebox";
 import { call } from "@tame/rpc-sdk";
 import { resolve } from "@std/path";
@@ -6,6 +6,7 @@ import { serve } from "./serve.ts";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
 import type { ComponentDef, Placement } from "@tame/web-sdk/placement";
 import { basePlugins, terserPlugin } from "./build-config.ts";
+import { contextToItems, assistantBlocksToItems, paginateItems } from "./items.ts";
 
 export type { ComponentDef, Placement } from "@tame/web-sdk/placement";
 
@@ -42,6 +43,7 @@ export class WebPlugin implements Plugin {
 	#stylesheets = new Map<string, string>(); // pluginId → url
 	#placements: Placement[] = [];
 	#harness: IHarness | undefined;
+	#rpc: RPCPlugin | undefined;
 	#config: WebConfig;
 	#buildDir: string;
 	#rootDir: string;
@@ -193,6 +195,7 @@ export class WebPlugin implements Plugin {
 
 		const rpc = harness.getPlugin<RPCPlugin>("rpc");
 		if (!rpc) throw new Error("plugin-web requires the rpc plugin");
+		this.#rpc = rpc;
 
 		rpc.register("web", {
 			getRegistry: call({
@@ -218,8 +221,81 @@ export class WebPlugin implements Plugin {
 					return { components, placements: this.#placements, stylesheets };
 				},
 			}),
+
+			getItems: call({
+				input: Type.Object({
+					id: Type.String(),
+					offset: Type.Number(),
+					limit: Type.Number(),
+				}),
+				output: Type.Object({
+					items: Type.Array(Type.Object({}, { additionalProperties: true })),
+					total: Type.Number(),
+				}),
+				call: async ({ id, offset, limit }) => {
+					const agent = harness.getAgent(id);
+					if (!agent) throw new Error(`agent ${id} not found`);
+					const all = contextToItems(agent);
+					return {
+						items: paginateItems(all, offset, limit) as unknown as Record<string, unknown>[],
+						total: all.length,
+					};
+				},
+			}),
 		});
 
 		serve(this.#config, this.#components, this.#stylesheets, rpc);
+	}
+
+	newAgent(agent: IAgent) {
+		const rpc = this.#rpc;
+		if (!rpc) return;
+
+		const emit = (event: string, data: Record<string, unknown>) => {
+			rpc.emit({
+				type: "event",
+				plugin: "web",
+				agent_id: agent.id,
+				event,
+				data,
+			});
+		};
+
+		agent.after("userMessage", async (e) => {
+			const content = e.msg.content
+				.filter((c) => c.type === "text")
+				.map((c) => ({ type: "text" as const, text: c.text }));
+			if (content.length === 0) return e;
+			emit("userMessage", {
+				item: {
+					type: "message",
+					role: "user",
+					content,
+					key: `live-user-${Date.now()}`,
+				},
+			});
+			return e;
+		});
+
+		agent.after("assistantMessage", async (e) => {
+			const items = assistantBlocksToItems(e.msg.content, agent);
+			if (items.length === 0) return e;
+			emit("assistantMessage", { items });
+			return e;
+		});
+
+		agent.after("toolResult", async (e) => {
+			emit("toolResult", {
+				toolUseId: e.toolUse,
+				result: e.result,
+				isError: e.error,
+			});
+			return e;
+		});
+
+		agent.after("idle", async (e) => {
+			emit("idle", { stopReason: e.stopReason });
+			return e;
+		});
 	}
 }
