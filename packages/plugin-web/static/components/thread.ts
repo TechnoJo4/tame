@@ -10,7 +10,36 @@ export class TameThread extends LitElement {
 	declare items: ThreadItem[];
 	declare controller: RPCController;
 
+	#pinned = true;
+	#scrollHandler: (() => void) | null = null;
+
 	createRenderRoot() { return this; }
+
+	connectedCallback() {
+		super.connectedCallback();
+		this.addEventListener("scroll", this.#onScroll);
+	}
+
+	disconnectedCallback() {
+		super.disconnectedCallback();
+		this.removeEventListener("scroll", this.#onScroll);
+	}
+
+	updated(changed: Map<string, unknown>) {
+		if (changed.has("items") && this.#pinned) {
+			// defer until child elements finish rendering (markdown sets innerHTML)
+			requestAnimationFrame(() => this.#scrollToBottom());
+		}
+	}
+
+	#onScroll = () => {
+		const threshold = 48; // px from bottom to consider "pinned"
+		this.#pinned = this.scrollTop + this.clientHeight >= this.scrollHeight - threshold;
+	};
+
+	#scrollToBottom() {
+		this.scrollTop = this.scrollHeight;
+	}
 
 	render() {
 		return (this.items ?? []).map((item, i) => {
