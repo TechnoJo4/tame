@@ -3,6 +3,7 @@
 
 import { writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { execSync } from "node:child_process";
+import { swcOptions, tameAliasPattern, resolveExtensions } from "./build-config.ts";
 
 const dir = import.meta.dirname;
 if (!dir) throw new Error("no dirname");
@@ -39,20 +40,15 @@ import resolve from "@rollup/plugin-node-resolve";
 import alias from "@rollup/plugin-alias";
 import terser from "@rollup/plugin-terser";
 
-const swcPlugin = swc({
-	swc: {
-		jsc: {
-			parser: { syntax: "typescript", decorators: true },
-			transform: { decoratorVersion: "2021-12" },
-			target: "es2022",
-			loose: false,
-		},
-	},
-});
+const swcOptions = ${JSON.stringify(swcOptions)};
+const tameAliasPattern = ${tameAliasPattern};
+const resolveExt = ${JSON.stringify(resolveExtensions)};
+
+const swcPlugin = swc({ swc: swcOptions });
 
 const tameAlias = alias({
 	entries: [
-		{ find: /^@tame\\/(.*)/, replacement: "${rootDir}/packages/$1" },
+		{ find: tameAliasPattern, replacement: "${rootDir}/packages/$1" },
 	],
 });
 
@@ -63,7 +59,7 @@ export default [
 	{
 		input: "${buildDir}/lit.entry.ts",
 		output: { file: "${staticDir}/lit.js", format: "esm" },
-		plugins: [resolve({ browser: true, extensions: [".ts", ".mjs", ".js"] }), swcPlugin, terser()],
+		plugins: [resolve({ browser: true, extensions: resolveExt }), swcPlugin, terser()],
 	},
 	// ---- typebox (main + compile combined) ----
 	{
@@ -76,14 +72,14 @@ export default [
 		input: "${buildDir}/tame-rpc-client.entry.ts",
 		output: { file: "${staticDir}/tame-rpc-client.js", format: "esm" },
 		external: ["typebox", "typebox/compile"],
-		plugins: [tameAlias, resolve({ browser: true, extensions: [".ts", ".mjs", ".js"] }), swcPlugin, terser()],
+		plugins: [tameAlias, resolve({ browser: true, extensions: resolveExt }), swcPlugin, terser()],
 	},
 	// ---- shell ----
 	{
 		input: "${dir}/static/shell.ts",
 		output: { file: "${staticDir}/shell.js", format: "esm" },
 		external: ["lit", "lit/decorators.js", "@tame/rpc-client", "typebox", "typebox/compile"],
-		plugins: [tameAlias, resolve({ browser: true, extensions: [".ts", ".mjs", ".js"] }), swcPlugin, terser()],
+		plugins: [tameAlias, resolve({ browser: true, extensions: resolveExt }), swcPlugin, terser()],
 	},
 ];
 `;

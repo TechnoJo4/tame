@@ -140,7 +140,7 @@ export class RPCPlugin implements Plugin {
 						id: agent.id,
 						system: agent.system,
 						title: agent.title,
-						context: agent.context as Record<string, unknown>[],
+						context: agent.context as unknown as Record<string, unknown>[],
 					};
 				}
 			}),

@@ -5,6 +5,7 @@ import { resolve } from "@std/path";
 import { serve } from "./serve.ts";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
 import type { ComponentDef, Placement } from "@tame/web-sdk/placement";
+import { swcOptions, tameAliasPattern, resolveExtensions } from "./build-config.ts";
 
 export type { ComponentDef, Placement } from "@tame/web-sdk/placement";
 
@@ -53,7 +54,7 @@ export class WebPlugin implements Plugin {
 	}
 
 	/** Register components and placements for a plugin. Called during init(). */
-	register(pluginId: string, components: ComponentDef[], placements: Placement[], css?: string): void {
+	async register(pluginId: string, components: ComponentDef[], placements: Placement[], css?: string): Promise<void> {
 		const tsFiles: { src: string; tag: string }[] = [];
 
 		for (const c of components) {
@@ -67,7 +68,7 @@ export class WebPlugin implements Plugin {
 		}
 
 		if (tsFiles.length > 0) {
-			this.#transpile(pluginId, tsFiles);
+			await this.#transpile(pluginId, tsFiles);
 		}
 
 		// copy CSS file to build output so it can be served
@@ -86,31 +87,21 @@ export class WebPlugin implements Plugin {
 	/** Transpile .ts component files to .js using rollup + swc — same
 	 *  config as the main build, so decorators etc. stay consistent.
 	 *  Output goes to .build/plugins/<id>/. */
-	#transpile(pluginId: string, files: { src: string; tag: string }[]): void {
+	async #transpile(pluginId: string, files: { src: string; tag: string }[]): Promise<void> {
 		const outDir = `${this.#buildDir}/plugins/${pluginId}`;
 		try { Deno.mkdirSync(outDir, { recursive: true }); } catch { /* exists */ }
 
-		const { createRequire } = require("node:module");
-		const req = createRequire(`${this.#buildDir}/package.json`);
-		const { rollup } = req("rollup");
-		const swcPlugin = req("@rollup/plugin-swc").default ?? req("@rollup/plugin-swc");
-		const resolvePlugin = req("@rollup/plugin-node-resolve").default ?? req("@rollup/plugin-node-resolve");
-		const aliasPlugin = req("@rollup/plugin-alias").default ?? req("@rollup/plugin-alias");
+		const modPath = (p: string) => `${this.#buildDir}/node_modules/${p}`;
+		const rollupMod = await import(modPath("rollup/dist/es/rollup.js"));
+		const { rollup } = rollupMod;
+		const swcPlugin = (await import(modPath("@rollup/plugin-swc/dist/index.js"))).default;
+		const resolvePlugin = (await import(modPath("@rollup/plugin-node-resolve/dist/index.js"))).default;
+		const aliasPlugin = (await import(modPath("@rollup/plugin-alias/dist/index.js"))).default;
 
-		const swc = swcPlugin({
-			swc: {
-				jsc: {
-					parser: { syntax: "typescript", decorators: true },
-					transform: { decoratorVersion: "2021-12" },
-					target: "es2022",
-					loose: false,
-				},
-			},
-		});
-
+		const swc = swcPlugin({ swc: swcOptions });
 		const alias = aliasPlugin({
 			entries: [
-				{ find: /^@tame\/(.*)/, replacement: `${this.#buildDir}/../../packages/$1` },
+				{ find: tameAliasPattern, replacement: `${this.#buildDir}/../../packages/$1` },
 			],
 		});
 
@@ -119,7 +110,7 @@ export class WebPlugin implements Plugin {
 				const build = await rollup({
 					input: src,
 					external: [/^lit/, /^@tame\/web-sdk/, /^typebox/],
-					plugins: [alias, resolvePlugin({ browser: true, extensions: [".ts", ".mjs", ".js"] }), swc],
+					plugins: [alias, resolvePlugin({ browser: true, extensions: resolveExtensions }), swc],
 				});
 				const basename = src.split("/").pop()!.replace(/\.ts$/, ".js");
 				await build.write({ file: `${outDir}/${basename}`, format: "esm" });

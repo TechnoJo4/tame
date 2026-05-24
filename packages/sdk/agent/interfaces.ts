@@ -45,6 +45,7 @@ export interface IAgent {
 	readonly id: string;
 	llm: InferenceProvider;
 	system: string;
+	title?: string;
 	context: InputMessage[];
 	tools: Map<string, AnyTool>;
 	pluginData: Map<symbol, unknown>;
@@ -74,5 +75,6 @@ export interface IHarness {
 	addPlugins(...plugins: Plugin[]): void;
 	newAgent(llm?: InferenceProvider, system?: string, id?: string): IAgent;
 	getAgent(id: string): IAgent | undefined;
+	listAgents(): { id: string; title?: string }[];
 	cleanup(): void;
 }
