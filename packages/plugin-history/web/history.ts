@@ -51,7 +51,9 @@ export class TameHistory extends LitElement {
 		if (!client) return;
 		try {
 			const result = await client.call("history", "list", {});
-			this.#sessions = (result as any).sessions ?? [];
+			const sessions: SessionInfo[] = (result as any).sessions ?? [];
+			sessions.sort((a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0));
+			this.#sessions = sessions;
 		} catch (e) {
 			console.error("tame-history: failed to list sessions", e);
 		} finally {
