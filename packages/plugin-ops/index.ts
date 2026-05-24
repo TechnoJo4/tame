@@ -2,11 +2,9 @@ import { Emitter, tool, Type, type IAgent, type IHarness, type Plugin } from "@t
 import { promises as fs } from "node:fs";
 import { spawn } from "node:child_process";
 import process from "node:process";
-import { basename, dirname, join, resolve } from "@std/path";
+import { dirname, resolve } from "@std/path";
 import type { Static } from "typebox";
 import type { WebPlugin } from "@tame/plugin-web/index";
-import type { RPCPlugin } from "@tame/plugin-rpc/index";
-import { call } from "@tame/rpc-sdk";
 
 export type Content =
 	| { type: "text"; text: string }
@@ -529,57 +527,9 @@ export class OpsPlugin implements Plugin {
 				{ tag: "tame-ops-write", src: web.resolve(dir, "./web/ops.ts") },
 				{ tag: "tame-ops-edit", src: web.resolve(dir, "./web/ops.ts") },
 				{ tag: "tame-ops-exec", src: web.resolve(dir, "./web/ops.ts") },
-				{ tag: "tame-ops-files", src: web.resolve(dir, "./web/ops.ts") },
-			], [
-				{ location: "panel:sidebar", tag: "tame-ops-files" },
-			], web.resolve(dir, "./web/ops.css"));
+			], [], web.resolve(dir, "./web/ops.css"));
 		}
 
-		// register RPC for files explorer
-		const rpc = harness.getPlugin<RPCPlugin>("rpc");
-		if (rpc) {
-			rpc.register("ops", {
-				listDir: call({
-					input: Type.Object({ path: Type.String() }),
-					output: Type.Object({
-						path: Type.String(),
-						name: Type.String(),
-						entries: Type.Array(Type.Object({
-							name: Type.String(),
-							isDir: Type.Boolean(),
-							size: Type.Number(),
-						})),
-					}),
-					call: async ({ path }) => {
-						const resolved = resolve(path);
-						const entries = await fs.readdir(resolved, { withFileTypes: true });
-						const result = await Promise.all(entries.map(async (e): Promise<{ name: string; isDir: boolean; size: number }> => {
-							const entryPath = join(resolved, e.name);
-							try {
-								const stat = await fs.stat(entryPath);
-								return { name: e.name, isDir: stat.isDirectory(), size: stat.size };
-							} catch {
-								return { name: e.name, isDir: false, size: 0 };
-							}
-						}));
-						result.sort((a, b) => {
-							if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
-							return a.name.localeCompare(b.name);
-						});
-						return { path: resolved, name: basename(resolved), entries: result };
-					},
-				}),
-				readFile: call({
-					input: Type.Object({ path: Type.String() }),
-					output: Type.Object({ content: Type.String() }),
-					call: async ({ path }) => {
-						const data = await this.#localEnv.read(path);
-						const text = new TextDecoder().decode(data);
-						return { content: text };
-					},
-				}),
-			});
-		}
 	}
 
 	newAgent(agent: IAgent) {
