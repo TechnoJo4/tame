@@ -69,7 +69,8 @@ tame-web-sidebar {
 tame-web-sidebar[collapsed] { display: none; }
 
 /* ---- thread ---- */
-tame-web-thread { display: block; flex: 1; overflow-y: auto; overflow-x: hidden; }
+tame-web-thread { display: flex; flex: 1; min-height: 0; }
+tame-web-thread > lit-virtualizer { flex: 1; }
 
 /* ---- message ---- */
 tame-web-message { display: block; margin-bottom: 16px; padding: 8px; border-radius: 4px; }
