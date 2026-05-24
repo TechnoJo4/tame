@@ -19,9 +19,14 @@ export class TameMessage extends LitElement {
 	}
 
 	render() {
+		const visible = this.item.content.filter((block) => {
+			if (block.type === "thinking") return block.thinking?.trim();
+			return true; // text blocks always visible
+		});
+		if (visible.length === 0) return html``;
 		return html`
 			<span class="role">${this.item.role}</span>
-			${this.item.content.map((block) => this.#renderBlock(block))}
+			${visible.map((block) => this.#renderBlock(block))}
 		`;
 	}
 
