@@ -5,7 +5,7 @@ import { resolve } from "@std/path";
 import { serve } from "./serve.ts";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
 import type { ComponentDef, Placement } from "@tame/web-sdk/placement";
-import { swcOptions, tameAliasPattern, resolveExtensions } from "./build-config.ts";
+import { basePlugins, terserPlugin } from "./build-config.ts";
 
 export type { ComponentDef, Placement } from "@tame/web-sdk/placement";
 
@@ -42,10 +42,12 @@ export class WebPlugin implements Plugin {
 	#harness: IHarness | undefined;
 	#config: WebConfig;
 	#buildDir: string;
+	#rootDir: string;
 
 	constructor(config: WebConfig) {
 		this.#config = config;
 		this.#buildDir = `${config.staticDir}/../.build`;
+		this.#rootDir = resolve(config.staticDir, "../..");
 	}
 
 	/** Resolve a component path relative to the calling plugin's directory. */
@@ -89,30 +91,19 @@ export class WebPlugin implements Plugin {
 		try { Deno.mkdirSync(outDir, { recursive: true }); } catch { /* exists */ }
 
 		const { rollup } = await import("rollup");
-		const swcPlugin = (await import("@rollup/plugin-swc")).default;
-		const resolvePlugin = (await import("@rollup/plugin-node-resolve")).default;
-		const aliasPlugin = (await import("@rollup/plugin-alias")).default;
-		const terserPlugin = (await import("@rollup/plugin-terser")).default;
-
-		const swc = (swcPlugin as any)({ swc: swcOptions });
-		const alias = (aliasPlugin as any)({
-			entries: [
-				{ find: tameAliasPattern, replacement: `${this.#buildDir}/../../packages/$1` },
-			],
-		});
 
 		for (const { src, tag } of files) {
 			try {
 				const build = await rollup({
 					input: src,
 					external: [/^lit/, /^@tame\/web-sdk/, /^typebox/],
-					plugins: [alias, (resolvePlugin as any)({ browser: true, extensions: resolveExtensions }), swc],
+					plugins: basePlugins(this.#rootDir),
 				});
 				const basename = src.split("/").pop()!.replace(/\.ts$/, ".js");
 				await build.write({
 					file: `${outDir}/${basename}`,
 					format: "esm",
-					plugins: [(terserPlugin as any)()],
+					plugins: [terserPlugin],
 				});
 				await build.close();
 				const url = `/static/plugins/${pluginId}/${basename}`;

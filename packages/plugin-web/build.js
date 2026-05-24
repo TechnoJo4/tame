@@ -1,14 +1,10 @@
 // Build script for plugin-web.
-// Uses rollup JS API with swc. Dependencies declared in deno.json.
-// Plugin components are transpiled separately by index.ts at server start.
+// Bundles shell + vendor libs using rollup + swc.
+// Plugin components are transpiled separately at server start (see index.ts).
 
 import { writeFileSync, rmSync } from "node:fs";
 import { rollup } from "rollup";
-import swc from "@rollup/plugin-swc";
-import resolve from "@rollup/plugin-node-resolve";
-import alias from "@rollup/plugin-alias";
-import terser from "@rollup/plugin-terser";
-import { swcOptions, tameAliasPattern, resolveExtensions } from "./build-config.ts";
+import { basePlugins, minPlugins, terserPlugin } from "./build-config.ts";
 
 const dir = import.meta.dirname;
 if (!dir) throw new Error("no dirname");
@@ -19,21 +15,12 @@ const rootDir = `${dir}/../..`;
 
 try { Deno.mkdirSync(buildDir); } catch { /* */ }
 
-const swcPlugin = swc({ swc: swcOptions });
-
-const tameAlias = alias({
-	entries: [
-		{ find: tameAliasPattern, replacement: `${rootDir}/packages/$1` },
-	],
-});
-
-const sharedPlugins = [tameAlias, resolve({ browser: true, extensions: resolveExtensions }), swcPlugin];
-const minPlugins = [...sharedPlugins, terser()];
-
 async function bundle(input, outfile, opts = {}) {
 	const externals = opts.externals ?? [];
-	const b = await rollup({ input, external: externals, plugins: externals.length === 0 ? minPlugins : sharedPlugins });
-	await b.write({ file: outfile, format: "esm", plugins: externals.length === 0 ? [] : [terser()] });
+	const plugins = externals.length === 0 ? minPlugins(rootDir) : basePlugins(rootDir);
+	const b = await rollup({ input, external: externals, plugins });
+	// terser in output for bundles that don't inline it (externals present → shared deps, min at output)
+	await b.write({ file: outfile, format: "esm", plugins: externals.length === 0 ? [] : [terserPlugin] });
 	await b.close();
 }
 
