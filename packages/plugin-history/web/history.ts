@@ -4,6 +4,7 @@ import type { WebController } from "@tame/web-sdk/controller";
 interface SessionInfo {
 	id: string;
 	title?: string;
+	lastMessageAt?: number;
 }
 
 export class TameHistory extends LitElement {
@@ -49,7 +50,8 @@ export class TameHistory extends LitElement {
 		if (!client) return;
 		try {
 			const result = await client.call("history", "list", {});
-			this.#sessions = (result as any).sessions ?? [];
+			this.#sessions = ((result as any).sessions ?? [])
+				.sort((a: SessionInfo, b: SessionInfo) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0));
 		} catch (e) {
 			console.error("tame-history: failed to list sessions", e);
 		} finally {

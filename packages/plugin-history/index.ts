@@ -19,11 +19,13 @@ export interface History {
 	context: InputMessage[];
 	history: InputMessage[];
 	extra: Record<string, unknown>;
+	lastMessageAt?: number;
 }
 
 export interface SessionInfo {
 	id: string;
 	title?: string;
+	lastMessageAt?: number;
 }
 
 export type PersistedMessage = InputMessage & {
@@ -39,6 +41,7 @@ export type PersistedHistory = History & {
 export interface HistoryAgentData {
 	title?: string;
 	history: InputMessage[];
+	lastMessageAt?: number;
 }
 
 export const messageToPersisted = (msg: InputMessage): PersistedMessage => ({
@@ -120,9 +123,7 @@ export class HistoryPlugin implements Plugin {
 					const nl = text.indexOf("\n");
 					hist.title = nl !== -1 ? text.substring(0, nl) : text;
 				}
-				await this.updateIndex(agent);
 			}
-
 			await this.saveAgent(agent);
 			return e;
 		});
@@ -144,26 +145,33 @@ export class HistoryPlugin implements Plugin {
 
 	async saveAgent(agent: IAgent) {
 		const data = getAgentHistory(agent);
+		const now = Date.now();
+		data.lastMessageAt = now;
 		const path = resolve(historyFolder, agent.id);
 		const history: History = {
 			id: agent.id,
 			system: agent.system,
 			context: agent.context.map(messageToPersisted),
 			history: data.history.map(messageToPersisted),
-			extra: Object.fromEntries(this.#hooks.entries().map(([k,v]) => [k, v.save(agent)]))
+			extra: Object.fromEntries(this.#hooks.entries().map(([k,v]) => [k, v.save(agent)])),
+			lastMessageAt: now,
 		};
-		await fs.writeFile(path, JSON.stringify(history), { encoding: "utf-8" })
+		await fs.writeFile(path, JSON.stringify(history), { encoding: "utf-8" });
+		await this.updateIndex(agent);
 	}
 
 	async updateIndex(...agents: IAgent[]) {
 		const data = await fs.readFile(indexFile, { encoding: "utf-8" });
 		const index: SessionInfo[] = JSON.parse(data);
 		for (const agent of agents) {
+			const ad = getAgentHistory(agent);
 			const s = index.find(s => s.id === agent.id);
-			if (s)
-				s.title = getAgentHistory(agent).title;
-			else
-				index.push({ id: agent.id, title: getAgentHistory(agent).title });
+			if (s) {
+				s.title = ad.title;
+				s.lastMessageAt = ad.lastMessageAt;
+			} else {
+				index.push({ id: agent.id, title: ad.title, lastMessageAt: ad.lastMessageAt });
+			}
 		}
 		await fs.writeFile(indexFile, JSON.stringify(index), { encoding: "utf-8" });
 		this.#rpc?.emit({ type: "event", plugin: "history", event: "sessionsChanged", data: {} });
@@ -176,6 +184,18 @@ export class HistoryPlugin implements Plugin {
 		for (const file of files)
 			if (file.isFile() && file.name !== "index.json" && !index.find(s => s.id === file.name))
 				index.push({ id: file.name });
+
+		// fallback: use file mtime for sessions missing lastMessageAt (pre-feature sessions)
+		await Promise.all(index.map(async (s) => {
+			if (s.lastMessageAt != null) return;
+			try {
+				const stat = await fs.stat(resolve(historyFolder, s.id));
+				s.lastMessageAt = stat.mtimeMs;
+			} catch {
+				s.lastMessageAt = 0;
+			}
+		}));
+
 		return index;
 	}
 
@@ -202,7 +222,8 @@ export class HistoryPlugin implements Plugin {
 		agent.context = history.context;
 		Object.assign(getAgentHistory(agent), {
 			title: history.title,
-			history: history.history
+			history: history.history,
+			lastMessageAt: history.lastMessageAt,
 		} as HistoryAgentData);
 
 		for (const [k,v] of Object.entries(history.extra ?? {})) {

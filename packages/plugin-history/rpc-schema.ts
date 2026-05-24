@@ -8,6 +8,7 @@ export const rpcSchema = {
 			sessions: Type.Array(Type.Object({
 				id: Type.String(),
 				title: Type.Optional(Type.String()),
+				lastMessageAt: Type.Optional(Type.Number()),
 			})),
 		}),
 	}),
