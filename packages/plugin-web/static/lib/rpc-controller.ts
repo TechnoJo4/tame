@@ -88,10 +88,6 @@ export class RPCController implements WebController {
 	#subscribeTo(agentId: string) {
 		if (!this.#client) return;
 
-		// drop old subscriptions before adding new ones
-		for (const unsub of this.#unsubs) unsub();
-		this.#unsubs = [];
-
 		const on = (event: string, handler: (data: Record<string, unknown>) => void) => {
 			this.#unsubs.push(
 				this.#client!.subscribe({ agent_id: agentId, event }, (msg) => {
