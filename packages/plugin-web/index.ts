@@ -12,6 +12,7 @@ export type { ComponentDef, Placement } from "@tame/web-sdk/placement";
 export interface WebConfig {
 	listen: { hostname: string; port: number };
 	staticDir: string;
+	buildShell: boolean;
 }
 
 export const configSchema = Type.Object({
@@ -20,6 +21,7 @@ export const configSchema = Type.Object({
 		port: Type.Optional(Type.Number()),
 	})),
 	staticDir: Type.Optional(Type.String()),
+	buildShell: Type.Optional(Type.Boolean()),
 });
 
 interface RegistryEntry {
@@ -114,8 +116,34 @@ export class WebPlugin implements Plugin {
 		}
 	}
 
+	async #buildShell(): Promise<void> {
+		const shellTs = `${this.#config.staticDir}/shell.ts`;
+		const shellJs = `${this.#config.staticDir}/shell.js`;
+
+		try {
+			const { rollup } = await import("rollup");
+			const build = await rollup({
+				input: shellTs,
+				external: ["lit", "lit/decorators.js", "@tame/rpc-client", "typebox", "typebox/compile"],
+				plugins: basePlugins(this.#rootDir),
+			});
+			await build.write({
+				file: shellJs,
+				format: "esm",
+				plugins: [terserPlugin],
+			});
+			await build.close();
+		} catch (e) {
+			console.warn("plugin-web: shell rebuild failed, using existing shell.js:", e);
+		}
+	}
+
 	async init(harness: IHarness) {
 		this.#harness = harness;
+
+		if (this.#config.buildShell) {
+			await this.#buildShell();
+		}
 
 		const rpc = harness.getPlugin<RPCPlugin>("rpc");
 		if (!rpc) throw new Error("plugin-web requires the rpc plugin");

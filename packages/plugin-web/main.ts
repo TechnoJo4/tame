@@ -12,6 +12,7 @@ const config: WebConfig = {
 		port: raw.listen?.port ?? 6780,
 	},
 	staticDir: raw.staticDir ?? `${dir}/static`,
+	buildShell: raw.buildShell ?? true,
 };
 
 export default new WebPlugin(config);
