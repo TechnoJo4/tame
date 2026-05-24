@@ -18,12 +18,13 @@ try { Deno.mkdirSync(buildDir); } catch { /* */ }
 async function bundle(input, outfile, opts = {}) {
 	const externals = opts.externals ?? [];
 	const noMinify = opts.noMinify ?? false;
+	const inlineDynamicImports = opts.inlineDynamicImports ?? false;
 	const plugins = noMinify
 		? basePlugins(rootDir)
 		: externals.length === 0 ? minPlugins(rootDir) : basePlugins(rootDir);
 	const b = await rollup({ input, external: externals, plugins });
 	const outputPlugins = noMinify ? [] : externals.length === 0 ? [] : [terserPlugin];
-	await b.write({ file: outfile, format: "esm", plugins: outputPlugins });
+	await b.write({ file: outfile, format: "esm", inlineDynamicImports, plugins: outputPlugins });
 	await b.close();
 }
 
@@ -56,7 +57,8 @@ await bundle(`${buildDir}/lit-context.entry.ts`, `${staticDir}/lit-context.js`, 
 });
 console.log("  → static/lit-context.js");
 await bundle(`${dir}/static/shell.ts`, `${staticDir}/shell.js`, {
-	externals: ["lit", "lit/decorators.js", "lit/directive.js", "lit/async-directive.js", "@lit/context", "@tame/rpc-client", "typebox", "typebox/compile"],
+	externals: ["lit", "lit/decorators.js", "lit/directive.js", "lit/async-directive.js", "@lit/context", "@tame/rpc-client", "@tame/agent-context", "typebox", "typebox/compile"],
+	inlineDynamicImports: true,
 });
 console.log("  → static/shell.js");
 

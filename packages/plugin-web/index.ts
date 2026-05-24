@@ -142,6 +142,7 @@ export class WebPlugin implements Plugin {
 			await build.write({
 				file: shellJs,
 				format: "esm",
+				inlineDynamicImports: true,
 				plugins: [terserPlugin],
 			});
 			await build.close();
