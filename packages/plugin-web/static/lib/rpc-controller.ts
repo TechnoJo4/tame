@@ -39,6 +39,8 @@ export class RPCController implements WebController {
 	/** Total items in the agent context (from last getItems response). */
 	#totalItems = 0;
 
+	#loadingMore = false;
+
 	constructor(host: TameShellHost) {
 		this.#host = host;
 		host.addController(this);
@@ -165,24 +167,31 @@ export class RPCController implements WebController {
 		this.#host.requestUpdate();
 	}
 
-	/** Load more history (older items). Called when scrolling near the top. */
+	/** Load more history (older items). Called when scrolling near the top.
+	 *  Returns true if more items were loaded. */
 	async loadMore(): Promise<boolean> {
 		if (!this.#client || !this.agentId) return false;
-		if (this.#totalLoaded >= this.#totalItems) return false; // all loaded
+		if (this.#totalLoaded >= this.#totalItems) return false;
+		if (this.#loadingMore) return false;
 
-		const result = await this.#client.call("web", "getItems", {
-			id: this.agentId,
-			offset: this.#totalLoaded,
-			limit: PAGE_SIZE,
-		});
-		const items = (result as any).items as ThreadItem[];
-		if (items.length === 0) return false;
+		this.#loadingMore = true;
+		try {
+			const result = await this.#client.call("web", "getItems", {
+				id: this.agentId,
+				offset: this.#totalLoaded,
+				limit: PAGE_SIZE,
+			});
+			const items = (result as any).items as ThreadItem[];
+			if (items.length === 0) return false;
 
-		// prepend older items
-		this.#host.items = [...items, ...this.#host.items];
-		this.#totalLoaded += items.length;
-		this.#host.requestUpdate();
-		return true;
+			// prepend older items
+			this.#host.items = [...items, ...this.#host.items];
+			this.#totalLoaded += items.length;
+			this.#host.requestUpdate();
+			return true;
+		} finally {
+			this.#loadingMore = false;
+		}
 	}
 
 	/** Create a fresh agent and switch to it. */

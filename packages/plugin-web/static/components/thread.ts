@@ -12,12 +12,28 @@ export class TameThread extends LitElement {
 
 	#pinned = true;
 	#layout: Record<string, unknown> = {};
+	#loadingMore = false;
 
 	createRenderRoot() { return this; }
 
+	connectedCallback() {
+		super.connectedCallback();
+	}
+
+	disconnectedCallback() {
+		super.disconnectedCallback();
+		this.#virtualizer?.removeEventListener("scroll", this.#onScroll);
+	}
+
+	firstUpdated() {
+		// attach scroll listener to the virtualizer (scroll events don't bubble)
+		this.#virtualizer?.addEventListener("scroll", this.#onScroll, { passive: true });
+	}
+
 	updated(changed: Map<string, unknown>) {
 		if (changed.has("items") && this.#pinned) {
-			this.#pinToBottom();
+			// defer until after the virtualizer lays out new items
+			requestAnimationFrame(() => this.#pinToBottom());
 		}
 	}
 
@@ -27,21 +43,36 @@ export class TameThread extends LitElement {
 		this.#layout = { pin: { index: len - 1, block: "end" } };
 	}
 
+	#onScroll = () => {
+		const el = this.#virtualizer;
+		if (!el) return;
+		const threshold = 48;
+		const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
+		if (atBottom && !this.#pinned) {
+			this.#pinned = true;
+			this.#pinToBottom();
+		}
+	};
+
 	#onUnpinned = () => {
 		this.#pinned = false;
 	};
 
 	#onRangeChanged = (e: RangeChangedEvent) => {
-		// if the last item is visible, consider us pinned
-		const len = this.items?.length ?? 0;
-		if (len > 0 && e.last >= len - 1) {
-			this.#pinned = true;
-		}
-		// load more when scrolling near the top
-		if (e.first <= 3) {
-			this.controller?.loadMore();
+		// load more history when scrolling near the top
+		if (e.first <= 3 && !this.#loadingMore) {
+			this.#loadMore();
 		}
 	};
+
+	async #loadMore() {
+		this.#loadingMore = true;
+		try {
+			await this.controller?.loadMore();
+		} finally {
+			this.#loadingMore = false;
+		}
+	}
 
 	#renderItem = (item: ThreadItem) => {
 		if (item.type === "tool_call") {
