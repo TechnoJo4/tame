@@ -15,7 +15,6 @@ export class TameSettingsModal extends LitElement {
 
 	connectedCallback() {
 		super.connectedCallback();
-		this.#onKeydown = this.#onKeydown.bind(this);
 		document.addEventListener("keydown", this.#onKeydown);
 	}
 
@@ -24,11 +23,11 @@ export class TameSettingsModal extends LitElement {
 		document.removeEventListener("keydown", this.#onKeydown);
 	}
 
-	#onKeydown(e: KeyboardEvent) {
+	#onKeydown = (e: KeyboardEvent) => {
 		if (e.key === "Escape" && this.open) {
 			this.#close();
 		}
-	}
+	};
 
 	#close() {
 		this.open = false;

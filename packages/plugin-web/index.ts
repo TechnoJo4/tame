@@ -162,7 +162,7 @@ export class WebPlugin implements Plugin {
 		entry("tame-rpc-client",
 			`export { RPCClient } from "@tame/rpc-client";\n` +
 			`export { wsToStream } from "@tame/rpc-client/stream";\n`);
-		entry("lit-context", `export { createContext, ContextProvider, ContextConsumer, provide, consume } from "@lit/context";\n`);
+		entry("lit-context", `export { createContext, ContextProvider, ContextConsumer, ContextEvent, provide, consume } from "@lit/context";\n`);
 
 		const bundle = async (name: string, externals: string[] = [], noMinify = false) => {
 			const b = await rollup({

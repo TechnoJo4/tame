@@ -37,7 +37,7 @@ writeFileSync(`${buildDir}/typebox.entry.ts`,
 writeFileSync(`${buildDir}/tame-rpc-client.entry.ts`,
 	`export { RPCClient } from "@tame/rpc-client";\n` +
 	`export { wsToStream } from "@tame/rpc-client/stream";\n`);
-writeFileSync(`${buildDir}/lit-context.entry.ts`, `export { createContext, ContextProvider, ContextConsumer, provide, consume } from "@lit/context";\n`);
+writeFileSync(`${buildDir}/lit-context.entry.ts`, `export { createContext, ContextProvider, ContextConsumer, ContextEvent, provide, consume } from "@lit/context";\n`);
 
 // ---- bundle ----
 
