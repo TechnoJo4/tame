@@ -18,6 +18,7 @@
 		"mdast-util-from-markdown": "npm:mdast-util-from-markdown@^2",
 		"micromark-extension-gfm-table": "npm:micromark-extension-gfm-table@^2",
 		"mdast-util-gfm-table": "npm:mdast-util-gfm-table@^2",
-		"@lit-labs/virtualizer": "npm:@lit-labs/virtualizer@^2.1"
+		"@lit-labs/virtualizer": "npm:@lit-labs/virtualizer@^2.1",
+		"tslib": "npm:tslib@^2"
 	}
 }

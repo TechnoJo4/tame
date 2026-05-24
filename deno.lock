@@ -16,6 +16,7 @@
     "npm:mdast-util-gfm-table@2": "2.0.0",
     "npm:micromark-extension-gfm-table@2": "2.1.1",
     "npm:rollup@4.44.0": "4.44.0",
+    "npm:tslib@2": "2.8.1",
     "npm:typebox@1.1.38": "1.1.38",
     "npm:typebox@^1.1.32": "1.1.38"
   },
@@ -834,6 +835,7 @@
           "npm:mdast-util-gfm-table@2",
           "npm:micromark-extension-gfm-table@2",
           "npm:rollup@4.44.0",
+          "npm:tslib@2",
           "npm:typebox@1.1.38"
         ]
       }
