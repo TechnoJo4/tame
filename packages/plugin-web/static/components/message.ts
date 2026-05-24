@@ -29,21 +29,21 @@ export class TameMessage extends LitElement {
 	#renderBlock(block: TextOrThinking) {
 		switch (block.type) {
 			case "text":
-				return html`<tame-markdown .text=${block.text}></tame-markdown>`;
+				return html`<tame-web-markdown .text=${block.text}></tame-web-markdown>`;
 			case "thinking":
 				if (!block.thinking?.trim()) return html``;
 				return html`<details class="thinking">
 					<summary>thinking</summary>
-					<tame-markdown .text=${block.thinking}></tame-markdown>
+					<tame-web-markdown .text=${block.thinking}></tame-web-markdown>
 				</details>`;
 			default:
 				return html``;
 		}
 	}
 }
-customElements.define("tame-message", TameMessage);
+customElements.define("tame-web-message", TameMessage);
 
-// ---- <tame-tool-view> ----
+// ---- <tame-web-tool-view> ----
 
 class TameToolView extends LitElement {
 	@property({ type: Object }) controller: RPCController;
@@ -81,12 +81,12 @@ class TameToolView extends LitElement {
 			return html`<div class="loading">loading tool view...</div>`;
 		}
 		if (!this.#resolved) {
-			return html`<tame-tool-fallback
+			return html`<tame-web-tool-fallback
 				.name=${this.toolName}
 				.input=${this.toolInput}
 				.result=${this.result ?? null}
 				.isError=${this.isError}
-			></tame-tool-fallback>`;
+			></tame-web-tool-fallback>`;
 		}
 		const { tag, props } = this.#resolved;
 		const el = document.createElement(tag) as any;

@@ -38,16 +38,16 @@ export class TameThread extends LitElement {
 	render() {
 		return (this.items ?? []).map((item, i) => {
 			if (item.type === "tool_call") {
-				return html`<tame-tool-view
+				return html`<tame-web-tool-view
 					.controller=${this.controller}
 					.toolUseId=${item.id}
 					.toolName=${item.name}
 					.toolInput=${item.input}
 					.result=${item.result ?? null}
 					.isError=${item.isError ?? false}
-				></tame-tool-view>`;
+				></tame-web-tool-view>`;
 			}
-			return html`<tame-message .item=${item} .controller=${this.controller}></tame-message>`;
+			return html`<tame-web-message .item=${item} .controller=${this.controller}></tame-web-message>`;
 		});
 	}
 }

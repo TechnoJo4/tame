@@ -154,8 +154,8 @@ the component itself lives in the plugin's `web/` directory and is registered wi
 export class TameOpsRead extends LitElement {
   static properties = {
     path: { type: String },
-    result: { type: String },    // set by tame-tool-view after tool execution
-    isError: { type: Boolean },  // set by tame-tool-view after tool execution
+    result: { type: String },    // set by tame-web-tool-view after tool execution
+    isError: { type: Boolean },  // set by tame-web-tool-view after tool execution
   };
   // ...
 }
