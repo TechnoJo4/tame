@@ -20,6 +20,7 @@ interface TameShellHost {
 	idle: boolean;
 	addController(c: RPCController): void;
 	requestUpdate(): void;
+	updateComplete: Promise<boolean>;
 }
 
 const PAGE_SIZE = 50;
@@ -143,6 +144,7 @@ export class RPCController implements WebController {
 		this.#host.items = items;
 		this.#totalLoaded = items.length;
 		this.#totalItems = total;
+		this.#host.requestUpdate();
 	}
 
 	#injectStylesheets() {
@@ -164,7 +166,7 @@ export class RPCController implements WebController {
 		this.agentId = id;
 		await this.#loadItems(id);
 		this.#subscribeTo(id);
-		this.#host.requestUpdate();
+		await this.#host.updateComplete;
 	}
 
 	/** Load more history (older items). Called when scrolling near the top.
