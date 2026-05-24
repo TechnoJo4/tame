@@ -163,8 +163,16 @@ export class RPCController implements WebController {
 		if (!this.#client) return;
 		if (id === this.agentId) return;
 
+		const oldId = this.agentId;
 		this.agentId = id;
-		await this.#loadItems(id);
+
+		try {
+			await this.#loadItems(id);
+		} catch {
+			// rollback on failure — don't leave agentId pointing at an unloaded agent
+			this.agentId = oldId;
+			return;
+		}
 		this.#subscribeTo(id);
 		await this.#host.updateComplete;
 	}
