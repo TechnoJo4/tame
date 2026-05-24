@@ -83,31 +83,52 @@ export class WebPlugin implements Plugin {
 		this.#placements.push(...placements);
 	}
 
-	/** Transpile .ts component files to .js using esbuild. No bundling — just
-	 *  strip types and convert to ESM. Output goes to .build/plugins/<id>/. */
+	/** Transpile .ts component files to .js using rollup + swc — same
+	 *  config as the main build, so decorators etc. stay consistent.
+	 *  Output goes to .build/plugins/<id>/. */
 	#transpile(pluginId: string, files: { src: string; tag: string }[]): void {
 		const outDir = `${this.#buildDir}/plugins/${pluginId}`;
 		try { Deno.mkdirSync(outDir, { recursive: true }); } catch { /* exists */ }
 
-		const args = [
-			...files.map((f) => f.src),
-			`--outdir=${outDir}`,
-			"--format=esm",
-			"--supported:decorators=true",
-		];
+		const { createRequire } = require("node:module");
+		const req = createRequire(`${this.#buildDir}/package.json`);
+		const { rollup } = req("rollup");
+		const swcPlugin = req("@rollup/plugin-swc").default ?? req("@rollup/plugin-swc");
+		const resolvePlugin = req("@rollup/plugin-node-resolve").default ?? req("@rollup/plugin-node-resolve");
+		const aliasPlugin = req("@rollup/plugin-alias").default ?? req("@rollup/plugin-alias");
 
-		const proc = new Deno.Command("esbuild", { args, stdout: "null", stderr: "null" });
-		const { code } = proc.outputSync();
-		if (code !== 0) {
-			console.warn(`plugin-web: esbuild failed for plugin ${pluginId}, skipping transpile`);
-			return;
-		}
+		const swc = swcPlugin({
+			swc: {
+				jsc: {
+					parser: { syntax: "typescript", decorators: true },
+					transform: { decoratorVersion: "2021-12" },
+					target: "es2022",
+					loose: false,
+				},
+			},
+		});
+
+		const alias = aliasPlugin({
+			entries: [
+				{ find: /^@tame\/(.*)/, replacement: `${this.#buildDir}/../../packages/$1` },
+			],
+		});
 
 		for (const { src, tag } of files) {
-			const basename = src.split("/").pop()!.replace(/\.ts$/, ".js");
-			const outPath = `${outDir}/${basename}`;
-			const url = `/static/plugins/${pluginId}/${basename}`;
-			this.#components.set(tag, { src: outPath, url });
+			try {
+				const build = await rollup({
+					input: src,
+					external: [/^lit/, /^@tame\/web-sdk/, /^typebox/],
+					plugins: [alias, resolvePlugin({ browser: true, extensions: [".ts", ".mjs", ".js"] }), swc],
+				});
+				const basename = src.split("/").pop()!.replace(/\.ts$/, ".js");
+				await build.write({ file: `${outDir}/${basename}`, format: "esm" });
+				await build.close();
+				const url = `/static/plugins/${pluginId}/${basename}`;
+				this.#components.set(tag, { src: `${outDir}/${basename}`, url });
+			} catch (e) {
+				console.warn(`plugin-web: rollup failed for ${tag} (${src}):`, e);
+			}
 		}
 	}
 
