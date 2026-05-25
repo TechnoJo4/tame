@@ -1,5 +1,5 @@
 /// <reference path="./rpc.d.ts" />
-import { type Plugin, tameDataFolder, tameMsgMeta, type IAgent, type IHarness, type InputMessage, type TameMessageMeta } from "@tame/sdk";
+import { type Plugin, tameDataFolder, tameMsgMeta, type IAgent, type IHarness, type InputMessage, type TameMessageMeta, Thread } from "@tame/sdk";
 import { call } from "@tame/rpc-sdk";
 import { rpcSchema } from "./rpc-schema.ts";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
@@ -75,6 +75,15 @@ export class HistoryPlugin implements Plugin {
 	#hooks = new Map<string, HistoryHook<unknown>>();
 	#rpc: RPCPlugin | undefined;
 
+	/** Serializes all disk writes. */
+	#writeThread = new Thread();
+	/** Agents with pending debounced writes. */
+	#dirtyAgents = new Set<IAgent>();
+	/** Debounce timer handle. */
+	#debounceTimer: ReturnType<typeof setTimeout> | undefined;
+	/** Debounce window in ms. */
+	#debounceMs = 250;
+
 	enabled?: true;
 
 	async init(harness: IHarness) {
@@ -126,15 +135,15 @@ export class HistoryPlugin implements Plugin {
 					hist.title = nl !== -1 ? text.substring(0, nl) : text;
 				}
 			}
-			await this.saveAgent(agent);
+			this.#scheduleWrite(agent);
 			return e;
 		});
 		agent.after("assistantMessage", async (e) => {
-			await this.saveAgent(agent);
+			this.#scheduleWrite(agent);
 			return e;
 		});
 		agent.after("toolResult", async (e) => {
-			await this.saveAgent(agent);
+			this.#scheduleWrite(agent);
 			return e;
 		});
 	}
@@ -145,24 +154,69 @@ export class HistoryPlugin implements Plugin {
 		this.#hooks.set(key, hook);
 	}
 
-	async saveAgent(agent: IAgent) {
-		const data = getAgentHistory(agent);
-		const now = Date.now();
-		data.lastMessageAt = now;
-		const path = resolve(historyFolder, agent.id);
-		const history: History = {
-			id: agent.id,
-			system: agent.system,
-			context: agent.context.map(messageToPersisted),
-			history: data.history.map(messageToPersisted),
-			extra: Object.fromEntries(this.#hooks.entries().map(([k,v]) => [k, v.save(agent)])),
-			lastMessageAt: now,
-		};
-		await fs.writeFile(path, JSON.stringify(history), { encoding: "utf-8" });
-		await this.updateIndex(agent);
+	/** Schedule a debounced write for this agent. Resets the timer on each call. */
+	#scheduleWrite(agent: IAgent) {
+		this.#dirtyAgents.add(agent);
+		if (this.#debounceTimer !== undefined)
+			clearTimeout(this.#debounceTimer);
+		this.#debounceTimer = setTimeout(() => {
+			this.#debounceTimer = undefined;
+			const agents = [...this.#dirtyAgents];
+			this.#dirtyAgents.clear();
+			this.#writeThread.queue(async () => {
+				await this.#doSaveAgents(agents);
+			});
+		}, this.#debounceMs);
 	}
 
+	/** Serialized, immediate write of agent file + index. Skips debounce. */
+	async saveAgent(agent: IAgent) {
+		return new Promise<void>((resolve, reject) => {
+			this.#writeThread.queue(async () => {
+				try {
+					await this.#doSaveAgents([agent]);
+					resolve();
+				} catch (e) {
+					reject(e);
+				}
+			});
+		});
+	}
+
+	/** Serialized, immediate index update. Skips debounce. */
 	async updateIndex(...agents: IAgent[]) {
+		return new Promise<void>((resolve, reject) => {
+			this.#writeThread.queue(async () => {
+				try {
+					await this.#doUpdateIndex(agents);
+					resolve();
+				} catch (e) {
+					reject(e);
+				}
+			});
+		});
+	}
+
+	async #doSaveAgents(agents: IAgent[]) {
+		const now = Date.now();
+		for (const agent of agents) {
+			const data = getAgentHistory(agent);
+			data.lastMessageAt = now;
+			const path = resolve(historyFolder, agent.id);
+			const history: History = {
+				id: agent.id,
+				system: agent.system,
+				context: agent.context.map(messageToPersisted),
+				history: data.history.map(messageToPersisted),
+				extra: Object.fromEntries(this.#hooks.entries().map(([k, v]) => [k, v.save(agent)])),
+				lastMessageAt: now,
+			};
+			await fs.writeFile(path, JSON.stringify(history), { encoding: "utf-8" });
+		}
+		await this.#doUpdateIndex(agents);
+	}
+
+	async #doUpdateIndex(agents: IAgent[]) {
 		const data = await fs.readFile(indexFile, { encoding: "utf-8" });
 		const index: SessionInfo[] = JSON.parse(data);
 		for (const agent of agents) {
