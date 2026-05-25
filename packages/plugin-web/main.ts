@@ -13,6 +13,7 @@ const config: WebConfig = {
 	},
 	staticDir: raw.staticDir ?? `${dir}/static`,
 	buildShell: raw.buildShell ?? true,
+	sourceMaps: raw.sourceMaps ?? false,
 };
 
 export default new WebPlugin(config);

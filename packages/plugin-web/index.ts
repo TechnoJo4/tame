@@ -14,6 +14,7 @@ export interface WebConfig {
 	listen: { hostname: string; port: number };
 	staticDir: string;
 	buildShell: boolean;
+	sourceMaps: boolean;
 }
 
 export const configSchema = Type.Object({
@@ -23,6 +24,7 @@ export const configSchema = Type.Object({
 	})),
 	staticDir: Type.Optional(Type.String()),
 	buildShell: Type.Optional(Type.Boolean()),
+	sourceMaps: Type.Optional(Type.Boolean()),
 });
 
 interface RegistryEntry {
@@ -108,6 +110,7 @@ export class WebPlugin implements Plugin {
 					file: `${outDir}/${basename}`,
 					format: "esm",
 					plugins: [terserPlugin],
+					sourcemap: this.#config.sourceMaps,
 				});
 				await build.close();
 				const url = `/static/plugins/${pluginId}/${basename}`;
@@ -144,6 +147,7 @@ export class WebPlugin implements Plugin {
 				format: "esm",
 				inlineDynamicImports: true,
 				plugins: [terserPlugin],
+				sourcemap: this.#config.sourceMaps,
 			});
 			await build.close();
 		} catch (e) {
@@ -177,6 +181,7 @@ export class WebPlugin implements Plugin {
 				file: `${staticDir}/${name}.js`,
 				format: "esm",
 				plugins: (externals.length === 0 || noMinify) ? [] : [terserPlugin],
+				sourcemap: this.#config.sourceMaps,
 			});
 			await b.close();
 		};
