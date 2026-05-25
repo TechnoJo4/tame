@@ -1,7 +1,7 @@
 import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason, MessageRequest, ToolResult } from "../llm/types.ts";
 import type { AnyTool } from "./tool.ts";
 import type { Plugin } from "./plugin.ts";
-import type { Handler, Listener } from "../util/emitter.ts";
+import type { Emitter } from "@tame/sdk";
 
 // ---- event types ----
 
@@ -39,9 +39,7 @@ export interface AgentEvents {
 	idle: IdleEvent;
 }
 
-// ---- IAgent ----
-
-export interface IAgent {
+export interface IAgent extends Emitter<AgentEvents> {
 	readonly id: string;
 	llm: InferenceProvider;
 	system: string;
@@ -53,21 +51,7 @@ export interface IAgent {
 	addTool(tool: AnyTool): void;
 	viewToolCall(view: string, call: ToolUse, result?: ToolResult): unknown;
 	queueCompletion(maxRetries?: number): void;
-
-	// Emitter
-	readonly signal: AbortSignal | undefined;
-	readonly aborted: Promise<void>;
-	abort(): void;
-	fire<K extends keyof AgentEvents>(event: K, data: AgentEvents[K]): void;
-	do<K extends keyof AgentEvents>(event: K, data: AgentEvents[K]): Promise<AgentEvents[K]>;
-	before<K extends keyof AgentEvents>(event: K, f: Handler<AgentEvents, K>): void;
-	after<K extends keyof AgentEvents>(event: K, f: Handler<AgentEvents, K>): void;
-	once<K extends keyof AgentEvents>(event: K, f: Handler<AgentEvents, K>): void;
-	waitFor<K extends keyof AgentEvents>(event: K): Promise<AgentEvents[K]>;
-	listen(f: Listener<AgentEvents>): void;
 }
-
-// ---- IHarness ----
 
 export interface IHarness {
 	getPlugin<T extends Plugin>(id: T["id"]): T | undefined;

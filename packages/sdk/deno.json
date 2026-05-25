@@ -3,7 +3,16 @@
 	"version": "0.1.0",
 	"exports": {
 		".": "./mod.ts",
+		"./agent/interfaces": "./agent/interfaces.ts",
+		"./agent/plugin": "./agent/plugin.ts",
+		"./agent/tool": "./agent/tool.ts",
+		"./config": "./config/index.ts",
+		"./config/validate": "./config/validate.ts",
+		"./llm/types": "./llm/types.ts",
+		"./util/emitter": "./util/emitter.ts",
 		"./util/string-enum": "./util/string-enum.ts",
+		"./util/symbols": "./util/symbols.ts",
+		"./util/thread": "./util/thread.ts",
 		"./util/validate": "./util/validate.ts"
 	}
 }
