@@ -1,7 +1,6 @@
 import { Compile, type Validator } from "typebox/compile";
 import type { TSchema } from "typebox";
 import {
-	Thread,
 	Emitter,
 	handlerWrapperSkipErrors,
 	ValidationError,
@@ -27,7 +26,6 @@ export type { UserMessageEvent, AssistantMessageEvent, ToolResultEvent, Completi
 
 export class Agent extends Emitter<AgentEvents> implements IAgent {
 	#id: string;
-	#thread = new Thread();
 	#pendingToolCalls = new Set<string>();
 	#abortedToolCalls = new Set<string>();
 	#completionQueued = false;
@@ -64,7 +62,7 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 					content: []
 				});
 				const i = this.context.length - 1;
-				this.#thread.queue(async () => {
+				this.thread.queue(async () => {
 					for (const call of calls) {
 						const tool = this.tools.get(call.name);
 						if (tool)
@@ -126,13 +124,15 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 		super.abort();
 		for (const t of this.#pendingToolCalls)
 			this.#abortedToolCalls.add(t);
+		this.#pendingToolCalls.clear();
+		this.#completionQueued = false;
 		this.fire("idle", { stopReason: "aborted" });
 	}
 
 	queueCompletion(maxRetries: number = 5) {
 		if (!this.#completionQueued && this.#pendingToolCalls.size === 0) {
 			this.#completionQueued = true;
-			this.#thread.queue(async () => {
+			this.thread.queue(async () => {
 				this.fire("completion", {
 					retriesLeft: maxRetries,
 					req: {
