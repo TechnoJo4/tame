@@ -249,8 +249,7 @@ export class HistoryPlugin implements Plugin {
 
 	async #doUpdateIndex(agents: IAgent[]) {
 		console.log("reading index for update");
-		const data = await fs.readFile(indexFile, { encoding: "utf-8" });
-		const index: SessionInfo[] = JSON.parse(data);
+		const index: SessionInfo[] = await this.list();
 		for (const agent of agents) {
 			const ad = getAgentHistory(agent);
 			const s = index.find(s => s.id === agent.id);
