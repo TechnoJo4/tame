@@ -15,6 +15,7 @@ export class TameComposer extends LitElement {
 					class="input"
 					placeholder="send a message..."
 					@keydown=${this.#onKeydown}
+					@input=${this.#onInput}
 				></textarea>
 				${this.idle ? html`
 					<button class="send-btn" @click=${this.#send} title="send (enter)">→</button>
@@ -32,12 +33,20 @@ export class TameComposer extends LitElement {
 		}
 	}
 
+	#onInput() {
+		const textarea = this.renderRoot.querySelector("textarea") as HTMLTextAreaElement;
+		if (!textarea) return;
+		textarea.style.height = "auto";
+		textarea.style.height = `${textarea.scrollHeight}px`;
+	}
+
 	#send() {
 		const textarea = this.renderRoot.querySelector("textarea") as HTMLTextAreaElement;
 		const text = textarea?.value.trim();
 		if (text) {
 			this.controller?.send(text);
 			textarea.value = "";
+			textarea.style.height = "auto";
 		}
 	}
 

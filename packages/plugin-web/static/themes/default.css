@@ -142,7 +142,7 @@ tame-web-composer > .composer-row { display: flex; gap: 8px; align-items: flex-e
 tame-web-composer > .composer-row > .input {
 	flex: 1; min-height: 60px; background: var(--tame-surface); color: var(--tame-text);
 	border: 1px solid var(--tame-border-light); border-radius: 4px; padding: 8px;
-	font-family: inherit; font-size: 14px; resize: vertical;
+	font-family: inherit; font-size: 14px; resize: none; overflow-y: hidden;
 }
 tame-web-composer > .composer-row > .send-btn,
 tame-web-composer > .composer-row > .abort-btn {
