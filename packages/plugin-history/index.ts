@@ -95,9 +95,8 @@ export class HistoryPlugin implements Plugin {
 			await fs.writeFile(indexFile, JSON.stringify([]));
 		}
 
-		const rpc = harness.getPlugin<RPCPlugin>("rpc");
-		this.#rpc = rpc ?? undefined;
-		rpc?.register("history", {
+		this.#rpc = harness.getPlugin<RPCPlugin>("rpc");
+		this.#rpc?.register("history", {
 			list: call({
 				...rpcSchema.list,
 				call: async () => ({ sessions: await this.list() }),
@@ -135,14 +134,28 @@ export class HistoryPlugin implements Plugin {
 					hist.title = nl !== -1 ? text.substring(0, nl) : text;
 				}
 			}
+			hist.history.push(e.msg);
 			this.#scheduleWrite(agent);
 			return e;
 		});
 		agent.after("assistantMessage", async (e) => {
+			const hist = getAgentHistory(agent);
+			hist.history.push(e.msg);
+			const calls = e.msg.content.filter(c => c.type === "tool_use");
+			if (calls.length > 0)
+				hist.history.push({ role: "user", content: [] }); // for results
 			this.#scheduleWrite(agent);
 			return e;
 		});
 		agent.after("toolResult", async (e) => {
+			const hist = getAgentHistory(agent);
+			const callMsgIdx = hist.history.findIndex(m => m.content.find(c => c.type === "tool_result" && c.tool_use_id === e.toolUse));
+			hist.history[callMsgIdx+1].content.push({
+				type: "tool_result",
+				is_error: e.error,
+				tool_use_id: e.toolUse,
+				content: e.result
+			});
 			this.#scheduleWrite(agent);
 			return e;
 		});
