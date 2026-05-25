@@ -161,10 +161,10 @@ export class HistoryPlugin implements Plugin {
 			clearTimeout(this.#debounceTimer);
 		this.#debounceTimer = setTimeout(() => {
 			this.#debounceTimer = undefined;
-			const agents = [...this.#dirtyAgents];
-			this.#dirtyAgents.clear();
 			this.#writeThread.queue(async () => {
+				const agents = [...this.#dirtyAgents];
 				await this.#doSaveAgents(agents);
+				this.#dirtyAgents.clear();
 			});
 		}, this.#debounceMs);
 	}
@@ -205,6 +205,7 @@ export class HistoryPlugin implements Plugin {
 			const path = resolve(historyFolder, agent.id);
 			const history: History = {
 				id: agent.id,
+				title: data.title,
 				system: agent.system,
 				context: agent.context.map(messageToPersisted),
 				history: data.history.map(messageToPersisted),
