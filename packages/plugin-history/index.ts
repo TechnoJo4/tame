@@ -180,6 +180,7 @@ export class HistoryPlugin implements Plugin {
 		this.#dirtyAgents.add(agent);
 		if (this.#debounceTimer === undefined) {
 			this.#debounceTimer = setTimeout(() => {
+				console.log("entered index write queuer");
 				this.#debounceTimer = undefined;
 				this.#writeThread.queue(async () => {
 					console.log("starting index write");
