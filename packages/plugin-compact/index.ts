@@ -185,6 +185,7 @@ export class CompactPlugin implements Plugin {
 			}
 		}
 
+		console.log(`interval prune on ${agent.id}`);
 		const failedIds = this.failedToolUseIds(head);
 
 		const pruned: InputMessage[] = [];
@@ -216,6 +217,7 @@ export class CompactPlugin implements Plugin {
 		const protectedMsgs = head.filter(m => m[tameMsgMeta]?.noCompact);
 		const summarizable = head.filter(m => !m[tameMsgMeta]?.noCompact);
 
+		console.log(`ceiling compact on ${agent.id}`);
 		const summary = this.summarizeContext(summarizable, agent);
 		agent.context = [
 			{

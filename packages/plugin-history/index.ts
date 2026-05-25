@@ -134,13 +134,13 @@ export class HistoryPlugin implements Plugin {
 					hist.title = nl !== -1 ? text.substring(0, nl) : text;
 				}
 			}
-			hist.history.push(e.msg);
+			hist.history.push(structuredClone(e.msg));
 			this.#scheduleWrite(agent);
 			return e;
 		});
 		agent.after("assistantMessage", async (e) => {
 			const hist = getAgentHistory(agent);
-			hist.history.push(e.msg);
+			hist.history.push(structuredClone(e.msg));
 			const calls = e.msg.content.filter(c => c.type === "tool_use");
 			if (calls.length > 0)
 				hist.history.push({ role: "user", content: [] }); // for results
@@ -154,7 +154,7 @@ export class HistoryPlugin implements Plugin {
 				type: "tool_result",
 				is_error: e.error,
 				tool_use_id: e.toolUse,
-				content: e.result
+				content: structuredClone(e.result)
 			});
 			this.#scheduleWrite(agent);
 			return e;
