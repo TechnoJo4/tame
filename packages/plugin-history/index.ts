@@ -177,9 +177,13 @@ export class HistoryPlugin implements Plugin {
 			this.#debounceTimer = setTimeout(() => {
 				this.#debounceTimer = undefined;
 				this.#writeThread.queue(async () => {
-					const agents = [...this.#dirtyAgents];
-					this.#dirtyAgents.clear();
-					await this.#doSaveAgents(agents);
+					try {
+						const agents = [...this.#dirtyAgents];
+						this.#dirtyAgents.clear();
+						await this.#doSaveAgents(agents);
+					} catch (e) {
+						console.error(`failed to save agents`, e);
+					}
 				});
 			}, this.#debounceMs);
 	}
