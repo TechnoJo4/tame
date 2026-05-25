@@ -41,14 +41,15 @@ export class LocalSettingsStore implements SettingsStore {
 		const raw = localStorage.getItem(encodeKey(pluginId, key));
 		if (raw === null) return null;
 		try {
-			return JSON.stringify(JSON.parse(raw));
+			const val = JSON.parse(raw);
+			return typeof val === "string" ? val : null;
 		} catch {
 			return null;
 		}
 	}
 
 	set(pluginId: string, key: string, value: string): void {
-		const encoded = JSON.stringify(JSON.parse(value)); // normalize: re-encode so stored value is always valid JSON
+		const encoded = JSON.stringify(value);
 		localStorage.setItem(encodeKey(pluginId, key), encoded);
 		const detail = { pluginId, key, value };
 		document.dispatchEvent(
@@ -63,12 +64,10 @@ export class LocalSettingsStore implements SettingsStore {
 	): () => void {
 		const handler = (e: Event) => {
 			const detail = (e as CustomEvent).detail as {
-				pluginId: string; key: string; value: unknown;
+				pluginId: string; key: string; value: string | null;
 			};
 			if (detail.pluginId === pluginId && detail.key === key) {
-				callback(
-					detail.value !== null ? JSON.stringify(detail.value) : null,
-				);
+				callback(detail.value);
 			}
 		};
 		document.addEventListener(EVENT, handler);

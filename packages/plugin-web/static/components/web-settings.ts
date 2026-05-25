@@ -2,7 +2,11 @@ import { LitElement, html } from "lit";
 import { property } from "lit/decorators.js";
 import { consume } from "@lit/context";
 import { settingsStoreContext, settingsPluginIdContext } from "../lib/settings-context.ts";
-import { SettingController } from "../lib/setting-controller.ts";
+
+const FORMAT_OPTIONS = [
+	{ value: "markdown", label: "markdown" },
+	{ value: "raw", label: "raw text" },
+];
 
 /** Shell's own settings. Registered at modal:settings by WebPlugin.init(). */
 export class TameWebSettings extends LitElement {
@@ -14,29 +18,25 @@ export class TameWebSettings extends LitElement {
 	@property({ type: String })
 	pluginId = "";
 
-	#theme: SettingController | null = null;
-
 	createRenderRoot() { return this; }
-
-	willUpdate(_changed: Map<string, unknown>) {
-		if (!this.#theme && this.store && this.pluginId) {
-			this.#theme = new SettingController(this, this.pluginId, "theme", "dark");
-		}
-	}
 
 	render() {
 		return html`
-			<tame-web-settings-section heading="appearance">
+			<fieldset class="settings-section">
+				<legend>message rendering</legend>
 				<tame-web-setting-select
-					key="theme"
-					default="dark"
-					label="theme"
-					.options=${[
-						{ value: "dark", label: "dark" },
-						{ value: "light", label: "light" },
-					]}
+					key="assistantFormat"
+					default="markdown"
+					label="assistant"
+					.options=${FORMAT_OPTIONS}
 				></tame-web-setting-select>
-			</tame-web-settings-section>
+				<tame-web-setting-select
+					key="userFormat"
+					default="markdown"
+					label="user"
+					.options=${FORMAT_OPTIONS}
+				></tame-web-setting-select>
+			</fieldset>
 		`;
 	}
 }

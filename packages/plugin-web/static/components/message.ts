@@ -1,17 +1,61 @@
 import { LitElement, html } from "lit";
 import { property } from "lit/decorators.js";
+import { consume } from "@lit/context";
+import { settingsStoreContext } from "../lib/settings-context.ts";
+import type { SettingsStore } from "@tame/web-sdk";
 import type { RPCController, MessageItem, TextOrThinking } from "../lib/rpc-controller.ts";
+
+const SETTINGS_PLUGIN = "web";
+const FORMAT_KEYS: Record<string, string> = {
+	user: "userFormat",
+	assistant: "assistantFormat",
+};
 
 export class TameMessage extends LitElement {
 	@property({ type: Object }) item: MessageItem;
 	@property({ type: Object }) controller: RPCController;
 
+	@consume({ context: settingsStoreContext })
+	@property({ attribute: false })
+	store: SettingsStore | undefined;
+
+	#formatUnsub: (() => void) | null = null;
+
 	createRenderRoot() { return this; }
+
+	connectedCallback() {
+		super.connectedCallback();
+		this.#subscribeFormat();
+	}
+
+	disconnectedCallback() {
+		super.disconnectedCallback();
+		this.#formatUnsub?.();
+		this.#formatUnsub = null;
+	}
 
 	willUpdate(changed: Map<string, unknown>) {
 		if (changed.has("item")) {
 			this.dataset.role = this.item.role;
+			this.#subscribeFormat();
 		}
+		if (changed.has("store") && this.store) {
+			this.#subscribeFormat();
+		}
+	}
+
+	#subscribeFormat() {
+		if (!this.store) return;
+		this.#formatUnsub?.();
+		const key = FORMAT_KEYS[this.item.role] ?? "assistantFormat";
+		this.#formatUnsub = this.store.onChange(
+			SETTINGS_PLUGIN, key, () => this.requestUpdate(),
+		);
+	}
+
+	#formatForRole(): string {
+		const key = FORMAT_KEYS[this.item.role] ?? "assistantFormat";
+		return this.store?.get(SETTINGS_PLUGIN, key) || "markdown";
 	}
 
 	render() {
@@ -27,8 +71,12 @@ export class TameMessage extends LitElement {
 	}
 
 	#renderBlock(block: TextOrThinking) {
+		const format = this.#formatForRole();
 		switch (block.type) {
 			case "text":
+				if (format === "raw") {
+					return html`<pre>${block.text}</pre>`;
+				}
 				return html`<tame-web-markdown .text=${block.text}></tame-web-markdown>`;
 			case "thinking":
 				if (!block.thinking?.trim()) return html``;

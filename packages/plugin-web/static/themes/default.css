@@ -78,6 +78,11 @@ tame-web-message[data-role="user"] { background: var(--tame-surface); }
 tame-web-message > .role {
 	display: block; font-size: 11px; color: var(--tame-text-muted); margin-bottom: 4px; text-transform: uppercase;
 }
+tame-web-message > pre {
+	white-space: pre-wrap; word-break: break-word;
+	font-family: inherit; font-size: 14px; line-height: 1.5;
+	margin: 4px 0; color: var(--tame-text);
+}
 
 /* ---- markdown ---- */
 tame-web-markdown { display: block; line-height: 1.5; word-break: break-word; }
@@ -193,11 +198,11 @@ tame-web-settings-form + tame-web-settings-form {
 	border-top: 1px solid var(--tame-border);
 }
 
-tame-web-settings-section {
+tame-web-settings > .settings-section {
 	display: block; border: 1px solid var(--tame-border-light);
 	border-radius: 4px; padding: 12px; margin: 8px 0;
 }
-tame-web-settings-section > legend {
+tame-web-settings > .settings-section > legend {
 	font-size: 12px; font-weight: 600; color: var(--tame-text-muted);
 	text-transform: uppercase; padding: 0 4px;
 }
