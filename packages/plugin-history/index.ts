@@ -149,13 +149,16 @@ export class HistoryPlugin implements Plugin {
 		});
 		agent.after("toolResult", async (e) => {
 			const hist = getAgentHistory(agent);
-			const callMsgIdx = hist.history.findIndex(m => m.content.find(c => c.type === "tool_result" && c.tool_use_id === e.toolUse));
-			hist.history[callMsgIdx+1].content.push({
-				type: "tool_result",
-				is_error: e.error,
-				tool_use_id: e.toolUse,
-				content: structuredClone(e.result)
-			});
+			const callMsgIdx = hist.history.findIndex(m => m.content.find(c => c.type === "tool_use" && c.id === e.toolUse));
+			if (callMsgIdx !== -1)
+				hist.history[callMsgIdx+1].content.push({
+					type: "tool_result",
+					is_error: e.error,
+					tool_use_id: e.toolUse,
+					content: structuredClone(e.result)
+				});
+			else
+				console.log(`history: couldn't find tool use to push result ${e.toolUse}`)
 			this.#scheduleWrite(agent);
 			return e;
 		});
