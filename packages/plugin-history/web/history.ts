@@ -3,12 +3,7 @@ import { property } from "lit/decorators.js";
 import { consume } from "@lit/context";
 import { agentIdContext } from "@tame/agent-context";
 import type { WebController } from "@tame/web-sdk/controller";
-
-interface SessionInfo {
-	id: string;
-	title?: string;
-	lastMessageAt?: number;
-}
+import type { SessionInfo } from "./types.ts";
 
 // ---------------------------------------------------------------------------
 // controller
@@ -88,8 +83,7 @@ class HistoryController implements ReactiveController {
 		this.#unsub = client.subscribe(
 			{ plugin: "history", event: "sessionsChanged" },
 			(msg: any) => {
-				this.sessions = this.#sort(msg.data?.sessions ?? []);
-				this.loading = false;
+				this.sessions = this.#sort((msg.data as any)?.sessions ?? []);
 				this.#host.requestUpdate();
 			},
 		);
@@ -110,7 +104,7 @@ class HistoryController implements ReactiveController {
 	}
 
 	#sort(list: SessionInfo[]): SessionInfo[] {
-		return list.sort((a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0));
+		return [...list].sort((a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0));
 	}
 }
 

@@ -3,12 +3,7 @@ import { property } from "lit/decorators.js";
 import { consume } from "@lit/context";
 import { agentIdContext } from "@tame/agent-context";
 import type { WebController } from "@tame/web-sdk/controller";
-
-interface SessionInfo {
-	id: string;
-	title?: string;
-	lastMessageAt?: number;
-}
+import type { SessionInfo } from "./types.ts";
 
 // ---------------------------------------------------------------------------
 // controller: owns the subscription lifecycle + session state. the element
