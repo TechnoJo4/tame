@@ -21,6 +21,9 @@ export class Thread {
 			if (!c.signal.aborted)
 				return f().then(() => c).catch(() => c);
 			return c;
+		}, e => {
+			console.error("thread died:", e);
+			return this.#controller = new AbortController();
 		});
 	}
 }
