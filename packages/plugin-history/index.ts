@@ -55,6 +55,11 @@ export const messageFromPersisted = (msg: PersistedMessage): InputMessage => ({
 	[tameMsgMeta]: msg?._tame
 });
 
+export const cloneMessage = (msg: InputMessage): InputMessage => ({
+	...structuredClone(msg),
+	[tameMsgMeta]: msg[tameMsgMeta]
+});
+
 export const getAgentHistory = (agent: IAgent): HistoryAgentData => {
 	if (!agent.pluginData.has(dataKey))
 		agent.pluginData.set(dataKey, {
@@ -134,13 +139,13 @@ export class HistoryPlugin implements Plugin {
 					hist.title = nl !== -1 ? text.substring(0, nl) : text;
 				}
 			}
-			hist.history.push(structuredClone(e.msg));
+			hist.history.push(cloneMessage(e.msg));
 			this.#scheduleWrite(agent);
 			return e;
 		});
 		agent.after("assistantMessage", async (e) => {
 			const hist = getAgentHistory(agent);
-			hist.history.push(structuredClone(e.msg));
+			hist.history.push(cloneMessage(e.msg));
 			const calls = e.msg.content.filter(c => c.type === "tool_use");
 			if (calls.length > 0)
 				hist.history.push({ role: "user", content: [] }); // for results
@@ -173,19 +178,24 @@ export class HistoryPlugin implements Plugin {
 	/** Schedule a debounced write for this agent. */
 	#scheduleWrite(agent: IAgent) {
 		this.#dirtyAgents.add(agent);
-		if (this.#debounceTimer === undefined)
+		if (this.#debounceTimer === undefined) {
 			this.#debounceTimer = setTimeout(() => {
 				this.#debounceTimer = undefined;
 				this.#writeThread.queue(async () => {
+					console.log("starting index write");
 					try {
 						const agents = [...this.#dirtyAgents];
 						this.#dirtyAgents.clear();
 						await this.#doSaveAgents(agents);
 					} catch (e) {
-						console.error(`failed to save agents`, e);
+						console.error("failed to save agents", e);
 					}
+					console.log("finished index write");
 				});
+				console.log("index write queued");
 			}, this.#debounceMs);
+			console.log("debounce timeout started");
+		}
 	}
 
 	/** Serialized, immediate write of agent file + index. Skips debounce. */
@@ -231,12 +241,14 @@ export class HistoryPlugin implements Plugin {
 				extra: Object.fromEntries(this.#hooks.entries().map(([k, v]) => [k, v.save(agent)])),
 				lastMessageAt: now,
 			};
+			console.log(`saving agent ${agent.id}`);
 			await fs.writeFile(path, JSON.stringify(history), { encoding: "utf-8" });
 		}
 		await this.#doUpdateIndex(agents);
 	}
 
 	async #doUpdateIndex(agents: IAgent[]) {
+		console.log("reading index for update");
 		const data = await fs.readFile(indexFile, { encoding: "utf-8" });
 		const index: SessionInfo[] = JSON.parse(data);
 		for (const agent of agents) {
@@ -249,7 +261,9 @@ export class HistoryPlugin implements Plugin {
 				index.push({ id: agent.id, title: ad.title, lastMessageAt: ad.lastMessageAt });
 			}
 		}
+		console.log("saving index for update");
 		await fs.writeFile(indexFile, JSON.stringify(index), { encoding: "utf-8" });
+		console.log("sending index update");
 		this.#emitSessionsChanged(index);
 	}
 
