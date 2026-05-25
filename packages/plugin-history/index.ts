@@ -154,19 +154,18 @@ export class HistoryPlugin implements Plugin {
 		this.#hooks.set(key, hook);
 	}
 
-	/** Schedule a debounced write for this agent. Resets the timer on each call. */
+	/** Schedule a debounced write for this agent. */
 	#scheduleWrite(agent: IAgent) {
 		this.#dirtyAgents.add(agent);
-		if (this.#debounceTimer !== undefined)
-			clearTimeout(this.#debounceTimer);
-		this.#debounceTimer = setTimeout(() => {
-			this.#debounceTimer = undefined;
-			this.#writeThread.queue(async () => {
-				const agents = [...this.#dirtyAgents];
-				await this.#doSaveAgents(agents);
-				this.#dirtyAgents.clear();
-			});
-		}, this.#debounceMs);
+		if (this.#debounceTimer === undefined)
+			this.#debounceTimer = setTimeout(() => {
+				this.#debounceTimer = undefined;
+				this.#writeThread.queue(async () => {
+					const agents = [...this.#dirtyAgents];
+					await this.#doSaveAgents(agents);
+					this.#dirtyAgents.clear();
+				});
+			}, this.#debounceMs);
 	}
 
 	/** Serialized, immediate write of agent file + index. Skips debounce. */
