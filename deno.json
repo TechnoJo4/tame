@@ -1,10 +1,14 @@
 {
 	"workspace": ["packages/*"],
 	"imports": {
+		"@std/assert": "jsr:@std/assert@^1.0.19",
 		"@std/path": "jsr:@std/path@^1.1.4",
 		"typebox": "npm:typebox@^1.1.32"
 	},
 	"nodeModulesDir": "auto",
+	"tasks": {
+		"test": "deno test --allow-read --allow-env --allow-net=127.0.0.1 packages/"
+	},
 	"lint": {
 		"rules": {
 			"exclude": ["require-await", "no-explicit-any"]
