@@ -97,30 +97,14 @@ export class RPCPlugin implements Plugin {
 					const agent = harness.getAgent(agent_id);
 					if (!agent) throw new Error(`agent ${agent_id} not found`);
 
-					let call: ToolUse | undefined;
-					for (const m of agent.context) {
-						for (const c of m.content) {
-							if (c.type === "tool_use" && c.id === tool_use_id) {
-								call = c;
-								break;
-							}
-						}
-						if (call) break;
-					}
-					if (!call) throw new Error(`tool_use ${tool_use_id} not found`);
+					const callMsgIdx = agent.context.findIndex(m => m.content.find(c => c.type === "tool_use" && c.id === tool_use_id));
 
-					let result: ToolResult | undefined;
-					for (const m of agent.context) {
-						for (const c of m.content) {
-							if (c.type === "tool_result" && c.tool_use_id === tool_use_id) {
-								result = c;
-								break;
-							}
-						}
-						if (result) break;
-					}
+					const call = agent.context[callMsgIdx].content.find(c => c.type === "tool_use" && c.id === tool_use_id);
+					if (!call) throw new Error(`tool call ${tool_use_id} not found in agent ${agent_id}`);
 
-					return agent.viewToolCall(view, call, result);
+					const result = agent.context[callMsgIdx + 1]?.content?.find(c => c.type === "tool_result" && c.tool_use_id === tool_use_id);
+
+					return agent.viewToolCall(view, call as ToolUse, result as ToolResult);
 				}
 			}),
 			listAgents: call({
@@ -198,15 +182,15 @@ export class RPCPlugin implements Plugin {
 			while (true) {
 				const { done, value } = await reader.read();
 				if (done) break;
+				const msg = assertSchema(value, rpcMsgSchema, "invalid RPC message:", rpcMsgValidator)
 				try {
-					const msg = assertSchema(value, rpcMsgSchema, "invalid RPC message:", rpcMsgValidator);
 					this.#handle(conn, msg);
-				} catch {
-					// skip malformed messages
+				} catch (e) {
+					console.error("failed to handle RPC message", msg, e);
 				}
 			}
-		} catch {
-			// stream errored or closed
+		} catch (e) {
+			console.warn("dropping RPC connection", e);
 		} finally {
 			this.#drop(conn);
 		}
