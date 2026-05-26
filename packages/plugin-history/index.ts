@@ -87,7 +87,7 @@ export class HistoryPlugin implements Plugin {
 	/** Debounce timer handle. */
 	#debounceTimer: ReturnType<typeof setTimeout> | undefined;
 	/** Debounce window in ms. */
-	#debounceMs = 250;
+	#debounceMs = 5000;
 
 	enabled?: true;
 
