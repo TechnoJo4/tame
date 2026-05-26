@@ -43,6 +43,7 @@ interface Subscriptions {
 interface Connection {
 	stream: Stream;
 	writer: WritableStreamDefaultWriter<RPCMessage>;
+	reader: ReadableStreamDefaultReader<RPCMessage>;
 	subscriptions: {
 		base: Subscriptions;
 		plugins: Record<string, Subscriptions>;
@@ -123,7 +124,7 @@ export class RPCPlugin implements Plugin {
 						id: agent.id,
 						system: agent.system,
 						title: agent.title,
-						context: agent.context as unknown as Record<string, unknown>[],
+						context: agent.context,
 					};
 				}
 			}),
@@ -171,16 +172,16 @@ export class RPCPlugin implements Plugin {
 	/** Connect a bidirectional RPC stream. */
 	connect(stream: Stream) {
 		const writer = stream.writable.getWriter();
-		const conn: Connection = { stream, writer, subscriptions: { base: emptySubscriptions(), plugins: {} } };
+		const reader = stream.readable.getReader();
+		const conn: Connection = { stream, writer, reader, subscriptions: { base: emptySubscriptions(), plugins: {} } };
 		this.#connections.add(conn);
 		this.#readLoop(conn);
 	}
 
 	async #readLoop(conn: Connection) {
 		try {
-			const reader = conn.stream.readable.getReader();
 			while (true) {
-				const { done, value } = await reader.read();
+				const { done, value } = await conn.reader.read();
 				if (done) break;
 				const msg = assertSchema(value, rpcMsgSchema, "invalid RPC message:", rpcMsgValidator)
 				try {
@@ -306,6 +307,7 @@ export class RPCPlugin implements Plugin {
 	#drop(conn: Connection) {
 		this.#connections.delete(conn);
 		try { conn.writer.releaseLock(); } catch { /* already released */ }
+		try { conn.reader.cancel(); } catch { /* ignore */ }
 	}
 
 	#matches(msg: EventMessage, subs: Connection["subscriptions"]): boolean {
