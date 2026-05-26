@@ -140,7 +140,7 @@ export class HistoryPlugin implements Plugin {
 				}
 			}
 			hist.history.push(cloneMessage(e.msg));
-			this.#scheduleWrite(agent);
+			this.#markDirty(agent);
 			return e;
 		});
 		agent.after("assistantMessage", async (e) => {
@@ -149,7 +149,7 @@ export class HistoryPlugin implements Plugin {
 			const calls = e.msg.content.filter(c => c.type === "tool_use");
 			if (calls.length > 0)
 				hist.history.push({ role: "user", content: [] }); // for results
-			this.#scheduleWrite(agent);
+			this.#markDirty(agent);
 			return e;
 		});
 		agent.after("toolResult", async (e) => {
@@ -164,7 +164,7 @@ export class HistoryPlugin implements Plugin {
 				});
 			else
 				console.log(`history: couldn't find tool use to push result ${e.toolUse}`)
-			this.#scheduleWrite(agent);
+			this.#markDirty(agent);
 			return e;
 		});
 	}
@@ -175,56 +175,33 @@ export class HistoryPlugin implements Plugin {
 		this.#hooks.set(key, hook);
 	}
 
-	/** Schedule a debounced write for this agent. */
-	#scheduleWrite(agent: IAgent) {
+	#markDirty(agent: IAgent) {
 		this.#dirtyAgents.add(agent);
+		this.#scheduleWrite();
+	}
+
+	/** Schedule a debounced write for this agent. */
+	#scheduleWrite() {
 		if (this.#debounceTimer === undefined) {
 			this.#debounceTimer = setTimeout(() => {
-				console.log("entered index write queuer");
 				this.#debounceTimer = undefined;
-				this.#writeThread.queue(async () => {
-					console.log("starting index write");
-					try {
-						const agents = [...this.#dirtyAgents];
-						this.#dirtyAgents.clear();
-						await this.#doSaveAgents(agents);
-					} catch (e) {
-						console.error("failed to save agents", e);
-					}
-					console.log("finished index write");
-				});
-				console.log("index write queued");
+				if (this.#dirtyAgents.size > 0)
+					this.#scheduleWrite();
 			}, this.#debounceMs);
-			console.log("debounce timeout started");
+
+			this.#writeThread.queue(async () => {
+				console.log("starting index write");
+				try {
+					const agents = [...this.#dirtyAgents];
+					this.#dirtyAgents.clear();
+					await this.#doSaveAgents(agents);
+				} catch (e) {
+					console.error("failed to save agents", e);
+				}
+				console.log("finished index write");
+			});
+			console.log("index write queued");
 		}
-	}
-
-	/** Serialized, immediate write of agent file + index. Skips debounce. */
-	async saveAgent(agent: IAgent) {
-		return new Promise<void>((resolve, reject) => {
-			this.#writeThread.queue(async () => {
-				try {
-					await this.#doSaveAgents([agent]);
-					resolve();
-				} catch (e) {
-					reject(e);
-				}
-			});
-		});
-	}
-
-	/** Serialized, immediate index update. Skips debounce. */
-	async updateIndex(...agents: IAgent[]) {
-		return new Promise<void>((resolve, reject) => {
-			this.#writeThread.queue(async () => {
-				try {
-					await this.#doUpdateIndex(agents);
-					resolve();
-				} catch (e) {
-					reject(e);
-				}
-			});
-		});
 	}
 
 	async #doSaveAgents(agents: IAgent[]) {
@@ -302,12 +279,10 @@ export class HistoryPlugin implements Plugin {
 	async loadAgent(id: string): Promise<IAgent> {
 		const existing = this.#harness?.getAgent(id);
 		if (existing) return existing;
-		const agent = await this.historyToAgent(await this.load(id));
-		await this.#emitSessionsChanged(await this.list());
-		return agent;
+		return await this.historyToAgent(await this.load(id));
 	}
 
-	async #emitSessionsChanged(sessions: SessionInfo[]) {
+	#emitSessionsChanged(sessions: SessionInfo[]) {
 		this.#rpc?.emit({ type: "event", plugin: "history", event: "sessionsChanged", data: { sessions } });
 	}
 
@@ -329,7 +304,7 @@ export class HistoryPlugin implements Plugin {
 			hook.load(agent, v);
 		}
 
-		await this.updateIndex(agent);
+		this.#markDirty(agent);
 		return agent;
 	}
 }
