@@ -1,7 +1,6 @@
 import { Compile, type Validator } from "typebox/compile";
 import { assertSchema, type IAgent, type IHarness, type Plugin, type ToolUse, type ToolResult } from "@tame/sdk";
 import {
-	type eventSchema,
 	rpcMsgSchema,
 	call,
 	baseRouteSchemas,
@@ -163,7 +162,7 @@ export class RPCPlugin implements Plugin {
 	emit(msg: EventMessage) {
 		for (const conn of this.#connections) {
 			if (this.#matches(msg, conn.subscriptions)) {
-				conn.writer.write(msg).catch(() => this.#drop(conn));
+				this.#write(conn, msg);
 			}
 		}
 	}

@@ -3,8 +3,6 @@ import type { Plugin, IHarness } from "@tame/sdk";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
 import { wsToStream } from "@tame/rpc-client/stream";
 
-export { wsToStream } from "@tame/rpc-client/stream";
-
 export const configSchema = Type.Object({
 	listen: Type.Object({
 		hostname: Type.String(),

@@ -57,7 +57,9 @@ export class RPCController implements WebController {
 
 	async #connect() {
 		try {
-			const ws = new WebSocket(`ws://${location.host}`);
+			const secure = location.protocol === "https";
+			const wsProtocol = secure ? "wss" : "ws";
+			const ws = new WebSocket(`${wsProtocol}://${location.host}`);
 			await new Promise<void>((resolve, reject) => {
 				ws.addEventListener("open", () => resolve(), { once: true });
 				ws.addEventListener("error", () => reject(new Error("WebSocket connection failed")), { once: true });
