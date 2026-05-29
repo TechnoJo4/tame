@@ -84,8 +84,6 @@ export class HistoryPlugin implements Plugin {
 	#writeThread = new Thread();
 	/** Agents with pending debounced writes. */
 	#dirtyAgents = new Set<IAgent>();
-	/** Debounce timer handle. */
-	#debounceTimer: ReturnType<typeof setTimeout> | undefined;
 	/** Debounce window in ms. */
 	#debounceMs = 5000;
 
@@ -127,6 +125,25 @@ export class HistoryPlugin implements Plugin {
 				{ location: "topbar:center", tag: "tame-history-session-title" },
 			], web.resolve(dir, "./web/history.css"));
 		}
+
+		setInterval(() => {
+			if (this.#dirtyAgents.size > 0) {
+				this.#writeThread.queue(async () => {
+					console.log("starting index write");
+					try {
+						const agents = [...this.#dirtyAgents];
+						this.#dirtyAgents.clear();
+						await this.#doSaveAgents(agents);
+					} catch (e) {
+						console.error("failed to save agents", e);
+					}
+					console.log("finished index write");
+				});
+				console.log("index write queued");
+			} else {
+				console.log("skipping index update, no dirty agents");
+			}
+		}, this.#debounceMs);
 	}
 
 	newAgent(agent: IAgent) {
@@ -177,31 +194,6 @@ export class HistoryPlugin implements Plugin {
 
 	#markDirty(agent: IAgent) {
 		this.#dirtyAgents.add(agent);
-		this.#scheduleWrite();
-	}
-
-	/** Schedule a debounced write for this agent. */
-	#scheduleWrite() {
-		if (this.#debounceTimer === undefined) {
-			this.#debounceTimer = setTimeout(() => {
-				this.#debounceTimer = undefined;
-				if (this.#dirtyAgents.size > 0)
-					this.#scheduleWrite();
-			}, this.#debounceMs);
-
-			this.#writeThread.queue(async () => {
-				console.log("starting index write");
-				try {
-					const agents = [...this.#dirtyAgents];
-					this.#dirtyAgents.clear();
-					await this.#doSaveAgents(agents);
-				} catch (e) {
-					console.error("failed to save agents", e);
-				}
-				console.log("finished index write");
-			});
-			console.log("index write queued");
-		}
 	}
 
 	async #doSaveAgents(agents: IAgent[]) {
