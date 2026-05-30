@@ -3,16 +3,16 @@ import { property } from "lit/decorators.js";
 import { ContextProvider } from "@lit/context";
 import { settingsStoreContext } from "../lib/settings-context.ts";
 import { LocalSettingsStore } from "../lib/settings-store.ts";
-import { agentIdContext } from "@tame/agent-context";
+import { agentIdContext } from "@tame/web-sdk";
 import { RPCController, type ThreadItem } from "../lib/rpc-controller.ts";
 
 export class TameShell extends LitElement {
-	@property({ type: Array, state: true }) items: ThreadItem[];
-	@property({ type: Boolean, state: true }) loading: boolean;
-	@property({ type: String, state: true }) error: string | null;
-	@property({ type: Boolean, state: true }) idle: boolean;
-	@property({ type: Boolean, state: true }) sidebarCollapsed: boolean;
-	@property({ type: Boolean, state: true }) settingsOpen: boolean;
+	@property({ type: Array, state: true }) items!: ThreadItem[];
+	@property({ type: Boolean, state: true }) loading!: boolean;
+	@property({ type: String, state: true }) error!: string | null;
+	@property({ type: Boolean, state: true }) idle!: boolean;
+	@property({ type: Boolean, state: true }) sidebarCollapsed!: boolean;
+	@property({ type: Boolean, state: true }) settingsOpen!: boolean;
 	@property({ type: String, state: true }) agentId: string | null = null;
 
 	#settingsStore = new LocalSettingsStore();
@@ -39,9 +39,9 @@ export class TameShell extends LitElement {
 		});
 	}
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	connectedCallback() {
+	override connectedCallback() {
 		super.connectedCallback();
 		this.addEventListener("toggle-sidebar", () => {
 			this.sidebarCollapsed = !this.sidebarCollapsed;
@@ -51,13 +51,13 @@ export class TameShell extends LitElement {
 		});
 	}
 
-	willUpdate(changed: Map<string, unknown>) {
+	override willUpdate(changed: Map<string, unknown>) {
 		if (changed.has("agentId")) {
 			this.#agentProvider.setValue(this.agentId);
 		}
 	}
 
-	render() {
+	override render() {
 		if (this.loading) {
 			return html`<div class="loading">loading...</div>`;
 		}

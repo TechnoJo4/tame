@@ -3,14 +3,14 @@ import { property } from "lit/decorators.js";
 import type { RPCController } from "../lib/rpc-controller.ts";
 
 export class TameSidebar extends LitElement {
-	@property({ type: Object }) controller: RPCController;
-	@property({ type: Boolean, reflect: true }) collapsed: boolean;
+	@property({ type: Object }) controller!: RPCController;
+	@property({ type: Boolean, reflect: true }) collapsed!: boolean;
 
 	#loaded = new Set<string>();
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	render() {
+	override render() {
 		if (this.collapsed) return html``;
 		const placements = this.controller?.getPlacements("panel:sidebar") ?? [];
 		return html`${placements.map((p) => this.#renderPlacement(p))}`;

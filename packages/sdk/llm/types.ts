@@ -34,7 +34,7 @@ export interface RedactedThinking {
 export interface ToolUse {
 	type: "tool_use";
 	id: string;
-	input: object;
+	input: Record<string, unknown>;
 	name: string;
 }
 

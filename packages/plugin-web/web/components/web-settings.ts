@@ -18,9 +18,9 @@ export class TameWebSettings extends LitElement {
 	@property({ type: String })
 	pluginId = "";
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	render() {
+	override render() {
 		return html`
 			<fieldset class="settings-section">
 				<legend>message rendering</legend>

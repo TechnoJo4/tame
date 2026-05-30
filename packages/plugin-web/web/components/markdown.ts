@@ -23,21 +23,24 @@ interface MdNode {
 	identifier?: string;
 	label?: string;
 	referenceType?: string;
+	// annotated by #annotateTables
+	_align?: string | null;
+	_header?: boolean;
 }
 
 export class TameMarkdown extends LitElement {
-	@property({ type: String }) text: string;
+	@property({ type: String }) text!: string;
 
 	#root: MdNode | null = null;
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	render() {
+	override render() {
 		if (!this.#root) return html``;
 		return this.#renderNode(this.#root);
 	}
 
-	willUpdate(changed: Map<string, unknown>) {
+	override willUpdate(changed: Map<string, unknown>) {
 		if (changed.has("text")) {
 			try {
 				const root = fromMarkdown(this.text ?? "", {
@@ -57,16 +60,15 @@ export class TameMarkdown extends LitElement {
 	#annotateTables(root: MdNode) {
 		const walk = (node: MdNode, inHead: boolean) => {
 			if (node.type === "table" && node.children) {
-				const align = (node as Record<string, unknown>).align as (string | null)[] | undefined;
+				const align = (node as unknown as { align?: (string | null)[] }).align;
 				for (const section of node.children) {
-					const isHead = section.type === "tableHead";
 					if (section.children) {
 						for (const row of section.children) {
 							if (row.type === "tableRow" && row.children && align) {
 								for (let i = 0; i < row.children.length; i++) {
-									const cell = row.children[i] as Record<string, unknown>;
+									const cell = row.children[i];
 									cell._align = align[i] ?? null;
-									cell._header = isHead;
+									cell._header = section.type === "tableHead";
 								}
 							}
 						}
@@ -74,8 +76,7 @@ export class TameMarkdown extends LitElement {
 				}
 			}
 			if (node.children) {
-				const nextHead = node.type === "tableHead" ? true : node.type === "tableBody" ? false : inHead;
-				for (const child of node.children) walk(child, nextHead);
+				for (const child of node.children) walk(child, false);
 			}
 		};
 		walk(root, false);
@@ -130,10 +131,10 @@ export class TameMarkdown extends LitElement {
 				return html`<tr>${(node.children ?? []).map((c) => this.#renderNode(c))}</tr>`;
 
 			case "tableCell": {
-				const style = (node as Record<string, unknown>)._align
-					? `text-align: ${(node as Record<string, unknown>)._align}`
+				const style = node._align
+					? `text-align: ${node._align}`
 					: "";
-				return html`<td style=${style} ?data-header=${(node as Record<string, unknown>)._header === true}>${(node.children ?? []).map((c) => this.#renderNode(c))}</td>`;
+				return html`<td style=${style} ?data-header=${node._header === true}>${(node.children ?? []).map((c) => this.#renderNode(c))}</td>`;
 			}
 
 			case "blockquote":

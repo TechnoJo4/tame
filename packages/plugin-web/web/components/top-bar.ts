@@ -3,12 +3,12 @@ import { property } from "lit/decorators.js";
 import type { RPCController } from "../lib/rpc-controller.ts";
 
 export class TameTopBar extends LitElement {
-	@property({ type: Object }) controller: RPCController;
-	@property({ type: Boolean }) sidebarCollapsed: boolean;
+	@property({ type: Object }) controller!: RPCController;
+	@property({ type: Boolean }) sidebarCollapsed!: boolean;
 
 	#loaded = new Set<string>();
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
 	#toggle() {
 		this.dispatchEvent(new CustomEvent("toggle-sidebar", { bubbles: true, composed: true }));
@@ -31,7 +31,7 @@ export class TameTopBar extends LitElement {
 		});
 	}
 
-	render() {
+	override render() {
 		return html`
 			<div class="top-bar-left">
 				<button class="top-bar-toggle" @click=${this.#toggle}

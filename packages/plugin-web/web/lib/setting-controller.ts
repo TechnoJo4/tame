@@ -3,13 +3,11 @@ import { ContextEvent } from "@lit/context";
 import { settingsStoreContext } from "./settings-context.ts";
 import type { SettingsStore } from "@tame/web-sdk";
 
-const DEFAULT_BOOL = "false";
-
 /** One instance per setting field. Handles get/set/subscribe/unsubscribe.
  *  Pulls the SettingsStore from the host element's context.
  *  Calls host.requestUpdate() automatically on change. */
 export class SettingController implements ReactiveController {
-	#host: ReactiveControllerHost;
+	#host: ReactiveControllerHost & HTMLElement;
 	#pluginId: string;
 	#key: string;
 	#defaultValue: string;
@@ -17,7 +15,7 @@ export class SettingController implements ReactiveController {
 	#unsub: (() => void) | null = null;
 
 	constructor(
-		host: ReactiveControllerHost,
+		host: ReactiveControllerHost & HTMLElement,
 		pluginId: string,
 		key: string,
 		defaultValue: string,
@@ -34,7 +32,7 @@ export class SettingController implements ReactiveController {
 		this.#host.dispatchEvent(
 			new ContextEvent(
 				settingsStoreContext,
-				this.#host as unknown as HTMLElement,
+				this.#host,
 				(store: SettingsStore) => {
 					this.#store = store;
 					this.#unsub = store.onChange(
@@ -66,7 +64,7 @@ export class SettingController implements ReactiveController {
 
 	get bool(): boolean {
 		const raw = this.#store?.get(this.#pluginId, this.#key);
-		if (raw === null) return this.#defaultValue === "true";
+		if (raw === null || raw === undefined) return this.#defaultValue === "true";
 		try {
 			return JSON.parse(raw) === true;
 		} catch {
@@ -88,7 +86,7 @@ export class SettingController implements ReactiveController {
 
 	get num(): number {
 		const raw = this.#store?.get(this.#pluginId, this.#key);
-		if (raw === null) return Number(this.#defaultValue);
+		if (raw === null || raw === undefined) return Number(this.#defaultValue);
 		try {
 			const n = JSON.parse(raw);
 			return typeof n === "number" && !Number.isNaN(n)
@@ -106,7 +104,7 @@ export class SettingController implements ReactiveController {
 
 	get json(): unknown {
 		const raw = this.#store?.get(this.#pluginId, this.#key);
-		if (raw === null) {
+		if (raw === null || raw === undefined) {
 			try { return JSON.parse(this.#defaultValue); } catch { return null; }
 		}
 		try { return JSON.parse(raw); } catch { return null; }

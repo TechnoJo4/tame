@@ -12,8 +12,8 @@ const FORMAT_KEYS: Record<string, string> = {
 };
 
 export class TameMessage extends LitElement {
-	@property({ type: Object }) item: MessageItem;
-	@property({ type: Object }) controller: RPCController;
+	@property({ type: Object }) item!: MessageItem;
+	@property({ type: Object }) controller!: RPCController;
 
 	@consume({ context: settingsStoreContext })
 	@property({ attribute: false })
@@ -21,20 +21,20 @@ export class TameMessage extends LitElement {
 
 	#formatUnsub: (() => void) | null = null;
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	connectedCallback() {
+	override connectedCallback() {
 		super.connectedCallback();
 		this.#subscribeFormat();
 	}
 
-	disconnectedCallback() {
+	override disconnectedCallback() {
 		super.disconnectedCallback();
 		this.#formatUnsub?.();
 		this.#formatUnsub = null;
 	}
 
-	willUpdate(changed: Map<string, unknown>) {
+	override willUpdate(changed: Map<string, unknown>) {
 		if (changed.has("item")) {
 			this.dataset.role = this.item.role;
 			this.#subscribeFormat();
@@ -58,7 +58,7 @@ export class TameMessage extends LitElement {
 		return this.store?.get(SETTINGS_PLUGIN, key) || "markdown";
 	}
 
-	render() {
+	override render() {
 		const visible = this.item.content.filter((block) => {
 			if (block.type === "thinking") return block.thinking?.trim();
 			return true;
@@ -94,21 +94,21 @@ customElements.define("tame-web-message", TameMessage);
 // ---- <tame-web-tool-view> ----
 
 class TameToolView extends LitElement {
-	@property({ type: Object }) controller: RPCController;
-	@property({ type: String }) toolUseId: string;
-	@property({ type: String }) toolName: string;
-	@property({ type: Object }) toolInput: Record<string, unknown>;
-	@property({ type: String }) result: string | null;
-	@property({ type: Boolean }) isError: boolean;
+	@property({ type: Object }) controller!: RPCController;
+	@property({ type: String }) toolUseId!: string;
+	@property({ type: String }) toolName!: string;
+	@property({ type: Object }) toolInput!: Record<string, unknown>;
+	@property({ type: String }) result: string | null = null;
+	@property({ type: Boolean }) isError: boolean = false;
 	/** Pre-resolved view metadata from the server. When set, the component
 	 *  is created directly without an RPC round-trip. */
-	@property({ type: Object }) view: { tag: string; props: Record<string, unknown> } | null;
+	@property({ type: Object }) view: { tag: string; props: Record<string, unknown> } | null = null;
 
 	#loaded = false;
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	connectedCallback() {
+	override connectedCallback() {
 		super.connectedCallback();
 		this.#resolve();
 	}
@@ -124,7 +124,7 @@ class TameToolView extends LitElement {
 		this.requestUpdate();
 	}
 
-	render() {
+	override render() {
 		if (!this.#loaded) {
 			return html`<div class="loading">loading tool view...</div>`;
 		}

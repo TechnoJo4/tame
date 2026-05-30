@@ -2,21 +2,21 @@ import { LitElement, html } from "lit";
 import { property } from "lit/decorators.js";
 
 export class TameToolFallback extends LitElement {
-	@property({ type: String }) name: string;
-	@property({ type: Object }) input: Record<string, unknown>;
-	@property({ type: String }) result: string | null;
-	@property({ type: Boolean }) isError: boolean;
+	@property({ type: String }) name!: string;
+	@property({ type: Object }) input!: Record<string, unknown>;
+	@property({ type: String }) result: string | null = null;
+	@property({ type: Boolean }) isError: boolean = false;
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	willUpdate(changed: Map<string, unknown>) {
+	override willUpdate(changed: Map<string, unknown>) {
 		if (changed.has("name")) this.dataset.tool = this.name;
 		if (changed.has("result") && this.result !== null) {
 			this.dataset.hasResult = "";
 		}
 	}
 
-	render() {
+	override render() {
 		const fields = Object.entries(this.input ?? {});
 		return html`
 			<span class="tool-label">tool: ${this.name}</span>

@@ -6,8 +6,8 @@ import { RangeChangedEvent, UnpinnedEvent } from "@lit-labs/virtualizer/events.j
 import type { RPCController, ThreadItem, ToolCallItem, MessageItem } from "../lib/rpc-controller.ts";
 
 export class TameThread extends LitElement {
-	@property({ type: Array }) items: ThreadItem[];
-	@property({ type: Object }) controller: RPCController;
+	@property({ type: Array }) items!: ThreadItem[];
+	@property({ type: Object }) controller!: RPCController;
 
 	#virtualizer: LitVirtualizer | null = null;
 
@@ -15,24 +15,24 @@ export class TameThread extends LitElement {
 	#layout: Record<string, unknown> = {};
 	#loadingMore = false;
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	connectedCallback() {
+	override connectedCallback() {
 		super.connectedCallback();
 	}
 
-	disconnectedCallback() {
+	override disconnectedCallback() {
 		super.disconnectedCallback();
 		this.#virtualizer?.removeEventListener("scroll", this.#onScroll);
 	}
 
-	firstUpdated() {
+	override firstUpdated() {
 		// query the virtualizer manually — decorator on private field breaks swc
 		this.#virtualizer = this.querySelector("lit-virtualizer") as LitVirtualizer;
 		this.#virtualizer?.addEventListener("scroll", this.#onScroll, { passive: true });
 	}
 
-	updated(changed: Map<string, unknown>) {
+	override updated(changed: Map<string, unknown>) {
 		if (changed.has("items") && this.#pinned) {
 			// defer until after the virtualizer lays out new items
 			requestAnimationFrame(() => this.#pinToBottom());
@@ -95,7 +95,7 @@ export class TameThread extends LitElement {
 
 	#keyFunction = (item: ThreadItem) => item.key;
 
-	render() {
+	override render() {
 		return html`<lit-virtualizer
 			scroller
 			.items=${this.items ?? []}

@@ -11,9 +11,9 @@ export class TameSettingsForm extends LitElement {
 	@property({ type: String })
 	pluginId = "";
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	render() {
+	override render() {
 		return html`<slot></slot>`;
 	}
 }

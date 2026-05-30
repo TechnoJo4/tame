@@ -3,12 +3,12 @@ import { property } from "lit/decorators.js";
 import type { RPCController } from "../lib/rpc-controller.ts";
 
 export class TameComposer extends LitElement {
-	@property({ type: Object }) controller: RPCController;
-	@property({ type: Boolean }) idle: boolean;
+	@property({ type: Object }) controller!: RPCController;
+	@property({ type: Boolean }) idle!: boolean;
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	render() {
+	override render() {
 		return html`
 			<div class="composer-row">
 				<textarea

@@ -1,0 +1,26 @@
+{
+	"imports": {
+		"lit": "npm:lit@3.3.3",
+		"lit/decorators.js": "npm:lit@3.3.3/decorators.js",
+		"lit/directive.js": "npm:lit@3.3.3/directive.js",
+		"lit/async-directive.js": "npm:lit@3.3.3/async-directive.js",
+		"lit/directives/unsafe-html.js": "npm:lit@3.3.3/directives/unsafe-html.js",
+		"@lit/context": "npm:@lit/context@^1.1",
+		"@lit-labs/virtualizer": "npm:@lit-labs/virtualizer@^2.1",
+		"@lit-labs/virtualizer/events.js": "npm:@lit-labs/virtualizer@^2.1/events.js",
+		"typebox": "npm:typebox@1.1.38",
+		"typebox/compile": "npm:typebox@1.1.38/compile",
+		"mdast-util-from-markdown": "npm:mdast-util-from-markdown@^2",
+		"micromark-extension-gfm-table": "npm:micromark-extension-gfm-table@^2",
+		"mdast-util-gfm-table": "npm:mdast-util-gfm-table@^2",
+		"@tame/rpc-client": "../../rpc-client/index.ts",
+		"@tame/rpc-client/stream": "../../rpc-client/stream.ts",
+		"@tame/web-sdk": "../../web-sdk/mod.ts",
+		"@tame/web-sdk/controller": "../../web-sdk/controller.ts",
+		"@tame/web-sdk/placement": "../../web-sdk/placement.ts"
+	},
+	"compilerOptions": {
+		"lib": ["dom", "dom.iterable", "esnext"],
+		"experimentalDecorators": true
+	}
+}

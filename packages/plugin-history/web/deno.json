@@ -1,0 +1,13 @@
+{
+	"imports": {
+		"lit": "npm:lit@3.3.3",
+		"lit/decorators.js": "npm:lit@3.3.3/decorators.js",
+		"@lit/context": "npm:@lit/context@^1.1",
+		"@tame/web-sdk": "../../web-sdk/mod.ts",
+		"@tame/web-sdk/controller": "../../web-sdk/controller.ts"
+	},
+	"compilerOptions": {
+		"lib": ["dom", "dom.iterable", "esnext"],
+		"experimentalDecorators": true
+	}
+}

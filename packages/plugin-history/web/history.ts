@@ -1,7 +1,7 @@
 import { LitElement, html, type ReactiveController, type ReactiveControllerHost } from "lit";
 import { property } from "lit/decorators.js";
 import { consume } from "@lit/context";
-import { agentIdContext } from "@tame/agent-context";
+import { agentIdContext } from "@tame/web-sdk";
 import type { WebController } from "@tame/web-sdk/controller";
 import type { SessionInfo } from "./types.ts";
 
@@ -113,15 +113,15 @@ class HistoryController implements ReactiveController {
 // ---------------------------------------------------------------------------
 
 export class TameHistory extends LitElement {
-	@property({ type: Object }) controller: WebController;
+	@property({ type: Object }) controller!: WebController;
 	@consume({ context: agentIdContext, subscribe: true })
-	agentId: string | null;
+	agentId: string | null = null;
 
 	#ctrl = new HistoryController(this as HistoryHost);
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	render() {
+	override render() {
 		const c = this.#ctrl;
 		return html`
 			<details class="history-details" open>

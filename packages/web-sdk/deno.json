@@ -5,6 +5,10 @@
 		".": "./mod.ts",
 		"./items": "./items.ts",
 		"./controller": "./controller.ts",
-		"./placement": "./placement.ts"
+		"./placement": "./placement.ts",
+		"./agent-context": "./agent-context.ts"
+	},
+	"imports": {
+		"@lit/context": "npm:@lit/context@^1.1"
 	}
 }

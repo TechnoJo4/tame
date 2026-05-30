@@ -1,7 +1,7 @@
 import { LitElement, html, type ReactiveController, type ReactiveControllerHost } from "lit";
 import { property } from "lit/decorators.js";
 import { consume } from "@lit/context";
-import { agentIdContext } from "@tame/agent-context";
+import { agentIdContext } from "@tame/web-sdk";
 import type { WebController } from "@tame/web-sdk/controller";
 import type { SessionInfo } from "./types.ts";
 
@@ -94,15 +94,15 @@ class TitleController implements ReactiveController {
 // ---------------------------------------------------------------------------
 
 export class TameHistorySessionTitle extends LitElement {
-	@property({ type: Object }) controller: WebController;
+	@property({ type: Object }) controller!: WebController;
 	@consume({ context: agentIdContext, subscribe: true })
-	agentId: string | null;
+	agentId: string | null = null;
 
 	#titleCtrl = new TitleController(this as TitleHost);
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	render() {
+	override render() {
 		return html`<span class="session-title">${this.#titleCtrl.title}</span>`;
 	}
 }

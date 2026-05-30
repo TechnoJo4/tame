@@ -6,19 +6,19 @@ import type { RPCController } from "../lib/rpc-controller.ts";
  *  <tame-web-settings-form> with pluginId from placement props.
  *  Visibility controlled by the open attribute. */
 export class TameSettingsModal extends LitElement {
-	@property({ type: Object }) controller: RPCController;
+	@property({ type: Object }) controller!: RPCController;
 	@property({ type: Boolean, reflect: true }) open = false;
 
 	#loaded = new Set<string>();
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	connectedCallback() {
+	override connectedCallback() {
 		super.connectedCallback();
 		document.addEventListener("keydown", this.#onKeydown);
 	}
 
-	disconnectedCallback() {
+	override disconnectedCallback() {
 		super.disconnectedCallback();
 		document.removeEventListener("keydown", this.#onKeydown);
 	}
@@ -39,7 +39,7 @@ export class TameSettingsModal extends LitElement {
 		}
 	}
 
-	render() {
+	override render() {
 		if (!this.open) return html``;
 		const placements = this.controller?.getPlacements("modal:settings") ?? [];
 		return html`

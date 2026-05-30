@@ -5,13 +5,8 @@ import { settingsStoreContext, settingsPluginIdContext } from "../lib/settings-c
 import { SettingController } from "../lib/setting-controller.ts";
 import type { SettingsStore } from "@tame/web-sdk";
 
-export interface SelectOption {
-	value: string;
-	label: string;
-}
-
-/** Dropdown with options. Consumes store + pluginId from context. */
-export class TameSettingSelect extends LitElement {
+/** Number input with min/max/step. Consumes store + pluginId from context. */
+export class TameSettingNumber extends LitElement {
 	@consume({ context: settingsStoreContext })
 	@property({ attribute: false })
 	store: SettingsStore | undefined;
@@ -21,15 +16,17 @@ export class TameSettingSelect extends LitElement {
 	pluginId = "";
 
 	@property({ type: String }) key = "";
-	@property({ type: String }) default = "";
+	@property({ type: String }) default = "0";
 	@property({ type: String }) label = "";
-	@property({ type: Array }) options: SelectOption[] = [];
+	@property({ type: Number }) min?: number;
+	@property({ type: Number }) max?: number;
+	@property({ type: Number }) step?: number;
 
 	#setting: SettingController | null = null;
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	willUpdate(_changed: Map<string, unknown>) {
+	override willUpdate(_changed: Map<string, unknown>) {
 		if (!this.#setting && this.store && this.pluginId && this.key) {
 			this.#setting = new SettingController(
 				this, this.pluginId, this.key, this.default,
@@ -37,23 +34,24 @@ export class TameSettingSelect extends LitElement {
 		}
 	}
 
-	#onChange(e: Event) {
-		const val = (e.target as HTMLSelectElement).value;
-		this.#setting!.value = val;
+	#onInput(e: Event) {
+		const val = Number((e.target as HTMLInputElement).value);
+		if (!Number.isNaN(val)) this.#setting!.num = val;
 	}
 
-	render() {
-		const val = this.#setting?.value ?? this.default;
+	override render() {
+		const val = this.#setting?.num ?? Number(this.default);
 		return html`
-			<label class="setting-select">
+			<label class="setting-number">
 				<span>${this.label}</span>
-				<select @change=${this.#onChange}>
-					${this.options.map((o) => html`
-						<option value=${o.value} ?selected=${o.value === val}>${o.label}</option>
-					`)}
-				</select>
+				<input type="number"
+					.value=${val}
+					min=${this.min ?? ""}
+					max=${this.max ?? ""}
+					step=${this.step ?? ""}
+					@input=${this.#onInput}>
 			</label>
 		`;
 	}
 }
-customElements.define("tame-web-setting-select", TameSettingSelect);
+customElements.define("tame-web-setting-number", TameSettingNumber);

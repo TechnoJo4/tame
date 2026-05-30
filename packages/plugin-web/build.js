@@ -39,6 +39,7 @@ writeFileSync(`${buildDir}/tame-rpc-client.entry.ts`,
 	`export { RPCClient } from "@tame/rpc-client";\n` +
 	`export { wsToStream } from "@tame/rpc-client/stream";\n`);
 writeFileSync(`${buildDir}/lit-context.entry.ts`, `export { createContext, ContextProvider, ContextConsumer, ContextEvent, provide, consume } from "@lit/context";\n`);
+writeFileSync(`${buildDir}/web-sdk.entry.ts`, `export { agentIdContext } from "@tame/web-sdk";\n`);
 
 // ---- bundle ----
 
@@ -56,8 +57,12 @@ await bundle(`${buildDir}/lit-context.entry.ts`, `${staticDir}/lit-context.js`, 
 	noMinify: true,
 });
 console.log("  → static/lit-context.js");
-await bundle(`${dir}/static/shell.ts`, `${staticDir}/shell.js`, {
-	externals: ["lit", "lit/decorators.js", "lit/directive.js", "lit/async-directive.js", "@lit/context", "@tame/rpc-client", "@tame/agent-context", "typebox", "typebox/compile"],
+await bundle(`${buildDir}/web-sdk.entry.ts`, `${staticDir}/web-sdk.js`, {
+	externals: ["lit", "@lit/context"],
+});
+console.log("  → static/web-sdk.js");
+await bundle(`${dir}/web/shell.ts`, `${staticDir}/shell.js`, {
+	externals: ["lit", "lit/decorators.js", "lit/directive.js", "lit/async-directive.js", "@lit/context", "@tame/rpc-client", "@tame/web-sdk", "typebox", "typebox/compile"],
 	inlineDynamicImports: true,
 });
 console.log("  → static/shell.js");
@@ -67,5 +72,6 @@ rmSync(`${buildDir}/lit.entry.ts`);
 rmSync(`${buildDir}/typebox.entry.ts`);
 rmSync(`${buildDir}/tame-rpc-client.entry.ts`);
 rmSync(`${buildDir}/lit-context.entry.ts`);
+rmSync(`${buildDir}/web-sdk.entry.ts`);
 
 console.log("build done.");

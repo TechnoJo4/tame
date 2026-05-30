@@ -21,9 +21,9 @@ export class TameSettingCheckbox extends LitElement {
 
 	#setting: SettingController | null = null;
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	willUpdate(_changed: Map<string, unknown>) {
+	override willUpdate(_changed: Map<string, unknown>) {
 		if (!this.#setting && this.store && this.pluginId && this.key) {
 			this.#setting = new SettingController(
 				this, this.pluginId, this.key, this.default,
@@ -35,7 +35,7 @@ export class TameSettingCheckbox extends LitElement {
 		this.#setting?.toggle();
 	}
 
-	render() {
+	override render() {
 		const checked = this.#setting?.bool ?? (this.default === "true");
 		return html`
 			<label class="setting-checkbox">

@@ -5,9 +5,9 @@ import { property } from "lit/decorators.js";
 export class TameSettingsSection extends LitElement {
 	@property({ type: String }) heading = "";
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	render() {
+	override render() {
 		return html`
 			<fieldset class="settings-section">
 				<legend>${this.heading}</legend>

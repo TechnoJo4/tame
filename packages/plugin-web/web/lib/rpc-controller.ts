@@ -1,4 +1,5 @@
-import { RPCClient, wsToStream } from "@tame/rpc-client";
+import { RPCClient } from "@tame/rpc-client";
+import { wsToStream } from "@tame/rpc-client/stream";
 import type { ThreadItem, MessageItem, ToolCallItem, TextOrThinking, WebController, Placement } from "@tame/web-sdk";
 
 interface ComponentEntry { src: string; }
@@ -98,7 +99,7 @@ export class RPCController implements WebController {
 		if (!this.#client) return;
 		this.#unsubscribeAll();
 
-		const on = (event: string, handler: (data: Record<string, unknown>) => void) => {
+		const on = (event: string, handler: (data: object) => void) => {
 			this.#unsubs.push(
 				this.#client!.subscribe(
 					{ agent_id: agentId, plugin: "web", event },

@@ -11,7 +11,7 @@ export interface WebController {
 	 *  and subscribing to plugin events. */
 	readonly client: {
 		call(plugin: string, method: string, args: Record<string, unknown>): Promise<Record<string, unknown>>;
-		subscribe(filter: { agent_id?: string; plugin?: string; event?: string }, callback: (msg: { data: Record<string, unknown> }) => void): () => void;
+		subscribe(filter: { agent_id?: string; plugin?: string; event?: string }, callback: (msg: { data: object }) => void): () => void;
 	} | null;
 }
 
