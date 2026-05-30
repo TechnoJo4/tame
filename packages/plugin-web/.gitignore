@@ -4,4 +4,6 @@ static/shell.js
 static/typebox.js
 static/tame-rpc-client.js
 static/agent-context.js
+static/*.js
+static/*.map
 .build/

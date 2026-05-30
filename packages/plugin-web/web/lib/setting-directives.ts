@@ -56,13 +56,13 @@ abstract class SettingDirective<T> extends AsyncDirective {
 		return this.coerce(raw === null ? this.#defaultValue : raw);
 	}
 
-	protected disconnected() {
+	protected override disconnected() {
 		this.#unsub?.();
 		this.#unsub = null;
 		this.#store = null;
 	}
 
-	protected reconnected() {
+	protected override reconnected() {
 		// store is resolved synchronously on next render()
 	}
 }

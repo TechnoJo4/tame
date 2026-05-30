@@ -1,6 +1,6 @@
 import { RPCClient } from "@tame/rpc-client";
 import { wsToStream } from "@tame/rpc-client/stream";
-import type { ThreadItem, MessageItem, ToolCallItem, TextOrThinking, WebController, Placement } from "@tame/web-sdk";
+import type { ThreadItem, MessageItem, WebController, Placement } from "@tame/web-sdk";
 
 interface ComponentEntry { src: string; }
 

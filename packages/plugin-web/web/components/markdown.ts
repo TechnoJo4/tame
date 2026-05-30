@@ -58,7 +58,7 @@ export class TameMarkdown extends LitElement {
 	// Annotate table cells with alignment and header flag so #renderNode
 	// doesn't need to thread parent context through the recursive walk.
 	#annotateTables(root: MdNode) {
-		const walk = (node: MdNode, inHead: boolean) => {
+		const walk = (node: MdNode) => {
 			if (node.type === "table" && node.children) {
 				const align = (node as unknown as { align?: (string | null)[] }).align;
 				for (const section of node.children) {
@@ -76,10 +76,10 @@ export class TameMarkdown extends LitElement {
 				}
 			}
 			if (node.children) {
-				for (const child of node.children) walk(child, false);
+				for (const child of node.children) walk(child);
 			}
 		};
-		walk(root, false);
+		walk(root);
 	}
 
 	// ---- mdast → Lit templates ----

@@ -2,7 +2,7 @@ import { LitElement, html } from "lit";
 import { property } from "lit/decorators.js";
 import "@lit-labs/virtualizer";
 import type { LitVirtualizer } from "@lit-labs/virtualizer";
-import { RangeChangedEvent, UnpinnedEvent } from "@lit-labs/virtualizer/events.js";
+import { RangeChangedEvent } from "@lit-labs/virtualizer/events.js";
 import type { RPCController, ThreadItem, ToolCallItem, MessageItem } from "../lib/rpc-controller.ts";
 
 export class TameThread extends LitElement {
