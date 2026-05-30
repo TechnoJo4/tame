@@ -2,6 +2,7 @@
 // Bundles shell + vendor libs using rollup + swc.
 // Plugin components are transpiled separately at server start (see index.ts).
 
+import { resolve } from "@std/path";
 import { writeFileSync, rmSync } from "node:fs";
 import { rollup } from "rollup";
 import { basePlugins, minPlugins, terserPlugin } from "./build-config.ts";
@@ -9,9 +10,9 @@ import { basePlugins, minPlugins, terserPlugin } from "./build-config.ts";
 const dir = import.meta.dirname;
 if (!dir) throw new Error("no dirname");
 
-const staticDir = `${dir}/static`;
-const buildDir = `${dir}/.build`;
-const rootDir = `${dir}/../..`;
+const staticDir = resolve(dir, "static");
+const buildDir = resolve(dir, ".build");
+const rootDir = resolve(dir, "..", "..");
 
 try { Deno.mkdirSync(buildDir); } catch { /* */ }
 
