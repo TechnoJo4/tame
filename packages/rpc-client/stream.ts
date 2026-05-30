@@ -22,7 +22,7 @@ export function wsToStream(socket: WebSocket): Stream {
 				try { controller.close(); } catch { /* already closed */ }
 			});
 			socket.addEventListener("error", () => {
-				controller.error(new Error("WebSocket error"));
+				console.error("websocket error");
 			});
 		},
 		cancel() {
