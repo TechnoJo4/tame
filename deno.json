@@ -1,5 +1,5 @@
 {
-	"workspace": ["packages/*", "packages/plugin-web/web", "packages/plugin-history/web"],
+	"workspace": ["packages/*", "packages/plugin-web/web", "packages/plugin-history/web", "packages/plugin-ops/web"],
 	"imports": {
 		"@std/assert": "jsr:@std/assert@^1.0.19",
 		"@std/path": "jsr:@std/path@^1.1.4",

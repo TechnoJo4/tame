@@ -31,7 +31,7 @@ the shell owns these things directly (they appear in `shell-app.ts`):
 - the markdown renderer (`<tame-web-markdown>`)
 - the tool fallback view (`<tame-web-tool-fallback>`)
 
-everything else must arrive via `web.register()` from the plugin that owns the concept. if you're adding a new piece of ui, ask: which plugin owns this concept? add the component there, then register it with a placement. if it's truly shell-level (e.g. a resize handle, a theme toggle, a keyboard shortcut handler), it belongs in `static/` and must not depend on any plugin.
+everything else must arrive via `web.register()` from the plugin that owns the concept. if you're adding a new piece of ui, ask: which plugin owns this concept? add the component there, then register it with a placement. if it's truly shell-level (e.g. a resize handle, a theme toggle, a keyboard shortcut handler), it belongs in `web/` and must not depend on any plugin.
 
 ### 3. custom element naming: `tame-{plugin}-thing`
 

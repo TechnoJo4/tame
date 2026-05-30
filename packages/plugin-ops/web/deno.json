@@ -1,0 +1,10 @@
+{
+	"imports": {
+		"lit": "npm:lit@3.3.3",
+		"lit/decorators.js": "npm:lit@3.3.3/decorators.js"
+	},
+	"compilerOptions": {
+		"lib": ["dom", "dom.iterable", "esnext"],
+		"experimentalDecorators": true
+	}
+}

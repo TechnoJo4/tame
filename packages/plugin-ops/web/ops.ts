@@ -15,7 +15,7 @@ const contractHome = (path: string): string => {
 // ---- tame-ops-read ----
 
 export class TameOpsRead extends LitElement {
-	static properties = {
+	static override properties = {
 		path: { type: String },
 		offset: { type: Number },
 		limit: { type: Number },
@@ -29,9 +29,9 @@ export class TameOpsRead extends LitElement {
 	declare result: string | null;
 	declare isError: boolean;
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	render() {
+	override render() {
 		const range = this.offset || this.limit
 			? ` [${this.offset ? `L${this.offset}` : ""}${this.limit ? `+${this.limit}` : ""}]`
 			: "";
@@ -48,7 +48,7 @@ customElements.define("tame-ops-read", TameOpsRead);
 // ---- tame-ops-write ----
 
 export class TameOpsWrite extends LitElement {
-	static properties = {
+	static override properties = {
 		path: { type: String },
 		content: { type: String },
 		result: { type: String },
@@ -60,9 +60,9 @@ export class TameOpsWrite extends LitElement {
 	declare result: string | null;
 	declare isError: boolean;
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	render() {
+	override render() {
 		return html`
 			<span class="ops-label">write ${contractHome(this.path)}</span>
 			${this.content ? html`
@@ -79,7 +79,7 @@ customElements.define("tame-ops-write", TameOpsWrite);
 // ---- tame-ops-edit ----
 
 export class TameOpsEdit extends LitElement {
-	static properties = {
+	static override properties = {
 		path: { type: String },
 		oldString: { type: String },
 		newString: { type: String },
@@ -93,9 +93,9 @@ export class TameOpsEdit extends LitElement {
 	declare result: string | null;
 	declare isError: boolean;
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	render() {
+	override render() {
 		return html`
 			<span class="ops-label">edit ${contractHome(this.path)}</span>
 			${this.oldString ? html`
@@ -115,7 +115,7 @@ customElements.define("tame-ops-edit", TameOpsEdit);
 // ---- tame-ops-exec ----
 
 export class TameOpsExec extends LitElement {
-	static properties = {
+	static override properties = {
 		command: { type: String },
 		workdir: { type: String },
 		result: { type: String },
@@ -127,9 +127,9 @@ export class TameOpsExec extends LitElement {
 	declare result: string | null;
 	declare isError: boolean;
 
-	createRenderRoot() { return this; }
+	override createRenderRoot() { return this; }
 
-	render() {
+	override render() {
 		return html`
 			<span class="ops-label">exec <code>${this.command ?? "?"}</code>${this.workdir ? ` in ${contractHome(this.workdir)}` : ""}</span>
 			${this.result !== null && this.result !== undefined ? html`
