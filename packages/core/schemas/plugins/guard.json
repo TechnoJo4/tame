@@ -1,0 +1,30 @@
+{
+	"type": "object",
+	"required": ["rules"],
+	"properties": {
+		"rules": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["pattern", "message"],
+				"properties": {
+					"pattern": {
+						"type": "string",
+						"description": "Regex pattern to match against the full command string"
+					},
+					"message": {
+						"type": "string",
+						"description": "Error message to show when the pattern matches"
+					},
+					"caseInsensitive": {
+						"type": "boolean",
+						"default": false,
+						"description": "Case-insensitive matching"
+					}
+				}
+			},
+			"default": []
+		}
+	},
+	"$schema": "https://json-schema.org/draft/2020-12/schema"
+}

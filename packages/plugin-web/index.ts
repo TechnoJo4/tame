@@ -52,8 +52,8 @@ export class WebPlugin implements Plugin {
 
 	constructor(config: WebConfig) {
 		this.#config = config;
-		this.#buildDir = `${config.staticDir}/../.build`;
-		this.#rootDir = resolve(config.staticDir, "../..");
+		this.#buildDir = resolve(config.staticDir, "..", ".build");
+		this.#rootDir = resolve(config.staticDir, "..", "..", "..");
 	}
 
 	/** Resolve a component path relative to the calling plugin's directory. */

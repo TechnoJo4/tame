@@ -845,6 +845,11 @@
           "npm:lit@3.3.3"
         ]
       },
+      "packages/plugin-ops/web": {
+        "dependencies": [
+          "npm:lit@3.3.3"
+        ]
+      },
       "packages/plugin-web": {
         "dependencies": [
           "npm:@rollup/plugin-alias@5.1.1",
