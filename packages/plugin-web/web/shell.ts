@@ -6,7 +6,6 @@ import "./components/placement.ts";
 import "./components/setting-checkbox.ts";
 import "./components/setting-number.ts";
 import "./components/setting-select.ts";
-import "./components/settings-form.ts";
 import "./components/settings-modal.ts";
 import "./components/settings-section.ts";
 import "./components/shell-app.ts";
