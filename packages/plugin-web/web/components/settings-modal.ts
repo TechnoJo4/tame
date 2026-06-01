@@ -9,8 +9,6 @@ export class TameSettingsModal extends LitElement {
 	@property({ type: Object }) controller!: RPCController;
 	@property({ type: Boolean, reflect: true }) open = false;
 
-	#loaded = new Set<string>();
-
 	override createRenderRoot() { return this; }
 
 	override connectedCallback() {

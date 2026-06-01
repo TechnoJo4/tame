@@ -6,8 +6,6 @@ export class TameTopBar extends LitElement {
 	@property({ type: Object }) controller!: RPCController;
 	@property({ type: Boolean }) sidebarCollapsed!: boolean;
 
-	#loaded = new Set<string>();
-
 	override createRenderRoot() { return this; }
 
 	#toggle() {
