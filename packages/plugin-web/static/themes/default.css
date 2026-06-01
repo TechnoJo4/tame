@@ -155,7 +155,7 @@ tame-web-composer > .abort-btn { color: var(--tame-text-muted); }
 tame-web-composer > .abort-btn:hover { color: var(--tame-danger); }
 
 /* ---- settings modal ---- */
-tame-web-settings-modal {
+tame-web-settings-modal[open] {
 	position: fixed; inset: 0; z-index: 100;
 	background: rgba(0, 0, 0, 0.6);
 	display: flex; align-items: center; justify-content: center;
