@@ -41,7 +41,6 @@ export class TameSettingsModal extends LitElement {
 
 	override render() {
 		if (!this.open) return html``;
-		const placements = this.controller?.getPlacements("modal:settings") ?? [];
 		return html`
 			<div class="settings-backdrop" @click=${this.#onBackdropClick}>
 				<div class="settings-panel">
@@ -50,29 +49,10 @@ export class TameSettingsModal extends LitElement {
 						<button class="settings-close" @click=${this.#close} title="close">✕</button>
 					</div>
 					<div class="settings-body">
-						${placements.map((p) => this.#renderPlacement(p))}
+						<tame-web-placement location="modal:settings" .controller=${this.controller}></tame-web-placement>
 					</div>
 				</div>
 			</div>
-		`;
-	}
-
-	#renderPlacement(p: { tag: string; props?: Record<string, unknown> }) {
-		const pluginId = (p.props?.pluginId as string) ?? "";
-		const src = this.controller?.getComponentSrc(p.tag);
-		if (src && !this.#loaded.has(p.tag)) {
-			this.#loaded.add(p.tag);
-			import(src).catch((e) => console.error(`failed to load ${p.tag}:`, e));
-		}
-		const el = document.createElement(p.tag) as any;
-		customElements.whenDefined(p.tag).then(() => {
-			el.controller = this.controller;
-			if (p.props) Object.assign(el, p.props);
-		});
-		return html`
-			<tame-web-settings-form pluginId=${pluginId}>
-				${el}
-			</tame-web-settings-form>
 		`;
 	}
 }

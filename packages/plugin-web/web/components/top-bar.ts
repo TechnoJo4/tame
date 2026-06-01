@@ -14,35 +14,18 @@ export class TameTopBar extends LitElement {
 		this.dispatchEvent(new CustomEvent("toggle-sidebar", { bubbles: true, composed: true }));
 	}
 
-	#renderPlacements(location: string) {
-		const placements = this.controller?.getPlacements(location) ?? [];
-		return placements.map((p) => {
-			const src = this.controller.getComponentSrc(p.tag);
-			if (src && !this.#loaded.has(p.tag)) {
-				this.#loaded.add(p.tag);
-				import(src).catch((e) => console.error(`failed to load ${p.tag}:`, e));
-			}
-			const el = document.createElement(p.tag) as any;
-			customElements.whenDefined(p.tag).then(() => {
-				el.controller = this.controller;
-				if (p.props) Object.assign(el, p.props);
-			});
-			return el;
-		});
-	}
-
 	override render() {
 		return html`
 			<div class="top-bar-left">
 				<button class="top-bar-toggle" @click=${this.#toggle}
 					title="${this.sidebarCollapsed ? "expand" : "collapse"} sidebar">☰</button>
-				${this.#renderPlacements("topbar:left")}
+				<tame-web-placement location="topbar:left" .controller=${this.controller}></tame-web-placement>
 			</div>
 			<div class="top-bar-center">
-				${this.#renderPlacements("topbar:center")}
+				<tame-web-placement location="topbar:center" .controller=${this.controller}></tame-web-placement>
 			</div>
 			<div class="top-bar-right">
-				${this.#renderPlacements("topbar:right")}
+				<tame-web-placement location="topbar:right" .controller=${this.controller}></tame-web-placement>
 				<button class="top-bar-gear" @click=${this.#openSettings} title="settings">⚙</button>
 			</div>
 		`;
