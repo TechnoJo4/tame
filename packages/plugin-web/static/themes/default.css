@@ -137,23 +137,22 @@ tame-web-tool-fallback > .tool-output {
 tame-web-tool-fallback > .tool-output.error { color: var(--tame-danger); }
 
 /* ---- composer ---- */
-tame-web-composer { display: block; border-top: 1px solid var(--tame-border); padding: 12px; }
-tame-web-composer > .composer-row { display: flex; gap: 8px; align-items: flex-end; }
-tame-web-composer > .composer-row > .input {
+tame-web-composer { display: flex; border-top: 1px solid var(--tame-border); padding: 12px; gap: 8px; align-items: flex-end; }
+tame-web-composer > .input {
 	flex: 1; min-height: 60px; background: var(--tame-surface); color: var(--tame-text);
 	border: 1px solid var(--tame-border-light); border-radius: 4px; padding: 8px;
 	font-family: inherit; font-size: 14px; resize: none; overflow-y: hidden;
 }
-tame-web-composer > .composer-row > .send-btn,
-tame-web-composer > .composer-row > .abort-btn {
+tame-web-composer > .send-btn,
+tame-web-composer > .abort-btn {
 	flex-shrink: 0; width: 36px; height: 36px; border: none; border-radius: 4px;
 	background: none; cursor: pointer; font-size: 18px; line-height: 1;
 	align-self: center;
 }
-tame-web-composer > .composer-row > .send-btn { color: var(--tame-text-muted); }
-tame-web-composer > .composer-row > .send-btn:hover { color: var(--tame-success); }
-tame-web-composer > .composer-row > .abort-btn { color: var(--tame-text-muted); }
-tame-web-composer > .composer-row > .abort-btn:hover { color: var(--tame-danger); }
+tame-web-composer > .send-btn { color: var(--tame-text-muted); }
+tame-web-composer > .send-btn:hover { color: var(--tame-success); }
+tame-web-composer > .abort-btn { color: var(--tame-text-muted); }
+tame-web-composer > .abort-btn:hover { color: var(--tame-danger); }
 
 /* ---- settings modal ---- */
 tame-web-settings-modal { display: contents; }
