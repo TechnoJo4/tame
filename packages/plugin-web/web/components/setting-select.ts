@@ -45,7 +45,7 @@ export class TameSettingSelect extends LitElement {
 	override render() {
 		const val = this.#setting?.value ?? this.default;
 		return html`
-			<label class="setting-select">
+			<label>
 				<span>${this.label}</span>
 				<select @change=${this.#onChange}>
 					${this.options.map((o) => html`

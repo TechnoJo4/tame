@@ -168,16 +168,14 @@ tame-web-settings-modal > .settings-panel {
 	display: flex; flex-direction: column;
 	overflow: hidden;
 }
-tame-web-settings-modal > .settings-panel > .settings-header {
+tame-web-settings-modal > .settings-panel > h2 {
 	display: flex; align-items: center; justify-content: space-between;
 	padding: 12px 16px;
 	border-bottom: 1px solid var(--tame-border);
 	flex-shrink: 0;
-}
-tame-web-settings-modal > .settings-panel > .settings-header h2 {
 	font-size: 16px; font-weight: 600; margin: 0; color: var(--tame-text);
 }
-tame-web-settings-modal > .settings-panel > .settings-header > .settings-close {
+tame-web-settings-modal > .settings-panel > h2 > .settings-close {
 	width: 28px; height: 28px; border: none; border-radius: 3px;
 	background: none; color: var(--tame-text-muted); cursor: pointer;
 	font-size: 16px; line-height: 1;
@@ -190,50 +188,32 @@ tame-web-settings-modal > .settings-panel > .settings-body {
 }
 
 /* ---- settings form + elements ---- */
-tame-web-settings-form { display: block; }
-tame-web-settings-form + tame-web-settings-form {
-	margin-top: 24px; padding-top: 24px;
-	border-top: 1px solid var(--tame-border);
-}
-
-tame-web-settings > .settings-section {
-	display: block; border: 1px solid var(--tame-border-light);
-	border-radius: 4px; padding: 12px; margin: 8px 0;
-}
-tame-web-settings > .settings-section > legend {
-	font-size: 12px; font-weight: 600; color: var(--tame-text-muted);
-	text-transform: uppercase; padding: 0 4px;
-}
-
 tame-web-setting-checkbox,
 tame-web-setting-number,
 tame-web-setting-select {
 	display: flex; align-items: center; gap: 8px;
 	padding: 4px 0;
 }
-tame-web-setting-checkbox > .setting-checkbox {
-	display: flex; align-items: center; gap: 8px;
-	cursor: pointer; font-size: 14px; color: var(--tame-text);
-	user-select: none;
-}
-tame-web-setting-checkbox > .setting-checkbox input[type="checkbox"] {
-	accent-color: var(--tame-text-secondary);
-}
-tame-web-setting-number > .setting-number {
-	display: flex; align-items: center; gap: 8px;
+tame-web-setting-checkbox > label,
+tame-web-setting-number > label,
+tame-web-setting-select > label {
+	display: flex; align-items: center; flex: 1;
 	font-size: 14px; color: var(--tame-text);
 }
-tame-web-setting-number > .setting-number input[type="number"] {
+tame-web-setting-checkbox > label {
+	cursor: pointer; 
+	user-select: none;
+}
+tame-web-setting-checkbox > label > input {
+	accent-color: var(--tame-text-secondary);
+}
+tame-web-setting-number > label > input {
 	width: 80px; padding: 2px 6px;
 	background: var(--tame-bg); color: var(--tame-text);
 	border: 1px solid var(--tame-border-light); border-radius: 3px;
 	font-family: inherit; font-size: 13px;
 }
-tame-web-setting-select > .setting-select {
-	display: flex; align-items: center; gap: 8px;
-	font-size: 14px; color: var(--tame-text);
-}
-tame-web-setting-select > .setting-select select {
+tame-web-setting-select > label > select {
 	padding: 2px 6px;
 	background: var(--tame-bg); color: var(--tame-text);
 	border: 1px solid var(--tame-border-light); border-radius: 3px;

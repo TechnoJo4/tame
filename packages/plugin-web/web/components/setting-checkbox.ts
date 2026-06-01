@@ -38,7 +38,7 @@ export class TameSettingCheckbox extends LitElement {
 	override render() {
 		const checked = this.#setting?.bool ?? (this.default === "true");
 		return html`
-			<label class="setting-checkbox">
+			<label>
 				<input type="checkbox" .checked=${checked} @change=${this.#toggle}>
 				<span>${this.label}</span>
 			</label>

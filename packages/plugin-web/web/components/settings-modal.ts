@@ -14,13 +14,11 @@ export class TameSettingsModal extends LitElement {
 	override connectedCallback() {
 		super.connectedCallback();
 		document.addEventListener("keydown", this.#onKeydown);
-		document.addEventListener("click", this.#onClick);
 	}
 
 	override disconnectedCallback() {
 		super.disconnectedCallback();
 		document.removeEventListener("keydown", this.#onKeydown);
-		document.removeEventListener("click", this.#onClick);
 	}
 
 	#onKeydown = (e: KeyboardEvent) => {
@@ -33,20 +31,14 @@ export class TameSettingsModal extends LitElement {
 		this.open = false;
 	}
 
-	#onClick(e: MouseEvent) {
-		if (e.target === this) {
-			this.#close();
-		}
-	}
-
 	override render() {
 		if (!this.open) return html``;
 		return html`
 			<div class="settings-panel">
-				<div class="settings-header">
-					<h2>settings</h2>
+				<h2>
+					settings
 					<button class="settings-close" @click=${this.#close} title="close">✕</button>
-				</div>
+				</h2>
 				<div class="settings-body">
 					<tame-web-placement location="modal:settings" .controller=${this.controller}></tame-web-placement>
 				</div>

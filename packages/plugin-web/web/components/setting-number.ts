@@ -42,7 +42,7 @@ export class TameSettingNumber extends LitElement {
 	override render() {
 		const val = this.#setting?.num ?? Number(this.default);
 		return html`
-			<label class="setting-number">
+			<label>
 				<span>${this.label}</span>
 				<input type="number"
 					.value=${val}
