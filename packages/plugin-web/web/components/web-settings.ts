@@ -2,7 +2,7 @@ import { LitElement, html } from "lit";
 import { property } from "lit/decorators.js";
 import { consume } from "@lit/context";
 import { settingsStoreContext } from "../lib/settings-context.ts";
-import { SettingsStore } from "@tame/web-sdk";
+import type { SettingsStore } from "@tame/web-sdk";
 
 const FORMAT_OPTIONS = [
 	{ value: "markdown", label: "markdown" },
@@ -18,7 +18,7 @@ export class TameWebSettings extends LitElement {
 
 	override render() {
 		return html`
-			<tame-web-settings-section .pluginId="web" .heading="message rendering">
+			<tame-web-settings-section plugin-id="web" heading="message rendering">
 				<tame-web-setting-select
 					key="assistantFormat"
 					default="markdown"

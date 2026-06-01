@@ -5,12 +5,10 @@ import { settingsPluginIdContext } from "../lib/settings-context.ts";
 
 export class TameSettingsSection extends LitElement {
 	@provide({ context: settingsPluginIdContext })
-	@property({ type: String })
+	@property({ type: String, attribute: "plugin-id" })
 	pluginId = "";
 
 	@property({ type: String }) heading = "";
-
-	override createRenderRoot() { return this; }
 
 	override render() {
 		return html`
