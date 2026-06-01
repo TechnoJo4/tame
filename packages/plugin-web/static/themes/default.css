@@ -155,13 +155,12 @@ tame-web-composer > .abort-btn { color: var(--tame-text-muted); }
 tame-web-composer > .abort-btn:hover { color: var(--tame-danger); }
 
 /* ---- settings modal ---- */
-tame-web-settings-modal { display: contents; }
-tame-web-settings-modal > .settings-backdrop {
+tame-web-settings-modal {
 	position: fixed; inset: 0; z-index: 100;
 	background: rgba(0, 0, 0, 0.6);
 	display: flex; align-items: center; justify-content: center;
 }
-tame-web-settings-modal > .settings-backdrop > .settings-panel {
+tame-web-settings-modal > .settings-panel {
 	background: var(--tame-surface);
 	border: 1px solid var(--tame-border);
 	border-radius: 8px;
@@ -169,24 +168,24 @@ tame-web-settings-modal > .settings-backdrop > .settings-panel {
 	display: flex; flex-direction: column;
 	overflow: hidden;
 }
-tame-web-settings-modal > .settings-backdrop > .settings-panel > .settings-header {
+tame-web-settings-modal > .settings-panel > .settings-header {
 	display: flex; align-items: center; justify-content: space-between;
 	padding: 12px 16px;
 	border-bottom: 1px solid var(--tame-border);
 	flex-shrink: 0;
 }
-tame-web-settings-modal > .settings-backdrop > .settings-panel > .settings-header h2 {
+tame-web-settings-modal > .settings-panel > .settings-header h2 {
 	font-size: 16px; font-weight: 600; margin: 0; color: var(--tame-text);
 }
-tame-web-settings-modal > .settings-backdrop > .settings-panel > .settings-header > .settings-close {
+tame-web-settings-modal > .settings-panel > .settings-header > .settings-close {
 	width: 28px; height: 28px; border: none; border-radius: 3px;
 	background: none; color: var(--tame-text-muted); cursor: pointer;
 	font-size: 16px; line-height: 1;
 }
-tame-web-settings-modal > .settings-backdrop > .settings-panel > .settings-header > .settings-close:hover {
+tame-web-settings-modal > .settings-panel > .settings-header > .settings-close:hover {
 	color: var(--tame-text); background: var(--tame-surface-alt);
 }
-tame-web-settings-modal > .settings-backdrop > .settings-panel > .settings-body {
+tame-web-settings-modal > .settings-panel > .settings-body {
 	flex: 1; overflow-y: auto; padding: 16px;
 }
 

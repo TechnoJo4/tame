@@ -14,11 +14,13 @@ export class TameSettingsModal extends LitElement {
 	override connectedCallback() {
 		super.connectedCallback();
 		document.addEventListener("keydown", this.#onKeydown);
+		document.addEventListener("click", this.#onClick);
 	}
 
 	override disconnectedCallback() {
 		super.disconnectedCallback();
 		document.removeEventListener("keydown", this.#onKeydown);
+		document.removeEventListener("click", this.#onClick);
 	}
 
 	#onKeydown = (e: KeyboardEvent) => {
@@ -31,8 +33,8 @@ export class TameSettingsModal extends LitElement {
 		this.open = false;
 	}
 
-	#onBackdropClick(e: MouseEvent) {
-		if ((e.target as HTMLElement).classList.contains("settings-backdrop")) {
+	#onClick(e: MouseEvent) {
+		if (e.target === this) {
 			this.#close();
 		}
 	}
@@ -40,15 +42,13 @@ export class TameSettingsModal extends LitElement {
 	override render() {
 		if (!this.open) return html``;
 		return html`
-			<div class="settings-backdrop" @click=${this.#onBackdropClick}>
-				<div class="settings-panel">
-					<div class="settings-header">
-						<h2>settings</h2>
-						<button class="settings-close" @click=${this.#close} title="close">✕</button>
-					</div>
-					<div class="settings-body">
-						<tame-web-placement location="modal:settings" .controller=${this.controller}></tame-web-placement>
-					</div>
+			<div class="settings-panel">
+				<div class="settings-header">
+					<h2>settings</h2>
+					<button class="settings-close" @click=${this.#close} title="close">✕</button>
+				</div>
+				<div class="settings-body">
+					<tame-web-placement location="modal:settings" .controller=${this.controller}></tame-web-placement>
 				</div>
 			</div>
 		`;
