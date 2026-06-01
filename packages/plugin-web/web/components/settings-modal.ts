@@ -34,15 +34,13 @@ export class TameSettingsModal extends LitElement {
 	override render() {
 		if (!this.open) return html``;
 		return html`
-			<div class="settings-panel">
+			<form>
 				<h2>
 					settings
 					<button class="settings-close" @click=${this.#close} title="close">✕</button>
 				</h2>
-				<div class="settings-body">
-					<tame-web-placement location="modal:settings" .controller=${this.controller}></tame-web-placement>
-				</div>
-			</div>
+				<tame-web-placement location="modal:settings" .controller=${this.controller}></tame-web-placement>
+			</form>
 		`;
 	}
 }

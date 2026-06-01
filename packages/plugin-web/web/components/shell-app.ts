@@ -65,17 +65,13 @@ export class TameShell extends LitElement {
 			return html`<div class="error">${this.error}</div>`;
 		}
 		return html`
-			<div class="layout">
-				<tame-web-sidebar .controller=${this.#controller} .collapsed=${this.sidebarCollapsed}></tame-web-sidebar>
-				<div class="main-column">
-					<tame-web-top-bar .controller=${this.#controller} .sidebarCollapsed=${this.sidebarCollapsed}></tame-web-top-bar>
-					<main class="main">
-						<tame-web-thread .items=${this.items} .controller=${this.#controller}></tame-web-thread>
-						<tame-web-composer .controller=${this.#controller} .idle=${this.idle}></tame-web-composer>
-					</main>
-				</div>
-				<tame-web-settings-modal .controller=${this.#controller} .open=${this.settingsOpen}></tame-web-settings-modal>
-			</div>
+			<tame-web-sidebar .controller=${this.#controller} .collapsed=${this.sidebarCollapsed}></tame-web-sidebar>
+			<main>
+				<tame-web-top-bar .controller=${this.#controller} .sidebarCollapsed=${this.sidebarCollapsed}></tame-web-top-bar>
+				<tame-web-thread .items=${this.items} .controller=${this.#controller}></tame-web-thread>
+				<tame-web-composer .controller=${this.#controller} .idle=${this.idle}></tame-web-composer>
+			</main>
+			<tame-web-settings-modal .controller=${this.#controller} .open=${this.settingsOpen}></tame-web-settings-modal>
 		`;
 	}
 }

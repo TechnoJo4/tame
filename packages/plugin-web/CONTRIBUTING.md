@@ -49,17 +49,15 @@ bad:
 
 lit elements render into the light dom (`createRenderRoot() { return this; }`). this means the dom is flat — no shadow boundaries. that's intentional: it lets themes style everything from one place.
 
-because there's no shadow dom, css scoping is done by **component tag name**, not by class:
+when a component has multiple children of the same type, it might make more sense to use classes, but **prefer components over classes for layout.** avoiding classes forces you to make your intent obvious through dom elements, and discourages div soup.
 
 ```css
 /* wrong — bare class leaks across the whole document */
 .ops-label { font-size: 12px; }
 
-/* correct — scoped under the custom element */
-tame-ops-read .ops-label { font-size: 12px; }
+/* correct — no unnecessary wrapping, scoped under the custom element */
+tame-ops-read > label { font-size: 12px; }
 ```
-
-classes are for *internal* structure within a single component. they're never utility classes and never cross component boundaries. the rule: if you write a class selector, it must be preceded by the component's tag name.
 
 **prefer attributes over classes for state.** use `data-*` attributes (or `[collapsed]`, `[active]`) for component states — they're cheap to query from theme css and make intent obvious:
 
