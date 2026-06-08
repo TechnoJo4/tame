@@ -5,13 +5,6 @@ import { LitElement, html } from "lit";
 const truncate = (s: string, n: number): string =>
 	s.length <= n ? s : s.slice(0, n) + "…";
 
-const contractHome = (path: string): string => {
-	const home = "/home/coder";
-	if (path === home) return "~";
-	if (path.startsWith(home + "/")) return "~" + path.slice(home.length);
-	return path;
-};
-
 // ---- tame-ops-read ----
 
 export class TameOpsRead extends LitElement {
@@ -36,7 +29,7 @@ export class TameOpsRead extends LitElement {
 			? ` [${this.offset ? `L${this.offset}` : ""}${this.limit ? `+${this.limit}` : ""}]`
 			: "";
 		return html`
-			<span class="ops-label">read ${contractHome(this.path)}${range}</span>
+			<span class="ops-label">read ${this.path}${range}</span>
 			${this.result !== null && this.result !== undefined ? html`
 				<pre class="ops-content${this.isError ? " error" : ""}">${this.result}</pre>
 			` : html``}
@@ -64,7 +57,7 @@ export class TameOpsWrite extends LitElement {
 
 	override render() {
 		return html`
-			<span class="ops-label">write ${contractHome(this.path)}</span>
+			<span class="ops-label">write ${this.path}</span>
 			${this.content ? html`
 				<pre class="ops-content">${truncate(this.content, 1000)}</pre>
 			` : html``}
@@ -97,7 +90,7 @@ export class TameOpsEdit extends LitElement {
 
 	override render() {
 		return html`
-			<span class="ops-label">edit ${contractHome(this.path)}</span>
+			<span class="ops-label">edit ${this.path}</span>
 			${this.oldString ? html`
 				<div class="ops-diff">
 					<pre class="ops-diff-old">− ${truncate(this.oldString, 200)}</pre>
@@ -131,7 +124,7 @@ export class TameOpsExec extends LitElement {
 
 	override render() {
 		return html`
-			<span class="ops-label">exec <code>${this.command ?? "?"}</code>${this.workdir ? ` in ${contractHome(this.workdir)}` : ""}</span>
+			<span class="ops-label">exec <code>${this.command ?? "?"}</code>${this.workdir ? ` in ${this.workdir}` : ""}</span>
 			${this.result !== null && this.result !== undefined ? html`
 				<pre class="ops-content${this.isError ? " error" : ""}">${this.result}</pre>
 			` : html``}

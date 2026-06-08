@@ -473,7 +473,7 @@ export class OpsPlugin implements Plugin {
 					const cmd = stripShell(this.normalizeCommand(command));
 					return {
 						tag: "tame-ops-exec",
-						props: { command: cmd.join(" "), workdir },
+						props: { command: cmd.join(" "), workdir: workdir ? contractHome(workdir) : undefined },
 					};
 				},
 				acp: ({ command }, result) => {
