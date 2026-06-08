@@ -109,9 +109,8 @@ const getExecName = (args: string[]): string => {
 	return s === -1 ? a[0] : a[0].slice(0, s);
 };
 
-const stripAnsi = (s: string) =>
-	s.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "")
-	 .replace(/\x1b\].*?(\x07|\x1b\\)/g, "");
+const stripAnsi = (s: string) => // deno-lint-ignore no-control-regex
+	s.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "").replace(/\x1b\].*?(\x07|\x1b\\)/g, "");
 
 const killTree = (pid: number) => {
 	try {
@@ -256,7 +255,7 @@ export class OpsPlugin implements Plugin {
 			if (e.result) return e;
 			const env = getEnv(e.agent);
 			let existed = false;
-			try { await env.read(e.path); existed = true; } catch {}
+			try { await env.read(e.path); existed = true; } catch { /* ignore */ }
 			await env.write(e.path, e.content);
 			e.result = existed ? "ok" : `${e.path}: successfully created.`;
 			return e;
