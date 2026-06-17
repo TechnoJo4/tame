@@ -4,5 +4,8 @@
 	"exports": {
 		".": "./main.ts",
 		"./index": "./index.ts"
+	},
+	"imports": {
+		"js-tiktoken": "npm:js-tiktoken@^1.0.21"
 	}
 }

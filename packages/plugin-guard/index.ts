@@ -1,5 +1,5 @@
 import { Type, type Static } from "typebox";
-import { type Plugin, type IHarness } from "@tame/sdk";
+import type { Plugin, IHarness } from "@tame/sdk";
 import type { OpsPlugin } from "@tame/plugin-ops/index";
 
 // ---- schema ----

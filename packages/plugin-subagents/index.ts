@@ -118,7 +118,7 @@ export class SubagentsPlugin implements Plugin {
 		parent.fire("userMessage", {
 			msg: {
 				role: "user",
-				content: [{ type: "text", text: `${header}\n\n${text}` }],
+				content: [{ type: "text", text: `<system>${header}\n\n${text}\n</system>` }],
 			},
 		});
 	}

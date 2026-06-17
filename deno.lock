@@ -13,6 +13,7 @@
     "npm:@rollup/plugin-swc@0.4.0": "0.4.0_@swc+core@1.13.2_rollup@4.44.0",
     "npm:@rollup/plugin-terser@0.4.4": "0.4.4_rollup@4.44.0",
     "npm:js-tiktoken@*": "1.0.21",
+    "npm:js-tiktoken@^1.0.21": "1.0.21",
     "npm:lit@3.3.3": "3.3.3",
     "npm:mdast-util-from-markdown@2": "2.0.3",
     "npm:mdast-util-gfm-table@2": "2.0.0",
@@ -837,6 +838,11 @@
       "packages/plugin-acp": {
         "dependencies": [
           "npm:@agentclientprotocol/sdk@0.18"
+        ]
+      },
+      "packages/plugin-compact": {
+        "dependencies": [
+          "npm:js-tiktoken@^1.0.21"
         ]
       },
       "packages/plugin-history/web": {

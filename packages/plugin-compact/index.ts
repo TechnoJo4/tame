@@ -1,4 +1,4 @@
-import { Tiktoken } from "npm:js-tiktoken/lite";
+import { Tiktoken } from "js-tiktoken/lite";
 import { type Static, Type } from "typebox";
 import type { IAgent, IHarness, InputMessage, InputContent, AssistantMessage, ToolUse } from "@tame/sdk";
 import { type Plugin, StringEnum, tameMsgMeta } from "@tame/sdk";
