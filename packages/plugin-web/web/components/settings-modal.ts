@@ -1,12 +1,10 @@
 import { LitElement, html } from "lit";
 import { property } from "lit/decorators.js";
-import type { RPCController } from "../lib/rpc-controller.ts";
 
 /** Modal frame. Renders modal:settings placements, each wrapped in
  *  <tame-web-settings-form> with pluginId from placement props.
  *  Visibility controlled by the open attribute. */
 export class TameSettingsModal extends LitElement {
-	@property({ type: Object }) controller!: RPCController;
 	@property({ type: Boolean, reflect: true }) open = false;
 
 	override createRenderRoot() { return this; }
@@ -39,7 +37,7 @@ export class TameSettingsModal extends LitElement {
 					settings
 					<button class="settings-close" @click=${this.#close} title="close">✕</button>
 				</h2>
-				<tame-web-placement location="modal:settings" .controller=${this.controller}></tame-web-placement>
+				<tame-web-placement location="modal:settings"></tame-web-placement>
 			</form>
 		`;
 	}

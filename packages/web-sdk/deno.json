@@ -4,9 +4,10 @@
 	"exports": {
 		".": "./mod.ts",
 		"./items": "./items.ts",
-		"./controller": "./controller.ts",
 		"./placement": "./placement.ts",
-		"./agent-context": "./agent-context.ts"
+		"./agent-context": "./agent-context.ts",
+		"./rpc-client-context": "./rpc-client-context.ts",
+		"./registry-context": "./registry-context.ts"
 	},
 	"imports": {
 		"@lit/context": "npm:@lit/context@^1.1"

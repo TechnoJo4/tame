@@ -1,10 +1,17 @@
 import { LitElement, html } from "lit";
 import { property } from "lit/decorators.js";
-import type { RPCController } from "../lib/rpc-controller.ts";
+import { consume } from "@lit/context";
+import { agentIdContext } from "@tame/web-sdk";
+import { rpcClientContext, type RPCClientLike } from "@tame/web-sdk/rpc-client-context";
 
 export class TameComposer extends LitElement {
-	@property({ type: Object }) controller!: RPCController;
-	@property({ type: Boolean }) idle!: boolean;
+	@consume({ context: rpcClientContext, subscribe: true })
+	@property({ attribute: false }) client: RPCClientLike | null = null;
+
+	@consume({ context: agentIdContext, subscribe: true })
+	@property({ type: String }) agentId: string | null = null;
+
+	@property({ type: Boolean }) idle = true;
 
 	override createRenderRoot() { return this; }
 
@@ -17,9 +24,9 @@ export class TameComposer extends LitElement {
 				@input=${this.#onInput}
 			></textarea>
 			${this.idle ? html`
-				<button class="send-btn" @click=${this.#send} title="send (enter)">→</button>
+				<button class="send-btn" @click=${this.#doSend} title="send (enter)">→</button>
 			` : html`
-				<button class="abort-btn" @click=${this.#abort} title="stop">■</button>
+				<button class="abort-btn" @click=${this.#doAbort} title="stop">■</button>
 			`}
 		`;
 	}
@@ -27,7 +34,7 @@ export class TameComposer extends LitElement {
 	#onKeydown(e: KeyboardEvent) {
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
-			this.#send();
+			this.#doSend();
 		}
 	}
 
@@ -38,18 +45,24 @@ export class TameComposer extends LitElement {
 		textarea.style.height = `${textarea.scrollHeight}px`;
 	}
 
-	#send() {
+	#doSend() {
 		const textarea = this.renderRoot.querySelector("textarea") as HTMLTextAreaElement;
 		const text = textarea?.value.trim();
-		if (text) {
-			this.controller?.send(text);
-			textarea.value = "";
-			textarea.style.height = "auto";
-		}
+		if (!text) return;
+		textarea.value = "";
+		textarea.style.height = "auto";
+		this.dispatchEvent(new CustomEvent("web:send", {
+			detail: { text },
+			bubbles: true,
+			composed: true,
+		}));
 	}
 
-	#abort() {
-		this.controller?.abort();
+	#doAbort() {
+		this.dispatchEvent(new CustomEvent("web:abort", {
+			bubbles: true,
+			composed: true,
+		}));
 	}
 }
 customElements.define("tame-web-composer", TameComposer);

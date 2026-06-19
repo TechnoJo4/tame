@@ -170,7 +170,7 @@ export class WebPlugin implements Plugin {
 			`export { RPCClient } from "@tame/rpc-client";\n` +
 			`export { wsToStream } from "@tame/rpc-client/stream";\n`);
 		entry("lit-context", `export { createContext, ContextProvider, ContextConsumer, ContextEvent, provide, consume } from "@lit/context";\n`);
-		entry("web-sdk", `export { agentIdContext } from "@tame/web-sdk";\n`);
+		entry("web-sdk", `export { agentIdContext, rpcClientContext, registryContext } from "@tame/web-sdk";\n`);
 
 		const bundle = async (name: string, externals: string[] = [], noMinify = false) => {
 			const b = await rollup({

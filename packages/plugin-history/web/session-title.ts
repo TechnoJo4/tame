@@ -2,7 +2,7 @@ import { LitElement, html, type ReactiveController, type ReactiveControllerHost 
 import { property } from "lit/decorators.js";
 import { consume } from "@lit/context";
 import { agentIdContext } from "@tame/web-sdk";
-import type { WebController } from "@tame/web-sdk/controller";
+import { rpcClientContext, type RPCClientLike } from "@tame/web-sdk/rpc-client-context";
 import type { SessionInfo } from "./types.ts";
 
 // ---------------------------------------------------------------------------
@@ -11,14 +11,14 @@ import type { SessionInfo } from "./types.ts";
 // ---------------------------------------------------------------------------
 
 interface TitleHost extends ReactiveControllerHost {
-	controller: WebController;
+	client: RPCClientLike | null;
 	agentId: string | null;
 }
 
 class TitleController implements ReactiveController {
 	#host: TitleHost;
 	#unsub: (() => void) | null = null;
-	#lastCtrl: WebController | undefined;
+	#lastClient: RPCClientLike | null = null;
 	#lastAid: string | null = null;
 
 	sessions: SessionInfo[] = [];
@@ -36,7 +36,7 @@ class TitleController implements ReactiveController {
 	// -- ReactiveController hooks ------------------------------------------
 
 	hostConnected() {
-		this.#lastCtrl = this.#host.controller;
+		this.#lastClient = this.#host.client;
 		this.#lastAid = this.#host.agentId;
 		this.#subscribe();
 		this.#fetch();
@@ -48,19 +48,19 @@ class TitleController implements ReactiveController {
 	}
 
 	hostUpdate() {
-		const ctrl = this.#host.controller;
+		const client = this.#host.client;
 		const aid = this.#host.agentId;
-		const ctrlChanged = ctrl !== this.#lastCtrl;
+		const clientChanged = client !== this.#lastClient;
 		const aidChanged = aid !== this.#lastAid;
 
-		if (ctrlChanged) {
+		if (clientChanged) {
 			this.#unsub?.();
 			this.#unsub = null;
-			this.#lastCtrl = ctrl;
+			this.#lastClient = client;
 			this.#subscribe();
 		}
 
-		if (ctrlChanged || aidChanged) {
+		if (clientChanged || aidChanged) {
 			this.#lastAid = aid;
 			this.#fetch();
 		}
@@ -69,7 +69,7 @@ class TitleController implements ReactiveController {
 	// -- internals ---------------------------------------------------------
 
 	#subscribe() {
-		const client = this.#host.controller?.client;
+		const client = this.#host.client;
 		if (!client) return;
 		this.#unsub = client.subscribe(
 			{ plugin: "history", event: "sessionsChanged" },
@@ -81,7 +81,7 @@ class TitleController implements ReactiveController {
 	}
 
 	async #fetch() {
-		const client = this.#host.controller?.client;
+		const client = this.#host.client;
 		if (!client) return;
 		const result = await client.call("history", "list", {});
 		this.sessions = (result as any)?.sessions ?? [];
@@ -94,9 +94,11 @@ class TitleController implements ReactiveController {
 // ---------------------------------------------------------------------------
 
 export class TameHistorySessionTitle extends LitElement {
-	@property({ type: Object }) controller!: WebController;
+	@consume({ context: rpcClientContext, subscribe: true })
+	@property({ attribute: false }) client: RPCClientLike | null = null;
+
 	@consume({ context: agentIdContext, subscribe: true })
-	agentId: string | null = null;
+	@property({ type: String }) agentId: string | null = null;
 
 	#titleCtrl = new TitleController(this as TitleHost);
 

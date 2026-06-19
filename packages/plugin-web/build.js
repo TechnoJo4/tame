@@ -40,7 +40,8 @@ writeFileSync(`${buildDir}/tame-rpc-client.entry.ts`,
 	`export { RPCClient } from "@tame/rpc-client";\n` +
 	`export { wsToStream } from "@tame/rpc-client/stream";\n`);
 writeFileSync(`${buildDir}/lit-context.entry.ts`, `export { createContext, ContextProvider, ContextConsumer, ContextEvent, provide, consume } from "@lit/context";\n`);
-writeFileSync(`${buildDir}/web-sdk.entry.ts`, `export { agentIdContext } from "@tame/web-sdk";\n`);
+writeFileSync(`${buildDir}/web-sdk.entry.ts`,
+	`export { agentIdContext, rpcClientContext, registryContext } from "@tame/web-sdk";\n`);
 
 // ---- bundle ----
 

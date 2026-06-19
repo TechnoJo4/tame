@@ -16,8 +16,8 @@
 		"@tame/rpc-client": "../../rpc-client/index.ts",
 		"@tame/rpc-client/stream": "../../rpc-client/stream.ts",
 		"@tame/web-sdk": "../../web-sdk/mod.ts",
-		"@tame/web-sdk/controller": "../../web-sdk/controller.ts",
-		"@tame/web-sdk/placement": "../../web-sdk/placement.ts"
+		"@tame/web-sdk/rpc-client-context": "../../web-sdk/rpc-client-context.ts",
+		"@tame/web-sdk/registry-context": "../../web-sdk/registry-context.ts"
 	},
 	"compilerOptions": {
 		"lib": ["dom", "dom.iterable", "esnext"],

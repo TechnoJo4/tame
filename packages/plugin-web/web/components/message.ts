@@ -1,9 +1,10 @@
 import { LitElement, html } from "lit";
 import { property } from "lit/decorators.js";
 import { consume } from "@lit/context";
+import { registryContext, type Registry } from "@tame/web-sdk";
 import { settingsStoreContext } from "../lib/settings-context.ts";
 import type { SettingsStore } from "@tame/web-sdk";
-import type { RPCController, MessageItem, TextOrThinking } from "../lib/rpc-controller.ts";
+import type { MessageItem, TextOrThinking } from "@tame/web-sdk";
 
 const SETTINGS_PLUGIN = "web";
 const FORMAT_KEYS: Record<string, string> = {
@@ -13,7 +14,6 @@ const FORMAT_KEYS: Record<string, string> = {
 
 export class TameMessage extends LitElement {
 	@property({ type: Object }) item!: MessageItem;
-	@property({ type: Object }) controller!: RPCController;
 
 	@consume({ context: settingsStoreContext })
 	@property({ attribute: false })
@@ -94,12 +94,14 @@ customElements.define("tame-web-message", TameMessage);
 // ---- <tame-web-tool-view> ----
 
 class TameToolView extends LitElement {
-	@property({ type: Object }) controller!: RPCController;
-	@property({ type: String }) toolUseId!: string;
-	@property({ type: String }) toolName!: string;
-	@property({ type: Object }) toolInput!: Record<string, unknown>;
+	@consume({ context: registryContext, subscribe: true })
+	@property({ attribute: false }) registry: Registry | null = null;
+
+	@property({ type: String }) toolUseId = "";
+	@property({ type: String }) toolName = "";
+	@property({ type: Object }) toolInput: Record<string, unknown> = {};
 	@property({ type: String }) result: string | null = null;
-	@property({ type: Boolean }) isError: boolean = false;
+	@property({ type: Boolean }) isError = false;
 	/** Pre-resolved view metadata from the server. When set, the component
 	 *  is created directly without an RPC round-trip. */
 	@property({ type: Object }) view: { tag: string; props: Record<string, unknown> } | null = null;
@@ -114,10 +116,8 @@ class TameToolView extends LitElement {
 	}
 
 	async #resolve() {
-		// If view metadata was pre-resolved server-side (getItems / web events),
-		// use it directly. Otherwise fall back to the RPC for backward compat.
 		if (this.view?.tag) {
-			const src = this.controller?.getComponentSrc(this.view.tag);
+			const src = this.registry?.getComponentSrc(this.view.tag);
 			if (src) await import(src).catch(() => {});
 		}
 		this.#loaded = true;
@@ -128,7 +128,6 @@ class TameToolView extends LitElement {
 		if (!this.#loaded) {
 			return html`<div class="loading">loading tool view...</div>`;
 		}
-		// use pre-resolved view if available
 		if (this.view?.tag) {
 			const { tag, props } = this.view;
 			const el = document.createElement(tag) as any;
@@ -139,7 +138,6 @@ class TameToolView extends LitElement {
 			}
 			return el;
 		}
-		// fallback: no pre-resolved view
 		return html`<tame-web-tool-fallback
 			.name=${this.toolName}
 			.input=${this.toolInput}

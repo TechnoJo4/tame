@@ -1,19 +1,34 @@
 import { LitElement, html } from "lit";
 import { property } from "lit/decorators.js";
+import { consume } from "@lit/context";
 import "@lit-labs/virtualizer";
 import type { LitVirtualizer } from "@lit-labs/virtualizer";
 import { RangeChangedEvent } from "@lit-labs/virtualizer/events.js";
-import type { RPCController, ThreadItem, ToolCallItem, MessageItem } from "../lib/rpc-controller.ts";
+import { agentIdContext } from "@tame/web-sdk";
+import { rpcClientContext, type RPCClientLike } from "@tame/web-sdk/rpc-client-context";
+import type { ThreadItem, ToolCallItem, MessageItem } from "@tame/web-sdk";
+
+const PAGE_SIZE = 50;
 
 export class TameThread extends LitElement {
-	@property({ type: Array }) items!: ThreadItem[];
-	@property({ type: Object }) controller!: RPCController;
+	@consume({ context: agentIdContext, subscribe: true })
+	@property({ type: String }) agentId: string | null = null;
+
+	@consume({ context: rpcClientContext, subscribe: true })
+	@property({ attribute: false }) client: RPCClientLike | null = null;
+
+	@property({ type: Array, state: true }) items: ThreadItem[] = [];
+	@property({ type: Boolean, state: true }) loading = true;
+	@property({ type: String, state: true }) error: string | null = null;
 
 	#virtualizer: LitVirtualizer | null = null;
-
 	#pinned = true;
 	#layout: Record<string, unknown> = {};
 	#loadingMore = false;
+	#totalLoaded = 0;
+	#totalItems = 0;
+	#unsubs: (() => void)[] = [];
+	#lastAgentId: string | null = null;
 
 	override createRenderRoot() { return this; }
 
@@ -24,23 +39,33 @@ export class TameThread extends LitElement {
 	override disconnectedCallback() {
 		super.disconnectedCallback();
 		this.#virtualizer?.removeEventListener("scroll", this.#onScroll);
+		this.#unsubscribeAll();
+	}
+
+	override willUpdate(changed: Map<string, unknown>) {
+		// agentId or client changed → reload if both are present and agentId is new
+		if ((changed.has("agentId") || changed.has("client"))
+			&& this.client && this.agentId
+			&& this.agentId !== this.#lastAgentId
+		) {
+			this.#lastAgentId = this.agentId;
+			this.#loadInitial();
+		}
 	}
 
 	override firstUpdated() {
-		// query the virtualizer manually — decorator on private field breaks swc
 		this.#virtualizer = this.querySelector("lit-virtualizer") as LitVirtualizer;
 		this.#virtualizer?.addEventListener("scroll", this.#onScroll, { passive: true });
 	}
 
 	override updated(changed: Map<string, unknown>) {
 		if (changed.has("items") && this.#pinned) {
-			// defer until after the virtualizer lays out new items
 			requestAnimationFrame(() => this.#pinToBottom());
 		}
 	}
 
 	#pinToBottom() {
-		const len = this.items?.length ?? 0;
+		const len = this.items.length;
 		if (len === 0) return;
 		this.#layout = { pin: { index: len - 1, block: "end" } };
 	}
@@ -61,16 +86,93 @@ export class TameThread extends LitElement {
 	};
 
 	#onRangeChanged = (e: RangeChangedEvent) => {
-		// load more history when scrolling near the top
 		if (e.first <= 3 && !this.#loadingMore) {
 			this.#loadMore();
 		}
 	};
 
+	#unsubscribeAll() {
+		for (const unsub of this.#unsubs) unsub();
+		this.#unsubs = [];
+	}
+
+	#subscribeToAgent() {
+		if (!this.client || !this.agentId) return;
+		this.#unsubscribeAll();
+
+		const on = (event: string, handler: (data: any) => void) => {
+			this.#unsubs.push(
+				this.client!.subscribe(
+					{ agent_id: this.agentId!, plugin: "web", event },
+					(msg) => handler((msg.data as Record<string, unknown>)),
+				),
+			);
+		};
+
+		on("userMessage", (d) => {
+			const item = d.item as MessageItem | undefined;
+			if (!item) return;
+			this.items = [...this.items, item];
+			this.#totalLoaded++;
+		});
+
+		on("assistantMessage", (d) => {
+			const items = d.items as ThreadItem[] | undefined;
+			if (!items || items.length === 0) return;
+			this.items = [...this.items, ...items];
+			this.#totalLoaded += items.length;
+		});
+
+		on("toolResult", (d) => {
+			const { toolUseId, result, isError } = d as {
+				toolUseId: string; result: string; isError: boolean;
+			};
+			for (let i = this.items.length - 1; i >= 0; i--) {
+				const item = this.items[i];
+				if (item.type === "tool_call" && item.id === toolUseId) {
+					item.result = result;
+					item.isError = isError;
+					break;
+				}
+			}
+			this.items = [...this.items];
+		});
+	}
+
+	async #loadInitial() {
+		if (!this.client || !this.agentId) return;
+		this.loading = true;
+		this.error = null;
+		this.#subscribeToAgent();
+		try {
+			const result = await this.client.call("web", "getItems", {
+				id: this.agentId, offset: 0, limit: PAGE_SIZE,
+			});
+			const r = result as any;
+			this.items = (r.items ?? []) as ThreadItem[];
+			this.#totalLoaded = this.items.length;
+			this.#totalItems = r.total as number;
+			this.#pinned = true;
+		} catch (e) {
+			this.error = e instanceof Error ? e.message : String(e);
+		} finally {
+			this.loading = false;
+		}
+	}
+
 	async #loadMore() {
+		if (!this.client || !this.agentId) return;
+		if (this.#totalLoaded >= this.#totalItems || this.#loadingMore) return;
 		this.#loadingMore = true;
 		try {
-			await this.controller?.loadMore();
+			const result = await this.client.call("web", "getItems", {
+				id: this.agentId, offset: this.#totalLoaded, limit: PAGE_SIZE,
+			});
+			const r = result as any;
+			const older = (r.items ?? []) as ThreadItem[];
+			if (older.length === 0) return;
+			this.items = [...older, ...this.items];
+			this.#totalLoaded += older.length;
 		} finally {
 			this.#loadingMore = false;
 		}
@@ -80,7 +182,6 @@ export class TameThread extends LitElement {
 		if (item.type === "tool_call") {
 			const ti = item as ToolCallItem;
 			return html`<tame-web-tool-view
-				.controller=${this.controller}
 				.toolUseId=${ti.id}
 				.toolName=${ti.name}
 				.toolInput=${ti.input}
@@ -90,15 +191,21 @@ export class TameThread extends LitElement {
 			></tame-web-tool-view>`;
 		}
 		const mi = item as MessageItem;
-		return html`<tame-web-message .item=${mi} .controller=${this.controller}></tame-web-message>`;
+		return html`<tame-web-message .item=${mi}></tame-web-message>`;
 	};
 
 	#keyFunction = (item: ThreadItem) => item.key;
 
 	override render() {
+		if (this.loading) {
+			return html`<div class="loading">loading thread...</div>`;
+		}
+		if (this.error) {
+			return html`<div class="error">${this.error}</div>`;
+		}
 		return html`<lit-virtualizer
 			scroller
-			.items=${this.items ?? []}
+			.items=${this.items}
 			.renderItem=${this.#renderItem}
 			.keyFunction=${this.#keyFunction}
 			.layout=${this.#layout}

@@ -13,6 +13,5 @@ import "./components/sidebar.ts";
 import "./components/thread.ts";
 import "./components/tool-fallback.ts";
 import "./components/top-bar.ts";
-import "./lib/rpc-controller.ts";
 
 document.body.appendChild(document.createElement("tame-web-shell"));
