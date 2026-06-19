@@ -24,7 +24,10 @@ export class TameHistorySessionTitle extends LitElement {
 		return session?.title || session?.id?.slice(0, 8) || "tame";
 	}
 
-	override willUpdate(changed: Map<string, unknown>) {
+	// use updated() not willUpdate() — same timing issue as TameHistory:
+	// context values aren't propagated yet when willUpdate fires for elements
+	// created via document.createElement() in TamePlacement.render().
+	override updated(changed: Map<string, unknown>) {
 		if (changed.has("client") && this.client && this.client !== this.#lastClient) {
 			this.#lastClient = this.client;
 			this.#subscribe();

@@ -20,7 +20,12 @@ export class TameHistory extends LitElement {
 
 	override createRenderRoot() { return this; }
 
-	override willUpdate(changed: Map<string, unknown>) {
+	// use updated() not willUpdate() — willUpdate fires before the DOM commit
+	// phase, so for elements created via document.createElement() inside a
+	// parent's render() (the TamePlacement path), context values from @consume
+	// haven't propagated yet. updated() fires after render + commit, so client
+	// is guaranteed resolved.
+	override updated(changed: Map<string, unknown>) {
 		if (changed.has("client") && this.client && this.client !== this.#lastClient) {
 			this.#lastClient = this.client;
 			this.#subscribe();
