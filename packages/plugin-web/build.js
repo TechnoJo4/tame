@@ -64,7 +64,7 @@ await bundle(`${buildDir}/web-sdk.entry.ts`, `${staticDir}/web-sdk.js`, {
 });
 console.log("  → static/web-sdk.js");
 await bundle(`${dir}/web/shell.ts`, `${staticDir}/shell.js`, {
-	externals: ["lit", "lit/decorators.js", "lit/directive.js", "lit/async-directive.js", "@lit/context", "@tame/rpc-client", "@tame/web-sdk", "typebox", "typebox/compile"],
+	externals: ["lit", "lit/decorators.js", "lit/directive.js", "lit/async-directive.js", "@lit/context", /^@tame\/rpc-client/, /^@tame\/web-sdk/, "typebox", "typebox/compile"],
 	inlineDynamicImports: true,
 });
 console.log("  → static/shell.js");

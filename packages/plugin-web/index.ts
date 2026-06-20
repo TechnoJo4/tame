@@ -140,7 +140,7 @@ export class WebPlugin implements Plugin {
 
 			const build = await rollup({
 				input: shellTs,
-				external: ["lit", "lit/decorators.js", "lit/directive.js", "lit/async-directive.js", "@lit/context", "@tame/rpc-client", "@tame/web-sdk", "typebox", "typebox/compile"],
+				external: ["lit", "lit/decorators.js", "lit/directive.js", "lit/async-directive.js", "@lit/context", /^@tame\/rpc-client/, /^@tame\/web-sdk/, "typebox", "typebox/compile"],
 				plugins: basePlugins(this.#rootDir),
 			});
 			await build.write({
