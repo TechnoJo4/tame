@@ -125,6 +125,7 @@ tame-web-message {
 	margin-bottom: 16px;
 	padding: 8px;
 	border-radius: 4px;
+	max-width: 100%;
 }
 tame-web-message[data-role="user"] {
 	background: var(--tame-surface);
