@@ -7,10 +7,10 @@ import type { SessionInfo } from "./types.ts";
 
 export class TameHistory extends LitElement {
 	@consume({ context: rpcClientContext, subscribe: true })
-	@property({ attribute: false }) client: RPCClientLike | null = null;
+	@property({ attribute: false }) declare client: RPCClientLike | null;
 
 	@consume({ context: agentIdContext, subscribe: true })
-	@property({ type: String }) agentId: string | null = null;
+	@property({ type: String }) declare agentId: string | null;
 
 	@property({ type: Array, state: true }) sessions: SessionInfo[] = [];
 	@property({ type: Boolean, state: true }) loading = true;

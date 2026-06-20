@@ -13,7 +13,7 @@ export class TameSettingNumber extends LitElement {
 
 	@consume({ context: settingsPluginIdContext })
 	@property({ type: String })
-	pluginId = "";
+	declare pluginId: string;
 
 	@property({ type: String }) key = "";
 	@property({ type: String }) default = "0";

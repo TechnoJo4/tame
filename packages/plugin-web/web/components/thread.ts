@@ -12,10 +12,10 @@ const PAGE_SIZE = 50;
 
 export class TameThread extends LitElement {
 	@consume({ context: agentIdContext, subscribe: true })
-	@property({ type: String }) agentId: string | null = null;
+	@property({ type: String }) declare agentId: string | null;
 
 	@consume({ context: rpcClientContext, subscribe: true })
-	@property({ attribute: false }) client: RPCClientLike | null = null;
+	@property({ attribute: false }) declare client: RPCClientLike | null;
 
 	@property({ type: Array, state: true }) items: ThreadItem[] = [];
 	@property({ type: Boolean, state: true }) loading = true;

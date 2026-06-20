@@ -6,7 +6,7 @@ import { registryContext, type Registry } from "@tame/web-sdk";
 
 class TamePlacement extends LitElement {
 	@consume({ context: registryContext, subscribe: true })
-	@property({ attribute: false }) registry: Registry | null = null;
+	@property({ attribute: false }) declare registry: Registry | null;
 
 	@property({ type: String }) location = "";
 

@@ -6,10 +6,10 @@ import { rpcClientContext, type RPCClientLike } from "@tame/web-sdk/rpc-client-c
 
 export class TameComposer extends LitElement {
 	@consume({ context: rpcClientContext, subscribe: true })
-	@property({ attribute: false }) client: RPCClientLike | null = null;
+	@property({ attribute: false }) declare client: RPCClientLike | null;
 
 	@consume({ context: agentIdContext, subscribe: true })
-	@property({ type: String }) agentId: string | null = null;
+	@property({ type: String }) declare agentId: string | null;
 
 	@property({ type: Boolean }) idle = true;
 
