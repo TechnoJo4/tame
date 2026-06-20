@@ -160,5 +160,7 @@ export const parseProvider = (o: AnyProviderConfig): InferenceProvider => {
 };
 
 export const parseLLM = (o: LLMConfig): InferenceProvider => {
-	return o.type === "priority" ? new PriorityProvider(o.providers.map(parseProvider), o.maxDelay) : parseProvider(o);
+	return o.type === "priority"
+		? new PriorityProvider(o.providers.map(parseProvider), o.maxDelay)
+		: new PriorityProvider([ parseProvider(o) ], 1000);
 };
