@@ -73,11 +73,14 @@ export const anyProviderConfig = Type.Intersect([
 
 export type AnyProviderConfig = Static<typeof anyProviderConfig>;
 
-export const llmConfig = Type.Object({
-	type: Type.Literal("priority"),
-	providers: Type.Array(anyProviderConfig),
-	maxDelay: Type.Number()
-});
+export const llmConfig = Type.Union([
+		Type.Object({
+		type: Type.Literal("priority"),
+		providers: Type.Array(anyProviderConfig),
+		maxDelay: Type.Number()
+	}),
+	anyProviderConfig
+]);
 
 export type LLMConfig = Static<typeof llmConfig>;
 
@@ -157,5 +160,5 @@ export const parseProvider = (o: AnyProviderConfig): InferenceProvider => {
 };
 
 export const parseLLM = (o: LLMConfig): InferenceProvider => {
-	return new PriorityProvider(o.providers.map(parseProvider), o.maxDelay);
+	return o.type === "priority" ? new PriorityProvider(o.providers.map(parseProvider), o.maxDelay) : parseProvider(o);
 };
