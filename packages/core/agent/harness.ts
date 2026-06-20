@@ -28,7 +28,7 @@ export class Harness implements IHarness {
 	}
 
 	newAgent(llm?: InferenceProvider, system?: string, id?: string): Agent {
-		const agent = new Agent(llm ?? config.llm, system ?? configSystem, id);
+		const agent = new Agent(llm ?? config.providers[config.defaultProvider], system ?? configSystem, id);
 
 		for (const t of this.#tools)
 			agent.addTool(t);

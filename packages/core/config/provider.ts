@@ -10,7 +10,7 @@ import { RatelimitedProvider } from "../llm/ratelimited.ts";
 import { ExtraDataProvider } from "../llm/extra-data.ts";
 
 // Schema
-export const knownProvider = StringEnum(["openrouter", "opencode", "deepseek"] as const);
+export const knownProvider = StringEnum(["openrouter", "opencode", "opencode-go", "deepseek"] as const);
 
 export type KnownProvider = Static<typeof knownProvider>;
 
@@ -90,6 +90,11 @@ type ProviderInfo = {
 };
 
 export const knownProviders: Record<KnownProvider, ProviderInfo> = {
+	deepseek: {
+		type: "anthropic-messages",
+		url: "https://api.deepseek.com/anthropic/v1/messages",
+		envKey: "DEEPSEEK_API_KEY",
+	},
 	openrouter: {
 		type: "anthropic-messages",
 		url: "https://openrouter.ai/api/v1/messages",
@@ -100,10 +105,10 @@ export const knownProviders: Record<KnownProvider, ProviderInfo> = {
 		url: "https://opencode.ai/zen/v1/messages",
 		envKey: "OPENCODE_API_KEY",
 	},
-	deepseek: {
+	"opencode-go": {
 		type: "anthropic-messages",
-		url: "https://api.deepseek.com/anthropic/v1/messages",
-		envKey: "DEEPSEEK_API_KEY",
+		url: "https://opencode.ai/zen/go/v1/messages",
+		envKey: "OPENCODE_API_KEY"
 	},
 };
 
