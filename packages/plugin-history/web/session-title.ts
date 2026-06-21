@@ -60,7 +60,7 @@ export class TameHistorySessionTitle extends LitElement {
 	}
 
 	override render() {
-		return html`<span class="session-title">${this.title}</span>`;
+		return html`<span>${this.title}</span>`;
 	}
 }
 customElements.define("tame-history-session-title", TameHistorySessionTitle);

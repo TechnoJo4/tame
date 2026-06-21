@@ -18,15 +18,14 @@ export class TameComposer extends LitElement {
 	override render() {
 		return html`
 			<textarea
-				class="input"
 				placeholder="send a message..."
 				@keydown=${this.#onKeydown}
 				@input=${this.#onInput}
 			></textarea>
 			${this.idle ? html`
-				<button class="send-btn" @click=${this.#doSend} title="send (enter)">→</button>
+				<button data-action="send" @click=${this.#doSend} title="send (enter)">→</button>
 			` : html`
-				<button class="abort-btn" @click=${this.#doAbort} title="stop">■</button>
+				<button data-action="abort" @click=${this.#doAbort} title="stop">■</button>
 			`}
 		`;
 	}

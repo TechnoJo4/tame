@@ -12,7 +12,7 @@ export class TameSettingsSection extends LitElement {
 
 	override render() {
 		return html`
-			<fieldset class="settings-section">
+			<fieldset>
 				<legend>${this.heading}</legend>
 				<slot></slot>
 			</fieldset>

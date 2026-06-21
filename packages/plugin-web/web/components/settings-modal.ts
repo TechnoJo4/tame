@@ -35,7 +35,7 @@ export class TameSettingsModal extends LitElement {
 			<form>
 				<h2>
 					settings
-					<button class="settings-close" @click=${this.#close} title="close">✕</button>
+					<button @click=${this.#close} title="close">✕</button>
 				</h2>
 				<tame-web-placement location="modal:settings"></tame-web-placement>
 			</form>

@@ -130,7 +130,7 @@ tame-web-message {
 tame-web-message[data-role="user"] {
 	background: var(--tame-surface);
 }
-tame-web-message > .role {
+tame-web-message > span {
 	display: block;
 	font-size: 11px;
 	color: var(--tame-text-muted);
@@ -220,7 +220,7 @@ tame-web-markdown del {
 }
 
 /* ---- thinking ---- */
-tame-web-message > details.thinking {
+tame-web-message > details {
 	color: var(--tame-text-muted);
 	font-style: italic;
 	margin: 8px 0;
@@ -231,7 +231,7 @@ tame-web-tool-view {
 	display: block;
 	margin-bottom: 12px;
 }
-tame-web-tool-view > .loading {
+tame-web-tool-view > div {
 	padding: 8px;
 	color: var(--tame-text-muted);
 }
@@ -246,14 +246,14 @@ tame-web-tool-fallback {
 	border-radius: 4px;
 	background: var(--tame-surface-alt);
 }
-tame-web-tool-fallback > .tool-label {
+tame-web-tool-fallback > span:first-of-type {
 	display: block;
 	font-size: 12px;
 	color: var(--tame-text-muted);
 	margin-bottom: 4px;
 	overflow-wrap: break-word;
 }
-tame-web-tool-fallback > .tool-field {
+tame-web-tool-fallback > span:not(:first-of-type) {
 	display: block;
 	font-size: 12px;
 	color: var(--tame-text-secondary);
@@ -261,11 +261,11 @@ tame-web-tool-fallback > .tool-field {
 	line-height: 1.4;
 	overflow-wrap: break-word;
 }
-tame-web-tool-fallback > .tool-field b {
+tame-web-tool-fallback > span:not(:first-of-type) > b {
 	color: var(--tame-text-faint);
 	font-weight: 500;
 }
-tame-web-tool-fallback > .tool-output {
+tame-web-tool-fallback > pre {
 	margin-top: 8px;
 	padding-top: 8px;
 	border-top: 1px solid var(--tame-border);
@@ -274,7 +274,7 @@ tame-web-tool-fallback > .tool-output {
 	color: var(--tame-text);
 	overflow-wrap: break-word;
 }
-tame-web-tool-fallback > .tool-output.error {
+tame-web-tool-fallback > pre[data-error] {
 	color: var(--tame-danger);
 }
 
@@ -286,7 +286,7 @@ tame-web-composer {
 	gap: 8px;
 	align-items: flex-end;
 }
-tame-web-composer > .input {
+tame-web-composer > textarea {
 	flex: 1;
 	min-height: 60px;
 	background: var(--tame-surface);
@@ -299,8 +299,7 @@ tame-web-composer > .input {
 	resize: none;
 	overflow-y: hidden;
 }
-tame-web-composer > .send-btn,
-tame-web-composer > .abort-btn {
+tame-web-composer > button {
 	flex-shrink: 0;
 	width: 36px;
 	height: 36px;
@@ -312,16 +311,16 @@ tame-web-composer > .abort-btn {
 	line-height: 1;
 	align-self: center;
 }
-tame-web-composer > .send-btn {
+tame-web-composer > button[data-action="send"] {
 	color: var(--tame-text-muted);
 }
-tame-web-composer > .send-btn:hover {
+tame-web-composer > button[data-action="send"]:hover {
 	color: var(--tame-success);
 }
-tame-web-composer > .abort-btn {
+tame-web-composer > button[data-action="abort"] {
 	color: var(--tame-text-muted);
 }
-tame-web-composer > .abort-btn:hover {
+tame-web-composer > button[data-action="abort"]:hover {
 	color: var(--tame-danger);
 }
 
@@ -358,7 +357,7 @@ tame-web-settings-modal > form > h2 {
 	margin: 0;
 	color: var(--tame-text);
 }
-tame-web-settings-modal > form > h2 > .settings-close {
+tame-web-settings-modal > form > h2 > button {
 	width: 28px;
 	height: 28px;
 	border: none;
@@ -369,7 +368,7 @@ tame-web-settings-modal > form > h2 > .settings-close {
 	font-size: 16px;
 	line-height: 1;
 }
-tame-web-settings-modal > form > .settings-header > .settings-close:hover {
+tame-web-settings-modal > form > h2 > button:hover {
 	color: var(--tame-text);
 	background: var(--tame-surface-alt);
 }

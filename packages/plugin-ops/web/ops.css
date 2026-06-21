@@ -2,74 +2,57 @@
 
 tame-ops-read, tame-ops-write, tame-ops-edit, tame-ops-exec { display: block; }
 
-tame-ops-read .ops-label,
-tame-ops-write .ops-label,
-tame-ops-edit .ops-label,
-tame-ops-exec .ops-label {
+tame-ops-read > span:first-of-type,
+tame-ops-write > span:first-of-type,
+tame-ops-edit > span:first-of-type,
+tame-ops-exec > span:first-of-type {
 	font-size: 12px; color: var(--tame-text-muted); display: block; margin-bottom: 4px;
 }
-tame-ops-read .ops-label code,
-tame-ops-write .ops-label code,
-tame-ops-edit .ops-label code,
-tame-ops-exec .ops-label code {
+tame-ops-exec > span:first-of-type > code {
 	font-size: 11px; background: var(--tame-surface); padding: 1px 4px; border-radius: 2px;
 }
 
-tame-ops-read .ops-content,
-tame-ops-write .ops-content,
-tame-ops-edit .ops-content,
-tame-ops-exec .ops-content {
+tame-ops-read > pre,
+tame-ops-write > pre {
 	font-size: 11px; color: var(--tame-text-secondary); white-space: pre-wrap;
 	max-height: 300px; overflow-y: auto; background: var(--tame-surface-alt);
 	padding: 6px 8px; border-radius: 4px; margin: 4px 0 0;
 }
-tame-ops-read .ops-content.error,
-tame-ops-write .ops-content.error,
-tame-ops-edit .ops-content.error,
-tame-ops-exec .ops-content.error {
+tame-ops-read > pre[data-error],
+tame-ops-write > pre[data-error] {
 	color: var(--tame-danger); border-left: 2px solid var(--tame-danger);
 }
 
-tame-ops-read .ops-status,
-tame-ops-write .ops-status,
-tame-ops-edit .ops-status,
-tame-ops-exec .ops-status {
+tame-ops-exec > pre {
+	font-size: 11px; color: var(--tame-text-secondary); white-space: pre-wrap;
+	max-height: 300px; overflow-y: auto; background: var(--tame-surface-alt);
+	padding: 6px 8px; border-radius: 4px; margin: 4px 0 0;
+}
+tame-ops-exec > pre[data-error] {
+	color: var(--tame-danger); border-left: 2px solid var(--tame-danger);
+}
+
+tame-ops-write > span[data-status],
+tame-ops-edit > span[data-status] {
 	font-size: 11px; color: var(--tame-text-dim); display: block; margin-top: 4px;
 }
-tame-ops-read .ops-status.error,
-tame-ops-write .ops-status.error,
-tame-ops-edit .ops-status.error,
-tame-ops-exec .ops-status.error {
+tame-ops-write > span[data-status][data-error],
+tame-ops-edit > span[data-status][data-error] {
 	color: var(--tame-danger);
 }
 
-tame-ops-read .ops-diff,
-tame-ops-write .ops-diff,
-tame-ops-edit .ops-diff,
-tame-ops-exec .ops-diff {
+tame-ops-edit > div {
 	margin: 4px 0 0; display: flex; flex-direction: column; gap: 2px;
 }
-tame-ops-read .ops-diff-old,
-tame-ops-write .ops-diff-old,
-tame-ops-edit .ops-diff-old,
-tame-ops-exec .ops-diff-old,
-tame-ops-read .ops-diff-new,
-tame-ops-write .ops-diff-new,
-tame-ops-edit .ops-diff-new,
-tame-ops-exec .ops-diff-new {
+tame-ops-edit > div > pre:first-child,
+tame-ops-edit > div > pre:last-child {
 	font-size: 11px; padding: 4px 6px; border-radius: 3px; margin: 0; white-space: pre-wrap;
 }
-tame-ops-read .ops-diff-old,
-tame-ops-write .ops-diff-old,
-tame-ops-edit .ops-diff-old,
-tame-ops-exec .ops-diff-old {
+tame-ops-edit > div > pre:first-child {
 	background: color-mix(in srgb, var(--tame-danger) 8%, transparent);
 	color: var(--tame-danger);
 }
-tame-ops-read .ops-diff-new,
-tame-ops-write .ops-diff-new,
-tame-ops-edit .ops-diff-new,
-tame-ops-exec .ops-diff-new {
+tame-ops-edit > div > pre:last-child {
 	background: color-mix(in srgb, var(--tame-success) 6%, transparent);
 	color: var(--tame-success);
 }

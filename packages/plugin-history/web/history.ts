@@ -96,13 +96,13 @@ export class TameHistory extends LitElement {
 
 	override render() {
 		return html`
-			<details class="history-details" open>
-				<summary class="history-header">
-					<span class="history-title">sessions</span>
-					<button class="history-new" @click=${this.#newChat} title="new chat">+</button>
+			<details open>
+				<summary>
+					<span>sessions</span>
+					<button @click=${this.#newChat} title="new chat">+</button>
 				</summary>
 				${this.loading
-					? html`<div class="history-loading">loading...</div>`
+					? html`<div data-state="loading">loading...</div>`
 					: this.#renderList()}
 			</details>
 		`;
@@ -110,12 +110,12 @@ export class TameHistory extends LitElement {
 
 	#renderList() {
 		if (this.sessions.length === 0) {
-			return html`<div class="history-empty">no sessions yet</div>`;
+			return html`<div data-state="empty">no sessions yet</div>`;
 		}
 		return html`
-			<div class="history-list">
+			<div data-state="list">
 				${this.sessions.map((s) => html`
-					<button class="history-item${s.id === this.agentId ? " active" : ""}"
+					<button ?data-active=${s.id === this.agentId}
 						@click=${() => this.#switchTo(s)}>
 						${s.title || s.id.slice(0, 8)}
 					</button>

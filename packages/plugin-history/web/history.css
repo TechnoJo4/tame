@@ -1,33 +1,33 @@
 tame-history { display: block; }
-tame-history .history-details { margin: 0; }
-tame-history .history-details > summary {
+tame-history > details { margin: 0; }
+tame-history > details > summary {
 	display: flex; align-items: center; justify-content: space-between;
 	cursor: pointer; list-style: none;
 }
-tame-history .history-details > summary::-webkit-details-marker { display: none; }
-tame-history .history-details > summary::marker { display: none; content: ""; }
-tame-history .history-details > summary .history-title {
+tame-history > details > summary::-webkit-details-marker { display: none; }
+tame-history > details > summary::marker { display: none; content: ""; }
+tame-history > details > summary > span {
 	font-size: 11px; color: var(--tame-text-muted); text-transform: uppercase; letter-spacing: 0.5px;
 }
-tame-history .history-details > summary .history-new {
+tame-history > details > summary > button {
 	width: 20px; height: 20px; border: 1px solid var(--tame-border-light); border-radius: 3px;
 	background: none; color: var(--tame-text-muted); cursor: pointer; font-size: 14px; line-height: 1;
 }
-tame-history .history-details > summary .history-new:hover { color: var(--tame-text); border-color: var(--tame-text-muted); }
-tame-history .history-loading,
-tame-history .history-empty { font-size: 12px; color: var(--tame-text-dim); }
-tame-history .history-list { display: flex; flex-direction: column; gap: 2px; }
-tame-history .history-list .history-item {
+tame-history > details > summary > button:hover { color: var(--tame-text); border-color: var(--tame-text-muted); }
+tame-history > details > div[data-state="loading"],
+tame-history > details > div[data-state="empty"] { font-size: 12px; color: var(--tame-text-dim); }
+tame-history > details > div[data-state="list"] { display: flex; flex-direction: column; gap: 2px; }
+tame-history > details > div[data-state="list"] > button {
 	display: block; width: 100%; padding: 4px 6px; border: none; border-radius: 3px;
 	background: none; color: var(--tame-text-secondary); font-size: 12px; text-align: left; cursor: pointer;
 	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-tame-history .history-list .history-item:hover { background: var(--tame-surface); }
-tame-history .history-list .history-item.active { background: var(--tame-surface); color: var(--tame-text); }
+tame-history > details > div[data-state="list"] > button:hover { background: var(--tame-surface); }
+tame-history > details > div[data-state="list"] > button[data-active] { background: var(--tame-surface); color: var(--tame-text); }
 
 /* ---- session title ---- */
 tame-history-session-title { display: block; }
-tame-history-session-title > .session-title {
+tame-history-session-title > span {
 	font-size: 13px; color: var(--tame-text-secondary);
 	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }

@@ -29,9 +29,9 @@ export class TameOpsRead extends LitElement {
 			? ` [${this.offset ? `L${this.offset}` : ""}${this.limit ? `+${this.limit}` : ""}]`
 			: "";
 		return html`
-			<span class="ops-label">read ${this.path}${range}</span>
+			<span>read ${this.path}${range}</span>
 			${this.result !== null && this.result !== undefined ? html`
-				<pre class="ops-content${this.isError ? " error" : ""}">${this.result}</pre>
+				<pre ?data-error=${this.isError}>${this.result}</pre>
 			` : html``}
 		`;
 	}
@@ -57,12 +57,12 @@ export class TameOpsWrite extends LitElement {
 
 	override render() {
 		return html`
-			<span class="ops-label">write ${this.path}</span>
+			<span>write ${this.path}</span>
 			${this.content ? html`
-				<pre class="ops-content">${truncate(this.content, 1000)}</pre>
+				<pre>${truncate(this.content, 1000)}</pre>
 			` : html``}
 			${this.result !== null && this.result !== undefined ? html`
-				<span class="ops-status${this.isError ? " error" : ""}">${this.result}</span>
+				<span data-status ?data-error=${this.isError}>${this.result}</span>
 			` : html``}
 		`;
 	}
@@ -90,15 +90,15 @@ export class TameOpsEdit extends LitElement {
 
 	override render() {
 		return html`
-			<span class="ops-label">edit ${this.path}</span>
+			<span>edit ${this.path}</span>
 			${this.oldString ? html`
-				<div class="ops-diff">
-					<pre class="ops-diff-old">− ${truncate(this.oldString, 200)}</pre>
-					<pre class="ops-diff-new">+ ${truncate(this.newString, 200)}</pre>
+				<div>
+					<pre>− ${truncate(this.oldString, 200)}</pre>
+					<pre>+ ${truncate(this.newString, 200)}</pre>
 				</div>
 			` : html``}
 			${this.result !== null && this.result !== undefined ? html`
-				<span class="ops-status${this.isError ? " error" : ""}">${this.result}</span>
+				<span data-status ?data-error=${this.isError}>${this.result}</span>
 			` : html``}
 		`;
 	}
@@ -124,9 +124,9 @@ export class TameOpsExec extends LitElement {
 
 	override render() {
 		return html`
-			<span class="ops-label">exec <code>${this.command ?? "?"}</code>${this.workdir ? ` in ${this.workdir}` : ""}</span>
+			<span>exec <code>${this.command ?? "?"}</code>${this.workdir ? ` in ${this.workdir}` : ""}</span>
 			${this.result !== null && this.result !== undefined ? html`
-				<pre class="ops-content${this.isError ? " error" : ""}">${this.result}</pre>
+				<pre ?data-error=${this.isError}>${this.result}</pre>
 			` : html``}
 		`;
 	}

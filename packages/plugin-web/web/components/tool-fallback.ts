@@ -19,10 +19,10 @@ export class TameToolFallback extends LitElement {
 	override render() {
 		const fields = Object.entries(this.input ?? {});
 		return html`
-			<span class="tool-label">tool: ${this.name}</span>
-			${fields.map(([k, v]) => html`<span class="tool-field"><b>${k}</b>: ${this.#fmt(v)}</span>`)}
+			<span>tool: ${this.name}</span>
+			${fields.map(([k, v]) => html`<span><b>${k}</b>: ${this.#fmt(v)}</span>`)}
 			${this.result !== null && this.result !== undefined ? html`
-				<pre class="tool-output${this.isError ? " error" : ""}">${this.result}</pre>
+				<pre ?data-error=${this.isError}>${this.result}</pre>
 			` : html``}
 		`;
 	}

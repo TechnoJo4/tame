@@ -198,10 +198,10 @@ export class TameThread extends LitElement {
 
 	override render() {
 		if (this.loading) {
-			return html`<div class="loading">loading thread...</div>`;
+			return html`<div>loading thread...</div>`;
 		}
 		if (this.error) {
-			return html`<div class="error">${this.error}</div>`;
+			return html`<div>${this.error}</div>`;
 		}
 		return html`<lit-virtualizer
 			scroller
