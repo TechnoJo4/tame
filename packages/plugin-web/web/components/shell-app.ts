@@ -48,6 +48,11 @@ export class TameShell extends LitElement {
 
 	override createRenderRoot() { return this; }
 
+	override willUpdate(changed: Map<string, unknown>) {
+		this.toggleAttribute("data-loading", this.loading);
+		this.toggleAttribute("data-error", this.error !== null);
+	}
+
 	override connectedCallback() {
 		super.connectedCallback();
 		this.addEventListener("web:toggle-sidebar", () => {
@@ -172,10 +177,10 @@ export class TameShell extends LitElement {
 
 	override render() {
 		if (this.loading) {
-			return html`<div class="loading">loading...</div>`;
+			return html`loading...`;
 		}
 		if (this.error) {
-			return html`<div class="error">${this.error}</div>`;
+			return html`${this.error}`;
 		}
 		return html`
 			<tame-web-sidebar .collapsed=${this.sidebarCollapsed}></tame-web-sidebar>

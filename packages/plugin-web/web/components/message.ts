@@ -65,7 +65,7 @@ export class TameMessage extends LitElement {
 		});
 		if (visible.length === 0) return html``;
 		return html`
-			<span>${this.item.role}</span>
+			<span data-label="role">${this.item.role}</span>
 			${visible.map((block) => this.#renderBlock(block))}
 		`;
 	}
@@ -80,7 +80,7 @@ export class TameMessage extends LitElement {
 				return html`<tame-web-markdown .text=${block.text}></tame-web-markdown>`;
 			case "thinking":
 				if (!block.thinking?.trim()) return html``;
-				return html`<details>
+				return html`<details class="thinking">
 					<summary>thinking</summary>
 					<tame-web-markdown .text=${block.thinking}></tame-web-markdown>
 				</details>`;
@@ -124,9 +124,13 @@ class TameToolView extends LitElement {
 		this.requestUpdate();
 	}
 
+	override willUpdate(changed: Map<string, unknown>) {
+		this.toggleAttribute("data-loading", !this.#loaded);
+	}
+
 	override render() {
 		if (!this.#loaded) {
-			return html`<div>loading tool view...</div>`;
+			return html`loading tool view...`;
 		}
 		if (this.view?.tag) {
 			const { tag, props } = this.view;

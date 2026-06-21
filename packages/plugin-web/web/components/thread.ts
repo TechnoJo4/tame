@@ -51,6 +51,8 @@ export class TameThread extends LitElement {
 			this.#lastAgentId = this.agentId;
 			this.#loadInitial();
 		}
+		this.toggleAttribute("data-loading", this.loading);
+		this.toggleAttribute("data-error", this.error !== null);
 	}
 
 	override firstUpdated() {
@@ -198,10 +200,10 @@ export class TameThread extends LitElement {
 
 	override render() {
 		if (this.loading) {
-			return html`<div>loading thread...</div>`;
+			return html`loading thread...`;
 		}
 		if (this.error) {
-			return html`<div>${this.error}</div>`;
+			return html`${this.error}`;
 		}
 		return html`<lit-virtualizer
 			scroller

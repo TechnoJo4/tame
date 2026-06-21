@@ -29,7 +29,7 @@ export class TameOpsRead extends LitElement {
 			? ` [${this.offset ? `L${this.offset}` : ""}${this.limit ? `+${this.limit}` : ""}]`
 			: "";
 		return html`
-			<span>read ${this.path}${range}</span>
+			<span data-label>read ${this.path}${range}</span>
 			${this.result !== null && this.result !== undefined ? html`
 				<pre ?data-error=${this.isError}>${this.result}</pre>
 			` : html``}
@@ -57,7 +57,7 @@ export class TameOpsWrite extends LitElement {
 
 	override render() {
 		return html`
-			<span>write ${this.path}</span>
+			<span data-label>write ${this.path}</span>
 			${this.content ? html`
 				<pre>${truncate(this.content, 1000)}</pre>
 			` : html``}
@@ -90,11 +90,11 @@ export class TameOpsEdit extends LitElement {
 
 	override render() {
 		return html`
-			<span>edit ${this.path}</span>
+			<span data-label>edit ${this.path}</span>
 			${this.oldString ? html`
 				<div>
-					<pre>− ${truncate(this.oldString, 200)}</pre>
-					<pre>+ ${truncate(this.newString, 200)}</pre>
+					<del>− ${truncate(this.oldString, 200)}</del>
+					<ins>+ ${truncate(this.newString, 200)}</ins>
 				</div>
 			` : html``}
 			${this.result !== null && this.result !== undefined ? html`
@@ -124,7 +124,7 @@ export class TameOpsExec extends LitElement {
 
 	override render() {
 		return html`
-			<span>exec <code>${this.command ?? "?"}</code>${this.workdir ? ` in ${this.workdir}` : ""}</span>
+			<span data-label>exec <code>${this.command ?? "?"}</code>${this.workdir ? ` in ${this.workdir}` : ""}</span>
 			${this.result !== null && this.result !== undefined ? html`
 				<pre ?data-error=${this.isError}>${this.result}</pre>
 			` : html``}
