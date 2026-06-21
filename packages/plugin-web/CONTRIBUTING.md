@@ -47,24 +47,73 @@ bad:
 
 ### 4. components and attributes above divs and classes
 
-lit elements render into the light dom (`createRenderRoot() { return this; }`). this means the dom is flat — no shadow boundaries. that's intentional: it lets themes style everything from one place.
+lit elements render into the light dom (`createRenderRoot() { return this; }`). this means the dom is flat -- no shadow boundaries. that's intentional: it lets themes style everything from one place.
 
-when a component has multiple children of the same type, it might make more sense to use classes, but **prefer components over classes for layout.** avoiding classes forces you to make your intent obvious through dom elements, and discourages div soup.
-
-```css
-/* wrong — bare class leaks across the whole document */
-.ops-label { font-size: 12px; }
-
-/* correct — no unnecessary wrapping, scoped under the custom element */
-tame-ops-read > label { font-size: 12px; }
-```
-
-**prefer attributes over classes for state.** use `data-*` attributes (or `[collapsed]`, `[active]`) for component states — they're cheap to query from theme css and make intent obvious:
+**prefer components over classes for layout.** avoiding classes forces you to make your intent obvious through dom elements, and discourages div soup:
 
 ```css
-tame-sidebar[collapsed] { display: none; }
-tame-message[data-role="user"] { background: var(--tame-surface); }
+/* avoid -- any kind of element could have .input */
+tame-web-composer > .input { ... }
+
+/* good -- only textarea in the composer, obviously the input */
+tame-web-composer > textarea { ... }
 ```
+
+`div` has no place in a selector. `div` is a non-word -- it carries zero semantics. if a `<div>` is the only child of a component, it shouldn't exist at all; the state it represents belongs on the host:
+
+```html
+<!-- bad -- div exists solely to carry a class -->
+<div class="loading">loading...</div>
+```
+
+```css
+/* bad -- "div" tells you nothing */
+tame-web-thread > div { ... }
+
+/* good -- selector says exactly what's happening */
+tame-web-thread[data-loading] { ... }
+```
+
+if a `<div>` genuinely groups multiple children, it must carry a `data-*` attribute naming its purpose:
+
+```css
+/* acceptable -- [data-state] tells you what the div represents */
+tame-history > details > div[data-state="list"] { ... }
+```
+
+`span` needs a qualifier. a bare `span` at the end of a selector is nearly as bad as div. qualify it with a `data-*` attribute or a semantic class:
+
+```css
+/* bad -- what span? */
+tame-web-message > span { ... }
+
+/* good -- it's the role label */
+tame-web-message > span[data-label="role"] { ... }
+```
+
+classes are for naming what something IS, not how it looks. a semantic class like `.thinking` is fine when there's no html element that captures the concept. a `data-*` attribute is better for state (`active`, `error`, `loading`, `collapsed`):
+
+```css
+/* acceptable -- "thinking" names a block type, no html element exists for it */
+tame-web-message > details.thinking { ... }
+
+/* good -- data attributes for state */
+tame-web-message[data-role="user"] { ... }
+tame-web-composer > button[data-action="send"] { ... }
+tame-web-tool-fallback > pre[data-error] { ... }
+```
+
+avoid positional selectors. `:first-of-type`, `:first-child`, `:last-child`, `:not(:first-of-type)` -- these tell you where an element sits, not what it is. they're fragile (reordering children breaks them) and opaque to a theme author:
+
+```css
+/* bad -- what does "first span" mean? */
+tame-ops-read > span:first-of-type { ... }
+
+/* good -- tells you it's the operation label */
+tame-ops-read > span[data-label] { ... }
+```
+
+**the test:** if a stranger reads a selector in a theme, they should know what elements it matches without opening devtools. every selector must communicate *what* the element is, not just *where* it sits.
 
 ### 5. never style inline, never use value-classes
 
@@ -112,7 +161,7 @@ a plugin's css file should look like this:
 ```css
 /* every rule scoped under the component's tag name */
 tame-my-plugin-thing { display: block; }
-tame-my-plugin-thing .some-internal-class { color: var(--tame-text); }
+tame-my-plugin-thing > blockquote { color: var(--tame-text); }
 tame-my-plugin-thing[data-loading] { opacity: 0.6; }
 
 /* no bare classes. no hardcoded values. use theme variables for everything. */
