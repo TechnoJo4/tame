@@ -53,6 +53,23 @@ export class TameThread extends LitElement {
 		}
 		this.toggleAttribute("data-loading", this.loading);
 		this.toggleAttribute("data-error", this.error !== null);
+
+		// when items change and we're pinned, pre-set the pin to the
+		// new last item so the virtualizer renders at the bottom
+		// immediately — no rAF flash.  when unpinned, ensure #layout
+		// carries no pin so a stale pin isn't re-applied.
+		if (changed.has("items")) {
+			if (this.#pinned && this.items.length > 0) {
+				this.#layout = { pin: { index: this.items.length - 1, block: "end" } };
+			} else if (!this.#pinned && this.#layoutHasPin()) {
+				this.#layout = {};
+			}
+		}
+	}
+
+	#layoutHasPin(): boolean {
+		const p = this.#layout as Record<string, unknown>;
+		return typeof p?.pin === "object" && p.pin !== null;
 	}
 
 	override firstUpdated() {
@@ -60,10 +77,9 @@ export class TameThread extends LitElement {
 		this.#virtualizer?.addEventListener("scroll", this.#onScroll, { passive: true });
 	}
 
-	override updated(changed: Map<string, unknown>) {
-		if (changed.has("items") && this.#pinned) {
-			requestAnimationFrame(() => this.#pinToBottom());
-		}
+	override updated(_changed: Map<string, unknown>) {
+		// pinning is handled in willUpdate() to avoid the rAF flash.
+		// the virtualizer applies the pin synchronously during render.
 	}
 
 	#pinToBottom() {
@@ -80,11 +96,20 @@ export class TameThread extends LitElement {
 		if (atBottom && !this.#pinned) {
 			this.#pinned = true;
 			this.#pinToBottom();
+		} else if (!atBottom && this.#pinned) {
+			this.#pinned = false;
 		}
 	};
 
 	#onUnpinned = () => {
-		this.#pinned = false;
+		// backup: the virtualizer's internal pin was cleared (e.g. user
+		// scrolled).  the scroll handler above also detects this, but
+		// the virtualizer may fire unpinned before the scroll event
+		// reaches us.
+		if (this.#pinned) {
+			this.#pinned = false;
+			this.#layout = {};
+		}
 	};
 
 	#onRangeChanged = (e: RangeChangedEvent) => {
