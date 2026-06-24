@@ -13,15 +13,12 @@ import {
 	type TameContentMeta,
 } from "@tame/sdk";
 
-// ---- helpers ----
-
 interface ThinkingBlock {
 	text: string;
 	reasoningField: string;
 	reasoningDetailType?: string;
 	index?: number;
 	signature?: string;
-	/** Opaque provider data to splat onto the reconstructed detail/field. */
 	providerData?: Record<string, unknown>;
 }
 
@@ -45,10 +42,7 @@ function collectThinking(content: Content[]): ThinkingBlock[] {
 	return blocks;
 }
 
-function applyThinking(
-	msg: Record<string, unknown>,
-	blocks: ThinkingBlock[],
-) {
+function applyThinking(msg: Record<string, unknown>, blocks: ThinkingBlock[]) {
 	const byField = new Map<string, ThinkingBlock[]>();
 	for (const b of blocks) {
 		const existing = byField.get(b.reasoningField);
@@ -86,19 +80,12 @@ function applyThinking(
 	}
 }
 
-// ---- provider ----
-
 export class CompletionsProvider implements InferenceProvider {
 	#url: string;
 	#headers: Record<string, string>;
 	defaultModel = "";
 
-	constructor(
-		url: string,
-		key?: string,
-		headers?: Record<string, string>,
-		defaultModel?: string,
-	) {
+	constructor(url: string, key?: string, headers?: Record<string, string>, defaultModel?: string) {
 		this.#url = url;
 		this.#headers = {
 			"Content-Type": "application/json",
@@ -110,14 +97,7 @@ export class CompletionsProvider implements InferenceProvider {
 		if (defaultModel) this.defaultModel = defaultModel;
 	}
 
-	// ---- outbound conversion (tame → openai) ----
-
-	#convertContent(
-		content: Content[],
-	): {
-		textParts: Record<string, unknown>[];
-		toolCalls: Record<string, unknown>[];
-	} {
+	#convertContent(content: Content[]): { textParts: Record<string, unknown>[]; toolCalls: Record<string, unknown>[] } {
 		const textParts: Record<string, unknown>[] = [];
 		const toolCalls: Record<string, unknown>[] = [];
 		for (const c of content) {
@@ -146,9 +126,7 @@ export class CompletionsProvider implements InferenceProvider {
 		return { textParts, toolCalls };
 	}
 
-	#convertTools(
-		tools: MessageRequest["tools"],
-	): Record<string, unknown>[] | undefined {
+	#convertTools(tools: MessageRequest["tools"]): Record<string, unknown>[] | undefined {
 		if (!tools || tools.length === 0) return undefined;
 		return tools.map((t) => ({
 			type: "function" as const,
@@ -160,10 +138,7 @@ export class CompletionsProvider implements InferenceProvider {
 		}));
 	}
 
-	#convertMessages(
-		messages: InputMessage[],
-		system?: string,
-	): Record<string, unknown>[] {
+	#convertMessages(messages: InputMessage[], system?: string): Record<string, unknown>[] {
 		const res: Record<string, unknown>[] = [];
 
 		if (system) {
@@ -215,8 +190,6 @@ export class CompletionsProvider implements InferenceProvider {
 		return res;
 	}
 
-	// ---- inbound conversion (openai → tame) ----
-
 	#mapStopReason(reason: string): StopReason {
 		switch (reason) {
 			case "stop":
@@ -236,9 +209,7 @@ export class CompletionsProvider implements InferenceProvider {
 		const choice = (data["choices"] as Record<string, unknown>[])?.[0] ?? {};
 		const message = (choice["message"] ?? {}) as Record<string, unknown>;
 		const usage = (data["usage"] ?? {}) as Record<string, unknown>;
-		const usageDetails = usage["prompt_tokens_details"] as
-			| Record<string, unknown>
-			| undefined;
+		const usageDetails = usage["prompt_tokens_details"] as Record<string, unknown> | undefined;
 
 		const content: Content[] = [];
 
@@ -255,7 +226,7 @@ export class CompletionsProvider implements InferenceProvider {
 			});
 		}
 
-		// reasoning string fields — take first non-empty to avoid duplication
+		// reasoning string fields -- take first non-empty to avoid duplication
 		const reasoningStringFields = [
 			"reasoning_content",
 			"reasoning",
@@ -273,10 +244,8 @@ export class CompletionsProvider implements InferenceProvider {
 			}
 		}
 
-		// reasoning_details (openai o-series)
-		const reasoningDetails = message["reasoning_details"] as
-			| Record<string, unknown>[]
-			| undefined;
+		// reasoning_details
+		const reasoningDetails = message["reasoning_details"] as Record<string, unknown>[] | undefined;
 		if (reasoningDetails) {
 			for (const rd of reasoningDetails) {
 				const detailType = rd["type"] as string;
@@ -319,9 +288,7 @@ export class CompletionsProvider implements InferenceProvider {
 		}
 
 		// tool calls
-		const toolCalls = message["tool_calls"] as
-			| Record<string, unknown>[]
-			| undefined;
+		const toolCalls = message["tool_calls"] as Record<string, unknown>[] | undefined;
 		if (toolCalls) {
 			for (const tc of toolCalls) {
 				let input: Record<string, unknown> = {};
@@ -363,8 +330,6 @@ export class CompletionsProvider implements InferenceProvider {
 			service_tier: (data["service_tier"] as string) ?? "",
 		};
 
-		// stash any message-level fields we didn't explicitly handle so they
-		// round-trip (audio, images, name, provider-specific extensions, etc.)
 		const handledMessageFields = new Set([
 			"content",
 			"refusal",
@@ -396,12 +361,7 @@ export class CompletionsProvider implements InferenceProvider {
 		};
 	}
 
-	// ---- public api ----
-
-	async complete(
-		req: MessageRequest,
-		signal?: AbortSignal,
-	): Promise<AssistantMessage> {
+	async complete(req: MessageRequest, signal?: AbortSignal): Promise<AssistantMessage> {
 		const body: Record<string, unknown> = {
 			model: this.defaultModel,
 			...req,
