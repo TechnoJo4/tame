@@ -4,6 +4,7 @@ export * from "./util/validate.ts";
 export * from "./util/string-enum.ts";
 export * from "./util/symbols.ts";
 export * from "./llm/types.ts";
+export * from "./llm/strip.ts";
 export * from "./agent/plugin.ts";
 export * from "./agent/tool.ts";
 export * from "./agent/interfaces.ts";

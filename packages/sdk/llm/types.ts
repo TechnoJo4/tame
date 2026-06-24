@@ -1,5 +1,5 @@
 import type { TSchema } from "typebox";
-import type { tameMsgMeta } from "../util/symbols.ts";
+import type { tameMsgMeta, tameContentMeta } from "../util/symbols.ts";
 
 export interface CacheControl {
 	type: "ephemeral";
@@ -15,20 +15,33 @@ export interface Usage {
 	service_tier: string;
 }
 
+export interface TameContentMeta {
+	providerData?: object;
+}
+
 export interface Text {
 	type: "text";
 	text: string;
+	[tameContentMeta]?: TameContentMeta;
 }
 
 export interface Thinking {
 	type: "thinking";
 	thinking: string;
 	signature?: string;
+	[tameContentMeta]?: TameContentMeta;
 }
 
 export interface RedactedThinking {
 	type: "redacted_thinking";
-	data: string;
+	[tameContentMeta]?: TameContentMeta;
+}
+
+export interface ToolResult {
+	type: "tool_result";
+	is_error?: boolean;
+	content: string;
+	[tameContentMeta]?: TameContentMeta;
 }
 
 export interface ToolUse {
@@ -36,17 +49,12 @@ export interface ToolUse {
 	id: string;
 	input: Record<string, unknown>;
 	name: string;
+	result?: ToolResult;
+	[tameContentMeta]?: TameContentMeta;
 }
 
-export interface ToolResult {
-	type: "tool_result";
-	tool_use_id: string;
-	is_error?: boolean;
-	content: string;
-}
-
-export type Content = Text | Thinking | RedactedThinking | ToolUse | ToolResult;
-export type InputContent = Content & { cache_control?: CacheControl };
+export type Content = Text | Thinking | RedactedThinking | ToolUse;
+export type InputContent = Content;
 
 export type StopReason =
 	| "end_turn"
@@ -63,6 +71,8 @@ export interface TameMessageMeta {
 	noCompact?: true
 	/** Skill associated with this message. */
 	skill?: string
+	/** Extraneous provider-specific data. */
+	providerData?: object;
 }
 
 export interface UserMessage {
@@ -100,7 +110,6 @@ export interface MessageRequest {
 	system: string;
 	tools?: ApiTool[];
 	messages: InputMessage[];
-	cache_control?: CacheControl;
 	session_id?: string;
 }
 

@@ -19,7 +19,7 @@ export interface ToolResultEvent {
 	toolUse: string;
 	error: boolean;
 	result: string;
-	resultMessageIdx: number;
+	messageIdx: number;
 }
 
 export interface CompletionEvent {

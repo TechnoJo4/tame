@@ -8,7 +8,6 @@ import {
 	type InferenceProvider,
 	type InputMessage,
 	type ToolUse,
-	type ToolResult,
 	type AnyTool,
 	type Tool,
 	type IAgent,
@@ -72,7 +71,7 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 								error: true,
 								toolUse: call.id,
 								result: `tool "${call.name}" not found`,
-								resultMessageIdx: i
+								messageIdx: i
 							});
 					}
 				});
@@ -83,12 +82,12 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 		});
 
 		this.after("toolResult", async (e: ToolResultEvent) => {
-			this.context[e.resultMessageIdx].content.push({
+			const call = this.context[e.messageIdx].content.find(c => c.type === "tool_use" && c.id === e.toolUse)! as ToolUse;
+			call.result = {
 				type: "tool_result",
 				is_error: e.error,
-				tool_use_id: e.toolUse,
 				content: e.result
-			});
+			};
 
 			this.#pendingToolCalls.delete(e.toolUse);
 			if (this.#pendingToolCalls.size === 0 && !this.#abortedToolCalls.has(e.toolUse))
@@ -156,13 +155,11 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 		this.#validators.set(tool, Compile(tool.args));
 	}
 
-	viewToolCall(view: string, call: ToolUse, result?: ToolResult) {
+	viewToolCall(view: string, call: ToolUse) {
 		try {
 			const tool = this.tools.get(call.name)! as Tool<TSchema>;
 			assertSchema(call.input, tool.args, "", this.#validators.get(tool)!);
-			if (result === undefined)
-				result = this.context.flatMap(m => m.content).find(c => c.type === "tool_result" && c.tool_use_id === call.id) as ToolResult | undefined;
-			return tool.view?.[view]?.(call.input, result);
+			return tool.view?.[view]?.(call.input, call.result);
 		} catch (e) {
 			if (!(e instanceof ValidationError)) {
 				console.warn("error while viewing tool call:", call, e);
@@ -171,7 +168,7 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 		}
 	}
 
-	async #execTool(tool: AnyTool, call: ToolUse, resultMessageIdx: number) {
+	async #execTool(tool: AnyTool, call: ToolUse, messageIdx: number) {
 		this.#pendingToolCalls.add(call.id);
 		try {
 			const args = assertSchema(call.input, tool.args, `invalid args to "${call.name}":`, this.#validators.get(tool)!);
@@ -184,14 +181,14 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 				toolUse: call.id,
 				error: false,
 				result: res as string,
-				resultMessageIdx
+				messageIdx
 			});
 		} catch (e) {
 			this.fire("toolResult", {
 				toolUse: call.id,
 				error: true,
 				result: e instanceof Error ? e.message : e as string,
-				resultMessageIdx
+				messageIdx
 			});
 		}
 	}
