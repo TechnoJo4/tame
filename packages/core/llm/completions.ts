@@ -235,7 +235,7 @@ export class CompletionsProvider implements InferenceProvider {
 		for (const field of reasoningStringFields) {
 			const value = message[field];
 			if (typeof value === "string" && value.length > 0) {
-				content.push({
+				content.unshift({
 					type: "thinking",
 					thinking: value,
 					[tameContentMeta]: { reasoningField: field },
@@ -272,14 +272,14 @@ export class CompletionsProvider implements InferenceProvider {
 						? (rd["summary"] as string)
 						: undefined;
 				if (thinkingText) {
-					content.push({
+					content.unshift({
 						type: "thinking",
 						thinking: thinkingText,
 						[tameContentMeta]: meta,
 					});
 				} else if (detailType === "reasoning.encrypted") {
 					meta.providerData = providerData;
-					content.push({
+					content.unshift({
 						type: "redacted_thinking",
 						[tameContentMeta]: meta,
 					} as Content);
