@@ -11,7 +11,7 @@ import { RatelimitedProvider } from "../llm/ratelimited.ts";
 import { ExtraDataProvider } from "../llm/extra-data.ts";
 
 // Schema
-export const knownProvider = StringEnum(["openrouter", "opencode", "opencode-go", "deepseek"] as const);
+export const knownProvider = StringEnum(["openrouter", "opencode", "opencode-go-messages", "opencode-go-completions", "deepseek"] as const);
 
 export type KnownProvider = Static<typeof knownProvider>;
 
@@ -94,7 +94,7 @@ export const llmConfig = Type.Union([
 
 export type LLMConfig = Static<typeof llmConfig>;
 
-type ProviderType = "anthropic-messages";
+type ProviderType = "anthropic-messages" | "openai-completions";
 
 type ProviderInfo = {
 	type: ProviderType;
@@ -118,10 +118,15 @@ export const knownProviders: Record<KnownProvider, ProviderInfo> = {
 		url: "https://opencode.ai/zen/v1/messages",
 		envKey: "OPENCODE_API_KEY",
 	},
-	"opencode-go": {
+	"opencode-go-messages": {
 		type: "anthropic-messages",
 		url: "https://opencode.ai/zen/go/v1/messages",
-		envKey: "OPENCODE_API_KEY"
+		envKey: "OPENCODE_API_KEY",
+	},
+	"opencode-go-completions": {
+		type: "openai-completions",
+		url: "https://opencode.ai/zen/go/v1/chat/completions",
+		envKey: "OPENCODE_API_KEY",
 	},
 };
 
@@ -153,6 +158,8 @@ export const parseKnownProvider = (o: KnownProviderConfig & ProviderExtraConfig)
 	switch (p.type) {
 		case "anthropic-messages":
 			return new AnthropicMessagesProvider(p.url, key, o.headers as Record<string, string>, o.model);
+		case "openai-completions":
+			return new CompletionsProvider(p.url, key, o.headers as Record<string, string>, o.model);
 	}
 };
 
