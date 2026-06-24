@@ -11,7 +11,17 @@ export interface Usage {
 }
 
 export interface TameContentMeta {
+	/** Opaque provider-specific data to splat back onto wire messages. */
 	providerData?: object;
+	/** For thinking/redacted_thinking blocks: which provider field this
+	 *  reasoning came from (e.g. "reasoning_content", "reasoning",
+	 *  "reasoning_details"). */
+	reasoningField?: string;
+	/** For reasoning_details blocks: the detail type
+	 *  ("reasoning.text", "reasoning.encrypted", etc.). */
+	reasoningDetailType?: string;
+	/** For reasoning_details blocks: the index in the details array. */
+	reasoningIndex?: number;
 }
 
 export interface Text {

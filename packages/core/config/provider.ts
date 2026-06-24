@@ -1,4 +1,5 @@
 import { AnthropicMessagesProvider } from "../llm/messages.ts";
+import { CompletionsProvider } from "../llm/completions.ts";
 import { type InferenceProvider, StringEnum } from "@tame/sdk";
 import { PriorityProvider } from "../llm/router.ts";
 import { type Static, Type } from "typebox";
@@ -66,8 +67,17 @@ export const providerExtraConfig = Type.Object({
 
 export type ProviderExtraConfig = Static<typeof providerExtraConfig>;
 
+export const completionsProviderConfig = Type.Object({
+	type: Type.Literal("openai-completions"),
+	apiUrl: Type.String(),
+	apiKey: Type.Optional(Type.String()),
+	model: Type.String(),
+});
+
+export type CompletionsProviderConfig = Static<typeof completionsProviderConfig>;
+
 export const anyProviderConfig = Type.Intersect([
-	Type.Union([ knownProviderConfig, messagesProviderConfig ]),
+	Type.Union([ knownProviderConfig, messagesProviderConfig, completionsProviderConfig ]),
 	providerExtraConfig
 ]);
 
@@ -156,6 +166,11 @@ export const parseProvider = (o: AnyProviderConfig): InferenceProvider => {
 			return parseExtra(parseKnownProvider(o), o);
 		case "anthropic-messages":
 			return parseExtra(parseMessagesProvider(o), o);
+		case "openai-completions":
+			return parseExtra(
+				new CompletionsProvider(o.apiUrl, o.apiKey, o.headers as Record<string, string>, o.model),
+				o
+			);
 	}
 };
 
