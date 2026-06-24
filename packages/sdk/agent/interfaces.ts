@@ -1,4 +1,4 @@
-import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason, MessageRequest, ToolResult } from "../llm/types.ts";
+import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason, MessageRequest } from "../llm/types.ts";
 import type { AnyTool } from "./tool.ts";
 import type { Plugin } from "./plugin.ts";
 import type { Emitter } from "@tame/sdk";
@@ -49,7 +49,7 @@ export interface IAgent extends Emitter<AgentEvents> {
 	pluginData: Map<symbol, unknown>;
 
 	addTool(tool: AnyTool): void;
-	viewToolCall(view: string, call: ToolUse, result?: ToolResult): unknown;
+	viewToolCall(view: string, call: ToolUse): unknown;
 	queueCompletion(maxRetries?: number): void;
 }
 

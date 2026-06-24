@@ -1,7 +1,7 @@
 import { Tiktoken } from "js-tiktoken/lite";
 import { type Static, Type } from "typebox";
-import type { IAgent, IHarness, InputMessage, InputContent, AssistantMessage, ToolUse } from "@tame/sdk";
-import { type Plugin, StringEnum, tameMsgMeta } from "@tame/sdk";
+import type { IAgent, IHarness, InputMessage, InputContent, AssistantMessage } from "@tame/sdk";
+import { type Plugin, StringEnum, tameMsgMeta, tameContentMeta } from "@tame/sdk";
 import type { MemoryPlugin } from "@tame/plugin-memory/index";
 
 const target = Type.Union([
@@ -67,9 +67,8 @@ export class CompactPlugin implements Plugin {
 					break;
 				case "tool_use":
 					n += this.#enc.encode(JSON.stringify(block.input)).length;
-					break;
-				case "tool_result":
-					n += this.#enc.encode(block.content).length;
+					if (block.result)
+						n += this.#enc.encode(block.result.content).length;
 					break;
 			}
 		}
@@ -106,7 +105,6 @@ export class CompactPlugin implements Plugin {
 				...e,
 				req: {
 					...e.req,
-					cache_control: { type: "ephemeral", ttl: "5m" },
 					messages
 				}
 			};
@@ -133,8 +131,8 @@ export class CompactPlugin implements Plugin {
 		const ids = new Set<string>();
 		for (const m of msgs) {
 			for (const c of m.content) {
-				if (c.type === "tool_result" && c.is_error)
-					ids.add(c.tool_use_id);
+				if (c.type === "tool_use" && c.result?.is_error)
+					ids.add(c.id);
 			}
 		}
 		return ids;
@@ -149,20 +147,21 @@ export class CompactPlugin implements Plugin {
 			case "thinking":
 				if (prune.thinking) return null;
 				break;
-			case "tool_use":
+			case "tool_use": {
 				if (prune.failedToolCalls && failedIds.has(c.id)) return null;
-				break;
-			case "tool_result":
-				if (prune.failedToolCalls && c.is_error) return null;
-				if (prune.maxToolResultLength > 0 && c.content.length > prune.maxToolResultLength) {
-					const head = c.content.slice(0, prune.maxToolResultLength);
-					const omitted = c.content.length - prune.maxToolResultLength;
+				if (c.result && prune.maxToolResultLength > 0 && c.result.content.length > prune.maxToolResultLength) {
+					const head = c.result.content.slice(0, prune.maxToolResultLength);
+					const omitted = c.result.content.length - prune.maxToolResultLength;
 					return {
 						...c,
-						content: `${head}\n\n[... ${omitted} more characters truncated by compaction]`,
+						result: {
+							...c.result,
+							content: `${head}\n\n[... ${omitted} more characters truncated by compaction]`,
+						},
 					};
 				}
 				break;
+			}
 		}
 		return c;
 	}
@@ -233,30 +232,21 @@ export class CompactPlugin implements Plugin {
 	summarizeContext(ctx: InputMessage[], agent: IAgent) {
 		let summary = "Your context window has been compacted.\n\n<history>\nKey conversation turns:";
 
-		const calls: Record<string, ToolUse> = {};
 		for (const c of userMessageHistory.get(agent)!)
 			summary += `\n[user] ${c}`;
 
+		let calls_text = "";
 		for (const m of ctx) {
 			if (!m[tameMsgMeta]?.automated) {
 				for (const c of m.content) {
-					if (c.type === "tool_use")
-						calls[c.id] = c;
 					if (c.type === "text") {
 						summary += `\n[${m.role}] ${c.text}`;
 						if (m.role === "user")
 							userMessageHistory.get(agent)!.push(c.text);
+					} else if (c.type === "tool_use" && c.result && !c.result.is_error) {
+						const view = agent.viewToolCall("compact", c);
+						if (view) calls_text += `\n- ${view}`;
 					}
-				}
-			}
-		}
-
-		let calls_text = "";
-		for (const m of ctx) {
-			for (const c of m.content) {
-				if (c.type === "tool_result" && !c.is_error) {
-					const view = agent.viewToolCall("compact", calls[c.tool_use_id], c);
-					if (view) calls_text += `\n- ${view}`;
 				}
 			}
 		}
@@ -280,10 +270,19 @@ export class CompactPlugin implements Plugin {
 	setCaching(m: InputMessage): InputMessage {
 		return {
 			...m,
-			content: m.content.map((c, i) =>
-				i === m.content.length - 1
-					? ({ ...c, cache_control: { type: "ephemeral", ttl: "5m" } })
-					: c)
+			content: m.content.map((c, i) => {
+				if (i !== m.content.length - 1) return c;
+				return {
+					...c,
+					[tameContentMeta]: {
+						...c[tameContentMeta],
+						providerData: {
+							...c[tameContentMeta]?.providerData,
+							cache_control: { type: "ephemeral", ttl: "5m" },
+						},
+					},
+				};
+			}),
 		};
 	}
 }

@@ -1,5 +1,5 @@
 import { Compile, type Validator } from "typebox/compile";
-import { assertSchema, type IAgent, type IHarness, type Plugin, type ToolUse, type ToolResult } from "@tame/sdk";
+import { assertSchema, type IAgent, type IHarness, type Plugin, type ToolUse } from "@tame/sdk";
 import {
 	rpcMsgSchema,
 	call,
@@ -103,9 +103,7 @@ export class RPCPlugin implements Plugin {
 					const call = agent.context[callMsgIdx].content.find(c => c.type === "tool_use" && c.id === tool_use_id);
 					if (!call) throw new Error(`tool call ${tool_use_id} not found in agent ${agent_id}`);
 
-					const result = agent.context[callMsgIdx + 1]?.content?.find(c => c.type === "tool_result" && c.tool_use_id === tool_use_id);
-
-					return agent.viewToolCall(view, call as ToolUse, result as ToolResult);
+					return agent.viewToolCall(view, call as ToolUse);
 				}
 			}),
 			listAgents: call({

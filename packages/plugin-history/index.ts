@@ -163,24 +163,25 @@ export class HistoryPlugin implements Plugin {
 		agent.after("assistantMessage", async (e) => {
 			const hist = getAgentHistory(agent);
 			hist.history.push(cloneMessage(e.msg));
-			const calls = e.msg.content.filter(c => c.type === "tool_use");
-			if (calls.length > 0)
-				hist.history.push({ role: "user", content: [] }); // for results
 			this.#markDirty(agent);
 			return e;
 		});
 		agent.after("toolResult", async (e) => {
 			const hist = getAgentHistory(agent);
-			const callMsgIdx = hist.history.findIndex(m => m.content.find(c => c.type === "tool_use" && c.id === e.toolUse));
-			if (callMsgIdx !== -1)
-				hist.history[callMsgIdx+1].content.push({
-					type: "tool_result",
-					is_error: e.error,
-					tool_use_id: e.toolUse,
-					content: structuredClone(e.result)
-				});
-			else
-				console.log(`history: couldn't find tool use to push result ${e.toolUse}`)
+			// find the tool_use block in history and set its result
+			for (let i = hist.history.length - 1; i >= 0; i--) {
+				const m = hist.history[i];
+				if (m.role !== "assistant") continue;
+				const call = m.content.find(c => c.type === "tool_use" && c.id === e.toolUse);
+				if (call) {
+					call.result = {
+						type: "tool_result",
+						is_error: e.error,
+						content: structuredClone(e.result)
+					};
+					break;
+				}
+			}
 			this.#markDirty(agent);
 			return e;
 		});

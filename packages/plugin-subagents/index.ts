@@ -1,5 +1,4 @@
 import { type Plugin, tool, Type, type IAgent, type IHarness } from "@tame/sdk";
-import type { ToolResult } from "@tame/sdk";
 
 // ---- agent definitions ----
 
@@ -191,21 +190,12 @@ export class SubagentsPlugin implements Plugin {
 		context: IAgent["context"],
 		maxLen: number,
 	): { name: string; result: string; error: boolean }[] {
-		const resultMap = new Map<string, ToolResult>();
-		for (const m of context) {
-			if (m.role !== "user") continue;
-			for (const c of m.content) {
-				if (c.type === "tool_result") resultMap.set(c.tool_use_id, c as ToolResult);
-			}
-		}
-
 		const toolCalls: { name: string; result: string; error: boolean }[] = [];
 		for (const msg of context) {
 			if (msg.role !== "assistant") continue;
 			for (const c of msg.content) {
 				if (c.type !== "tool_use") continue;
-				const rb = resultMap.get(c.id);
-				let resultText = rb?.content ?? "(no result)";
+				let resultText = c.result?.content ?? "(no result)";
 				if (resultText.length > maxLen) {
 					resultText = resultText.slice(0, maxLen) +
 						`\n[... ${resultText.length - maxLen} more characters]`;
@@ -213,7 +203,7 @@ export class SubagentsPlugin implements Plugin {
 				toolCalls.push({
 					name: c.name,
 					result: resultText,
-					error: rb?.is_error ?? false,
+					error: c.result?.is_error ?? false,
 				});
 			}
 		}

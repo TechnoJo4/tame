@@ -1,4 +1,4 @@
-import type { InputMessage, ToolResult, IAgent } from "@tame/sdk";
+import type { InputMessage, IAgent } from "@tame/sdk";
 import type { ThreadItem, MessageItem, ToolCallItem, TextOrThinking } from "@tame/web-sdk";
 
 // ---- context → items conversion ----
@@ -20,16 +20,6 @@ export function contextToItems(agent: IAgent): ThreadItem[] {
 						content: [{ type: "text", text: block.text }],
 						key: `msg-${msgIdx}`,
 					});
-				} else if (block.type === "tool_result") {
-					// attach result to the matching tool_call item
-					for (let i = items.length - 1; i >= 0; i--) {
-						const item = items[i];
-						if (item.type === "tool_call" && item.id === block.tool_use_id) {
-							item.result = block.content;
-							item.isError = block.is_error;
-							break;
-						}
-					}
 				}
 			}
 		} else {
@@ -48,18 +38,7 @@ export function contextToItems(agent: IAgent): ThreadItem[] {
 						});
 						textBlocks.length = 0;
 					}
-					// find matching result for view resolution
-					let result: ToolResult | undefined;
-					for (const m of agent.context) {
-						for (const c of m.content) {
-							if (c.type === "tool_result" && c.tool_use_id === block.id) {
-								result = c;
-								break;
-							}
-						}
-						if (result) break;
-					}
-					const view = agent.viewToolCall("web", block, result) as
+					const view = agent.viewToolCall("web", block) as
 						{ tag: string; props: Record<string, unknown> } | undefined;
 					const toolItem: ToolCallItem = {
 						type: "tool_call",
@@ -69,27 +48,16 @@ export function contextToItems(agent: IAgent): ThreadItem[] {
 						key: block.id,
 					};
 					if (view?.tag) toolItem.view = view;
-					// attach result if already present
-					if (result) {
-						toolItem.result = result.content;
-						toolItem.isError = result.is_error;
+					// attach embedded result if present
+					if (block.result) {
+						toolItem.result = block.result.content;
+						toolItem.isError = block.result.is_error;
 					}
 					items.push(toolItem);
 				} else if (block.type === "text") {
 					textBlocks.push({ type: "text", text: block.text });
 				} else if (block.type === "thinking") {
 					textBlocks.push({ type: "thinking", thinking: block.thinking });
-				} else if (block.type === "tool_result") {
-					// tool_results in assistant messages shouldn't happen,
-					// but handle just in case: attach to matching tool_call
-					for (let i = items.length - 1; i >= 0; i--) {
-						const item = items[i];
-						if (item.type === "tool_call" && item.id === block.tool_use_id) {
-							item.result = block.content;
-							item.isError = block.is_error;
-							break;
-						}
-					}
 				}
 			}
 

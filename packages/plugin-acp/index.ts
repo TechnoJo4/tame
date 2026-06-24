@@ -1,7 +1,7 @@
 import * as acp from "@agentclientprotocol/sdk";
 import { type Static, Type } from "typebox";
 
-import type { IAgent, IHarness, Plugin, InputContent, InputMessage, ToolResult, ToolUse, AgentStopReason } from "@tame/sdk";
+import type { IAgent, IHarness, Plugin, InputContent, InputMessage, AgentStopReason } from "@tame/sdk";
 import { tool } from "@tame/sdk";
 import { getAgentHistory, type HistoryPlugin } from "@tame/plugin-history/index";
 import type { CommandsPlugin } from "@tame/plugin-commands/index";
@@ -250,13 +250,17 @@ export class ACPAdapter implements acp.Agent {
 			return e;
 		});
 		agent.after("toolResult", async (e) => {
-			this.#sendMessage(agent.id, {
-				role: "user",
-				content: [ {
-					type: "tool_result",
-					tool_use_id: e.toolUse,
-					content: e.result
-				} ]
+			const call = agent.context.flatMap(m => m.content)
+				.find(c => c.type === "tool_use" && c.id === e.toolUse);
+			const view = call ? agent.viewToolCall("acp", call) : undefined;
+			this.#connection.sessionUpdate({
+				sessionId: agent.id,
+				update: {
+					sessionUpdate: "tool_call_update",
+					toolCallId: e.toolUse,
+					status: e.error ? "failed" : "completed",
+					...(typeof view === "object" ? view : {})
+				}
 			});
 			return e;
 		});
@@ -297,37 +301,21 @@ export class ACPAdapter implements acp.Agent {
 					});
 					break;
 				case "tool_use": {
+					if (noToolResult && block.result) break;
 					const agent = this.#sessions.get(sessionId)!;
-					const result = agent.context.flatMap(m => m.content).find(c => c.type === "tool_result" && c.tool_use_id === block.id) as ToolResult | undefined;
-					const view = agent.viewToolCall("acp", block, result);
+					const view = agent.viewToolCall("acp", block);
 					this.#connection.sessionUpdate({
 						sessionId,
 						update: {
 							sessionUpdate: "tool_call",
 							toolCallId: block.id,
 							title: block.name,
-							status: result
-								? result.is_error
+							status: block.result
+								? block.result.is_error
 									? "failed"
 									: "completed"
 								: "in_progress",
 							rawInput: block.input,
-							...(typeof view === "object" ? view : {})
-						}
-					});
-					break;
-				}
-				case "tool_result": {
-					if (noToolResult) break;
-					const agent = this.#sessions.get(sessionId)!;
-					const call = agent.context.flatMap(m => m.content).find(c => c.type === "tool_use" && c.id === block.tool_use_id) as ToolUse;
-					const view = agent.viewToolCall("acp", call, block);
-					this.#connection.sessionUpdate({
-						sessionId,
-						update: {
-							sessionUpdate: "tool_call_update",
-							toolCallId: block.tool_use_id,
-							status: block.is_error ? "failed" : "completed",
 							...(typeof view === "object" ? view : {})
 						}
 					});
