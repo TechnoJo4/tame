@@ -1,11 +1,6 @@
 import type { TSchema } from "typebox";
 import type { tameMsgMeta, tameContentMeta } from "../util/symbols.ts";
 
-export interface CacheControl {
-	type: "ephemeral";
-	ttl: "5m" | "1h";
-}
-
 // Total input tokens in a request is the summation of input_tokens, cache_creation_input_tokens, and cache_read_input_tokens.
 export interface Usage {
 	cache_creation_input_tokens: number;
@@ -28,7 +23,6 @@ export interface Text {
 export interface Thinking {
 	type: "thinking";
 	thinking: string;
-	signature?: string;
 	[tameContentMeta]?: TameContentMeta;
 }
 

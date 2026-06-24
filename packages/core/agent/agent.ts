@@ -53,14 +53,9 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 		});
 
 		this.after("assistantMessage", async (e: AssistantMessageEvent) => {
-			this.context.push(e.msg);
+			const i = this.context.push(e.msg) - 1;
 			const calls = e.msg.content.filter(c => c.type === "tool_use");
 			if (calls.length > 0) {
-				this.context.push({
-					role: "user",
-					content: []
-				});
-				const i = this.context.length - 1;
 				this.thread.queue(async () => {
 					for (const call of calls) {
 						const tool = this.tools.get(call.name);
