@@ -363,12 +363,10 @@ export class CompletionsProvider implements InferenceProvider {
 
 	async complete(req: MessageRequest, signal?: AbortSignal): Promise<AssistantMessage> {
 		const body: Record<string, unknown> = {
-			model: this.defaultModel,
-			...req,
+			model: req.model ?? this.defaultModel,
+			max_tokens: req.max_tokens,
 			messages: this.#convertMessages(req.messages, req.system),
 		};
-
-		delete body["system"];
 
 		if (req.tools) {
 			body["tools"] = this.#convertTools(req.tools);
