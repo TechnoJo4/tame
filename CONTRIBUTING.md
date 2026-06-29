@@ -50,7 +50,7 @@ tame/
 │   │   │   └── tool.ts       # Tool, AnyTool, tool()
 │   │   ├── config/
 │   │   │   ├── index.ts      # tameDataFolder, readTameConfig
-│   │   │   └── validate.ts   # readConfig
+│   │   │   └── validate.ts   # config schema validation helpers
 │   │   ├── llm/
 │   │   │   └── types.ts      # message types, InferenceProvider
 │   │   └── util/             # emitter, thread, validation, symbols
@@ -62,20 +62,24 @@ tame/
 │   │   ├── ratelimit/        # rate limiter implementations
 │   │   ├── schemas/          # generated plugin config schemas
 │   │   └── scripts/          # utility scripts
+│   ├── rpc-client/       # @tame/rpc-client — browser rpc client
+│   ├── rpc-sdk/          # @tame/rpc-sdk — rpc type helpers
+│   ├── web-sdk/          # @tame/web-sdk — web ui shared types
 │   ├── plugin-acp/       # agent client protocol
-│   ├── plugin-assisted-by/# git assisted-by trailer
 │   ├── plugin-commands/  # slash command registry
 │   ├── plugin-compact/   # context compaction
 │   ├── plugin-debug/     # debug logging
+│   ├── plugin-guard/     # regex-based shell command blocking
 │   ├── plugin-history/   # session persistence
 │   ├── plugin-jina-fetch/# web page fetching
-│   ├── plugin-memory/    # remember/forget tools
 │   ├── plugin-ops/       # file & shell operations
 │   ├── plugin-rpc/       # json-based rpc
 │   ├── plugin-rpc-ws/    # websocket rpc transport
 │   ├── plugin-skills/    # agent skills
-│   ├── plugin-system-load/# system prompt prepend
-│   └── plugin-tavily-search/# web search
+│   ├── plugin-subagents/ # spawn/kill subagents with depth limiting
+│   ├── plugin-tavily-search/# web search
+│   ├── plugin-token-stats/# per-session token counting
+│   └── plugin-web/       # browser ui shell
 └── .docs/                # design docs
 ```
 
@@ -84,7 +88,7 @@ tame/
 plugins are resolved from the `plugins` array in `config.json`. resolution order:
 
 1. **direct path** — if the entry starts with `./` or `/`, it's treated as a filesystem path to a module with a default export (the plugin instance).
-2. **bare specifier** — if it contains `/` (e.g. `@tame/plugin-memory`), imported as-is as a Deno workspace package or npm/jsr package.
+2. **bare specifier** — if it contains `/` (e.g. `@tame/plugin-ops`), imported as-is as a Deno workspace package or npm/jsr package.
 3. **directory search** — otherwise, each directory in `pluginSources` (defaults to `[~/.tame/plugins]`) is searched for `<name>/main.ts`.
 4. **fallback** — tries `@tame/plugin-<name>` as a bare specifier.
 
@@ -92,7 +96,7 @@ the `pluginSources` config field lets you add custom directories for your own pl
 
 ```json
 {
-  "plugins": ["memory", "@tame/plugin-compact", "./my-custom-plugin/main.ts"],
+  "plugins": ["ops", "@tame/plugin-compact", "./my-custom-plugin/main.ts"],
   "pluginSources": ["~/.tame/plugins", "~/dev/my-plugins"]
 }
 ```
@@ -142,7 +146,7 @@ export default new MyPlugin(readTameConfig("my-plugin.json", configSchema));
 
 ### plugin config
 
-use typebox for config schemas. plugins that need config should export `configSchema` from `index.ts` and use `readTameConfig("filename.json", configSchema)` in `main.ts`. config files live in `~/.tame/`. there's no hot-reload — restart to pick up changes.
+plugins that need config should export `configSchema` from `index.ts` and use `readTameConfig("filename.json", configSchema)` in `main.ts`. config files live in `~/.tame/`. plugins without config (like `plugin-history`) can just `new Plugin()` directly. there's no hot-reload — restart to pick up changes.
 
 ### plugin data
 
@@ -150,10 +154,13 @@ use typebox for config schemas. plugins that need config should export `configSc
 
 ## dependencies
 
-the repo is split into two packages:
+the repo is split into several packages:
 
 - **@tame/sdk** — interfaces, types, and utilities that plugins depend on. no heavy deps.
-- **@tame/core** — the agent harness implementation, llm providers, rate limiters, and built-in plugins. depends on @tame/sdk.
+- **@tame/core** — the agent harness implementation, llm providers, rate limiters. depends on @tame/sdk.
+- **@tame/rpc-client** — browser rpc client (websocket transport). used by the web ui.
+- **@tame/rpc-sdk** — rpc type helpers (method descriptors, call wrappers). used by rpc-aware plugins.
+- **@tame/web-sdk** — web ui shared types (contexts, items, placement interface). used by web-aware plugins.
 
 shared deps managed via root `deno.json` imports:
 
