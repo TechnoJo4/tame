@@ -1,5 +1,5 @@
 import { Agent } from "./agent.ts";
-import type { InferenceProvider, Plugin, AnyTool, IHarness } from "@tame/sdk";
+import type { Plugin, AnyTool, IHarness, NewAgentOptions } from "@tame/sdk";
 import { config, system as configSystem } from "../config/index.ts";
 
 export class Harness implements IHarness {
@@ -27,15 +27,16 @@ export class Harness implements IHarness {
 			p.init?.(this);
 	}
 
-	newAgent(llm?: InferenceProvider, system?: string, id?: string): Agent {
-		const agent = new Agent(llm ?? config.providers[config.defaultProvider], system ?? configSystem, id);
+	newAgent(opts: NewAgentOptions = {}): Agent {
+		const agent = new Agent(opts.llm ?? config.providers[config.defaultProvider], opts.system ?? configSystem, opts.id);
 
 		for (const t of this.#tools)
 			agent.addTool(t);
 
-		for (const p of this.#plugins.values())
-			if (p.newAgent)
-				p.newAgent(agent);
+		for (const k of (opts.plugins ?? this.#plugins.keys())) {
+			const p = this.#plugins.get(k);
+			if (p && p.newAgent) p.newAgent(agent);
+		}
 
 		this.#agents.set(agent.id, new WeakRef(agent));
 

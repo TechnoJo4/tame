@@ -154,7 +154,7 @@ export class SubagentsPlugin implements Plugin {
 			`Your task: ${args.description}`,
 		].join("\n");
 
-		const subagent = harness.newAgent(parentAgent.llm, systemPrompt);
+		const subagent = harness.newAgent({ llm: parentAgent.llm, system: systemPrompt });
 		subagent.pluginData.set(depthKey, depth + 1);
 
 		// filter tools if the definition has an allowlist

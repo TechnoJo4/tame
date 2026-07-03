@@ -70,7 +70,7 @@ export class RPCPlugin implements Plugin {
 			newAgent: call({
 				...baseRouteSchemas.newAgent,
 				call: async ({ id, system }) => {
-					const agent = harness.newAgent(undefined, system, id);
+					const agent = harness.newAgent({ system, id });
 					return { id: agent.id };
 				}
 			}),

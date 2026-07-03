@@ -1,5 +1,5 @@
 /// <reference path="./rpc.d.ts" />
-import { type Plugin, tameDataFolder, tameMsgMeta, type IAgent, type IHarness, type InputMessage, type TameMessageMeta, Thread } from "@tame/sdk";
+import { Thread, tameDataFolder, tameMsgMeta, type Plugin, type IAgent, type IHarness, type InputMessage, type TameMessageMeta, type ToolUse } from "@tame/sdk";
 import { call } from "@tame/rpc-sdk";
 import { rpcSchema } from "./rpc-schema.ts";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
@@ -172,7 +172,7 @@ export class HistoryPlugin implements Plugin {
 			for (let i = hist.history.length - 1; i >= 0; i--) {
 				const m = hist.history[i];
 				if (m.role !== "assistant") continue;
-				const call = m.content.find(c => c.type === "tool_use" && c.id === e.toolUse);
+				const call = m.content.find(c => c.type === "tool_use" && c.id === e.toolUse) as ToolUse | undefined;
 				if (call) {
 					call.result = {
 						type: "tool_result",
@@ -280,7 +280,10 @@ export class HistoryPlugin implements Plugin {
 	}
 
 	async historyToAgent(history: History): Promise<IAgent> {
-		const agent = this.#harness!.newAgent(undefined, history.system, history.id);
+		const agent = this.#harness!.newAgent({
+			system: history.system,
+			id: history.id
+		});
 		agent.context = history.context;
 		Object.assign(getAgentHistory(agent), {
 			title: history.title,

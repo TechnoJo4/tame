@@ -53,11 +53,18 @@ export interface IAgent extends Emitter<AgentEvents> {
 	queueCompletion(maxRetries?: number): void;
 }
 
+export interface NewAgentOptions {
+	llm?: InferenceProvider;
+	system?: string;
+	id?: string;
+	plugins?: string[];
+};
+
 export interface IHarness {
 	getPlugin<T extends Plugin>(id: T["id"]): T | undefined;
 	addTools(...tools: AnyTool[]): void;
 	addPlugins(...plugins: Plugin[]): void;
-	newAgent(llm?: InferenceProvider, system?: string, id?: string): IAgent;
+	newAgent(opts?: NewAgentOptions): IAgent;
 	getAgent(id: string): IAgent | undefined;
 	listAgents(): { id: string; title?: string }[];
 	cleanup(): void;
