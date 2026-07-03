@@ -34,7 +34,7 @@ export class Emitter<Events> {
 			this.thread.signal?.addEventListener("abort", () => r());
 		});
 	}
-	
+
 	/** Abort processing and clear the queue. */
 	abort() {
 		this.thread.abort();
@@ -55,18 +55,23 @@ export class Emitter<Events> {
 		});
 	}
 
+	/** Run an event, bypassing the queue, and get the processed event data. */
+	doImmediate<K extends keyof Events>(event: K, data: Events[K]): Promise<Events[K]> {
+		let p: Promise<Events[K]> = Promise.resolve(data);
+		for (const h of this.onceHandlers.get(event) ?? []) {
+			p = p.then(h as Handler<Events, K>);
+		}
+		this.onceHandlers.delete(event);
+		for (const h of this.handlers.get(event) ?? []) {
+			p = p.then(h as Handler<Events, K>);
+		}
+		return p.then(e => this.#runListeners(event, e))
+	}
+
 	/** Run an event and get the processed event data. */
 	do<K extends keyof Events>(event: K, data: Events[K]): Promise<Events[K]> {
 		return new Promise((resolve, reject) => this.thread.queue(() => {
-			let p: Promise<Events[K]> = Promise.resolve(data);
-			for (const h of this.onceHandlers.get(event) ?? []) {
-				p = p.then(h as Handler<Events, K>);
-			}
-			this.onceHandlers.delete(event);
-			for (const h of this.handlers.get(event) ?? []) {
-				p = p.then(h as Handler<Events, K>);
-			}
-			return p.then(e => this.#runListeners(event, e)).then(e => resolve(e)).catch(e => reject(e));
+			return this.doImmediate(event, data).then(e => resolve(e)).catch(e => reject(e));
 		}));
 	}
 
