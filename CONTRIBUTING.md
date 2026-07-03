@@ -39,10 +39,10 @@ userMessage → completion → assistantMessage → [toolResult → completion �
 
 ```
 tame/
-├── deno.json             # workspace root: shared imports, lint, fmt
-├── deno.lock             # shared lockfile
+├── deno.json                 # workspace root: shared imports, lint, fmt
+├── deno.lock                 # shared lockfile
 ├── packages/
-│   ├── sdk/              # @tame/sdk — interfaces, types, utilities
+│   ├── sdk/                  # @tame/sdk -- interfaces, types, utilities
 │   │   ├── mod.ts            # re-exports everything
 │   │   ├── agent/
 │   │   │   ├── interfaces.ts # IAgent, IHarness, event types
@@ -54,7 +54,7 @@ tame/
 │   │   ├── llm/
 │   │   │   └── types.ts      # message types, InferenceProvider
 │   │   └── util/             # emitter, thread, validation, symbols
-│   ├── core/             # @tame/core — implementations
+│   ├── core/                 # @tame/core -- implementations
 │   │   ├── index.ts          # entry point
 │   │   ├── agent/            # Agent, Harness implementations
 │   │   ├── config/           # config parsing, llm provider setup
@@ -62,35 +62,28 @@ tame/
 │   │   ├── ratelimit/        # rate limiter implementations
 │   │   ├── schemas/          # generated plugin config schemas
 │   │   └── scripts/          # utility scripts
-│   ├── rpc-client/       # @tame/rpc-client — browser rpc client
-│   ├── rpc-sdk/          # @tame/rpc-sdk — rpc type helpers
-│   ├── web-sdk/          # @tame/web-sdk — web ui shared types
-│   ├── plugin-acp/       # agent client protocol
-│   ├── plugin-commands/  # slash command registry
-│   ├── plugin-compact/   # context compaction
-│   ├── plugin-debug/     # debug logging
-│   ├── plugin-guard/     # regex-based shell command blocking
-│   ├── plugin-history/   # session persistence
-│   ├── plugin-jina-fetch/# web page fetching
-│   ├── plugin-ops/       # file & shell operations
-│   ├── plugin-rpc/       # json-based rpc
-│   ├── plugin-rpc-ws/    # websocket rpc transport
-│   ├── plugin-skills/    # agent skills
-│   ├── plugin-subagents/ # spawn/kill subagents with depth limiting
-│   ├── plugin-tavily-search/# web search
-│   ├── plugin-token-stats/# per-session token counting
-│   └── plugin-web/       # browser ui shell
-└── .docs/                # design docs
+│   ├── rpc-client/           # @tame/rpc-client -- browser rpc client
+│   ├── rpc-sdk/              # @tame/rpc-sdk -- rpc type helpers
+│   ├── web-sdk/              # @tame/web-sdk -- web ui shared types
+│   ├── plugin-commands/      # slash command registry
+│   ├── plugin-compact/       # context compaction
+│   ├── plugin-history/       # session persistence
+│   ├── plugin-ops/           # file & shell operations
+│   ├── plugin-rpc/           # json-based rpc
+│   ├── plugin-rpc-ws/        # websocket rpc transport
+│   ├── plugin-skills/        # agent skills
+│   └── plugin-web/           # browser ui shell
+└── .docs/                    # design docs
 ```
 
 ## plugin loading
 
 plugins are resolved from the `plugins` array in `config.json`. resolution order:
 
-1. **direct path** — if the entry starts with `./` or `/`, it's treated as a filesystem path to a module with a default export (the plugin instance).
-2. **bare specifier** — if it contains `/` (e.g. `@tame/plugin-ops`), imported as-is as a Deno workspace package or npm/jsr package.
-3. **directory search** — otherwise, each directory in `pluginSources` (defaults to `[~/.tame/plugins]`) is searched for `<name>/main.ts`.
-4. **fallback** — tries `@tame/plugin-<name>` as a bare specifier.
+1. **direct path** -- if the entry starts with `./` or `/`, it's treated as a filesystem path to a module with a default export (the plugin instance).
+2. **bare specifier** -- if it contains `/` (e.g. `@tame/plugin-ops`), imported as-is as a Deno workspace package or npm/jsr package.
+3. **directory search** -- otherwise, each directory in `pluginSources` (defaults to `[~/.tame/plugins]`) is searched for `<name>/main.ts`.
+4. **fallback** -- tries `@tame/plugin-<name>` as a bare specifier.
 
 the `pluginSources` config field lets you add custom directories for your own plugins:
 
@@ -105,9 +98,9 @@ the `pluginSources` config field lets you add custom directories for your own pl
 
 each plugin directory contains:
 
-- `index.ts` — exports the plugin class and optionally its config schema (typebox). this is the plugin's public api; other plugins import from here to interoperate.
-- `main.ts` — default-exported plugin instance, constructed with config. this is what the harness loads.
-- `README.md` — usage docs (optional but encouraged)
+- `index.ts` -- exports the plugin class and optionally its config schema (typebox). this is the plugin's public api; other plugins import from here to interoperate.
+- `main.ts` -- default-exported plugin instance, constructed with config. this is what the harness loads.
+- `README.md` -- usage docs (optional but encouraged)
 
 plugins communicate via `harness.getPlugin<T>(id)`. this is the intended interop mechanism. plugins should not import each other's internals directly unless they own the dependency (e.g., `ops` owns the `Env` interface; `acp` owns `ACPAdapter`).
 
@@ -146,7 +139,7 @@ export default new MyPlugin(readTameConfig("my-plugin.json", configSchema));
 
 ### plugin config
 
-plugins that need config should export `configSchema` from `index.ts` and use `readTameConfig("filename.json", configSchema)` in `main.ts`. config files live in `~/.tame/`. plugins without config (like `plugin-history`) can just `new Plugin()` directly. there's no hot-reload — restart to pick up changes.
+plugins that need config should export `configSchema` from `index.ts` and use `readTameConfig("filename.json", configSchema)` in `main.ts`. config files live in `~/.tame/`. plugins without config (like `plugin-history`) can just `new Plugin()` directly. there's no hot-reload -- restart to pick up changes.
 
 ### plugin data
 
@@ -156,11 +149,11 @@ plugins that need config should export `configSchema` from `index.ts` and use `r
 
 the repo is split into several packages:
 
-- **@tame/sdk** — interfaces, types, and utilities that plugins depend on. no heavy deps.
-- **@tame/core** — the agent harness implementation, llm providers, rate limiters. depends on @tame/sdk.
-- **@tame/rpc-client** — browser rpc client (websocket transport). used by the web ui.
-- **@tame/rpc-sdk** — rpc type helpers (method descriptors, call wrappers). used by rpc-aware plugins.
-- **@tame/web-sdk** — web ui shared types (contexts, items, placement interface). used by web-aware plugins.
+- **@tame/sdk** -- interfaces, types, and utilities that plugins depend on. no heavy deps.
+- **@tame/core** -- the agent harness implementation, llm providers, rate limiters. depends on @tame/sdk.
+- **@tame/rpc-client** -- browser rpc client (websocket transport). used by the web ui.
+- **@tame/rpc-sdk** -- rpc type helpers (method descriptors, call wrappers). used by rpc-aware plugins.
+- **@tame/web-sdk** -- web ui shared types (contexts, items, placement interface). used by web-aware plugins.
 
 shared deps managed via root `deno.json` imports:
 
