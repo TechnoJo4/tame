@@ -16,7 +16,7 @@ export interface Env {
 	exec(
 		command: string[],
 		opts: { workdir?: string; timeout: number; signal?: AbortSignal; env?: Record<string, string> },
-	): Promise<{ stdout: string; stderr: string; exitCode: number }>;
+	): Promise<{ stdout: string; stderr: string; exit: "timeout" | "abort" | number }>;
 }
 
 const dynamicEnvKey = Type.Union([
@@ -158,23 +158,28 @@ export class OpsPlugin implements Plugin {
 				proc.stdout.on("data", (data) => stdout.push(decoder.decode(data, { stream: true })));
 				proc.stderr.on("data", (data) => stderr.push(decoder.decode(data, { stream: true })));
 
-				const onAbort = () => { if (proc.pid && proc.exitCode === null) killTree(proc.pid); };
-				if (opts.signal?.aborted) onAbort();
-				else opts.signal?.addEventListener("abort", onAbort, { once: true });
+				let abortReason: "abort" | "timeout" | undefined = undefined;
+				const onAbort = (reason: "abort" | "timeout") => {
+					if (proc.pid && proc.exitCode === null) killTree(proc.pid);
+					abortReason = reason;
+				};
+				const abortListener = () => onAbort("abort");
+				if (opts.signal?.aborted) onAbort("abort");
+				else opts.signal?.addEventListener("abort", abortListener, { once: true });
 
-				const timeoutId = opts.timeout ? setTimeout(onAbort, opts.timeout) : undefined;
+				const timeoutId = opts.timeout ? setTimeout(() => onAbort("timeout"), opts.timeout) : undefined;
 				await new Promise<void>((resolve, reject) => {
 					proc.once("close", () => resolve());
 					proc.once("error", reject);
 				});
 
 				if (timeoutId) clearTimeout(timeoutId);
-				opts.signal?.removeEventListener("abort", onAbort);
+				opts.signal?.removeEventListener("abort", abortListener);
 
 				return {
 					stdout: stripAnsi(stdout.join("")),
 					stderr: stripAnsi(stderr.join("")),
-					exitCode: proc.exitCode ?? 1,
+					exit: abortReason ?? proc.exitCode ?? 1,
 				};
 			},
 		};
@@ -358,7 +363,7 @@ export class OpsPlugin implements Plugin {
 					},
 				});
 				return [
-					res.exitCode !== 0 ? `exited with code ${res.exitCode}.` : "",
+					res.exit !== 0 ? typeof res.exit === "string" ? `killed by ${res.exit}.` : `exited with code ${res.exit}.` : "",
 					res.stdout ? `stdout:\n${res.stdout}` : "",
 					res.stderr ? `stderr:\n${res.stderr}` : "",
 				].filter((s) => s !== "").join("\n\n") || "ok";
@@ -425,7 +430,7 @@ export class OpsPlugin implements Plugin {
 					},
 				});
 				return [
-					res.exitCode !== 0 ? `exited with code ${res.exitCode}.` : "",
+					res.exit !== 0 ? typeof res.exit === "string" ? `killed by ${res.exit}.` : `exited with code ${res.exit}.` : "",
 					res.stdout ? `stdout:\n${res.stdout}` : "",
 					res.stderr ? `stderr:\n${res.stderr}` : "",
 				].filter((s) => s !== "").join("\n\n") || "ok";
