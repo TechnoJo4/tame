@@ -71,6 +71,7 @@ export const configSchema = Type.Object({
 		write: Type.Optional(Type.Boolean({ default: true })),
 		edit: Type.Optional(Type.Boolean({ default: true })),
 		exec: Type.Optional(Type.Boolean({ default: true })),
+		bash: Type.Optional(Type.Boolean({ default: true })),
 	})),
 });
 
@@ -304,11 +305,6 @@ export class OpsPlugin implements Plugin {
 		return env;
 	}
 
-	normalizeCommand(command: string | string[]): string[] {
-		if (typeof command === "string") return [...this.config.shell, command];
-		return command;
-	}
-
 	async edit(
 		agent: IAgent,
 		path: string,
@@ -436,25 +432,21 @@ export class OpsPlugin implements Plugin {
 		}),
 		exec: tool({
 			name: "exec",
-			desc: `Run a shell command and returns its output.
+			desc: `Run a command. Returns stdout and stderr.
 - Always set the workdir param. Do not cd unless absolutely necessary.
-- Array arguments will be passed to execvp(). Most terminal commands should be prefixed with ["bash", "-lc"].`,
+- Arguments will be passed to execvp(). Most terminal commands should be prefixed with ["bash", "-lc"].`,
 			args: Type.Object({
-				command: Type.Union([
-					Type.Array(Type.String(), {
-						description: "Command line for the new process (passed directly to execvp)",
-						minItems: 1,
-					}),
-					Type.String({ description: "Shell command to run" }),
-				]),
+				command: Type.Array(Type.String(), {
+					description: "Command line for the new process (passed directly to execvp)",
+					minItems: 1,
+				}),
 				workdir: Type.Optional(Type.String({ description: "Working directory to execute the command in" })),
 				timeout: Type.Number({ description: "Timeout for the command in milliseconds" }),
 			}),
 			exec: async (args, agent) => {
-				const command = this.normalizeCommand(args.command);
 				const e = await this.emitter.do("exec", {
 					agent,
-					command,
+					command: args.command,
 					workdir: args.workdir,
 					timeout: args.timeout,
 				});
@@ -466,11 +458,10 @@ export class OpsPlugin implements Plugin {
 			},
 			view: {
 				compact: ({ command }) => {
-					const cmd = this.normalizeCommand(command);
-					return `exec ${getExecName(cmd)}`;
+					return `exec ${getExecName(command)}`;
 				},
 				web: ({ command, workdir }) => {
-					const cmd = stripShell(this.normalizeCommand(command));
+					const cmd = stripShell(command);
 					return {
 						tag: "tame-ops-exec",
 						props: { command: cmd.join(" "), workdir: workdir ? contractHome(workdir) : undefined },
@@ -478,7 +469,7 @@ export class OpsPlugin implements Plugin {
 				},
 				acp: ({ command }, result) => {
 					if (!command) return;
-					const cmd = stripShell(this.normalizeCommand(command));
+					const cmd = stripShell(command);
 					const display = cmd.join(" ");
 					const content = [{
 						"type": "content",
@@ -507,6 +498,67 @@ export class OpsPlugin implements Plugin {
 				},
 			},
 		}),
+		bash: tool({
+			name: "bash",
+			desc: `Execute a bash command. Returns stdout and stderr. If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.`,
+			args: Type.Object({
+				command: Type.String({ description: "Bash command to execute" }),
+				workdir: Type.Optional(Type.String({ description: "Working directory to execute the command in" })),
+				timeout: Type.Number({ description: "Timeout for the command in milliseconds" }),
+			}),
+			exec: async (args, agent) => {
+				const command = [...this.config.shell, args.command];
+				const e = await this.emitter.do("exec", {
+					agent,
+					command,
+					workdir: args.workdir,
+					timeout: args.timeout,
+				});
+				return [
+					e.exitCode !== 0 ? `exited with code ${e.exitCode}.` : "",
+					e.stdout ? `stdout:\n${e.stdout}` : "",
+					e.stderr ? `stderr:\n${e.stderr}` : "",
+				].filter((s) => s !== "").join("\n\n") || "ok";
+			},
+			view: {
+				compact: ({ command }) => {
+					return `exec ${getExecName([command])}`;
+				},
+				web: ({ command, workdir }) => {
+					return {
+						tag: "tame-ops-exec",
+						props: { command, workdir: workdir ? contractHome(workdir) : undefined },
+					};
+				},
+				acp: ({ command }, result) => {
+					if (!command) return;
+					const content = [{
+						"type": "content",
+						"content": {
+							"type": "text",
+							"text": command.includes("`")
+								? "```\n" + command + "\n```\n"
+								: "`" + command + "`",
+						},
+					}];
+					if (result && !result.is_error) {
+						content.push({
+							"type": "content",
+							"content": {
+								"type": "text",
+								"text": result.content.includes("```")
+									? result.content
+									: "```\n" + result.content + "\n```\n",
+							},
+						});
+					}
+					return {
+						title: getExecName([command]),
+						content,
+					};
+				},
+			},
+		}),
 	};
 
 	async init(harness: IHarness) {
@@ -516,6 +568,7 @@ export class OpsPlugin implements Plugin {
 			enabled.write !== false ? this.#tools.write : null,
 			enabled.edit !== false ? this.#tools.edit : null,
 			enabled.exec !== false ? this.#tools.exec : null,
+			enabled.bash !== false ? this.#tools.bash : null,
 		].filter((t): t is NonNullable<typeof t> => t !== null);
 		harness.addTools(...tools);
 
@@ -528,14 +581,12 @@ export class OpsPlugin implements Plugin {
 				{ tag: "tame-ops-write", src: web.resolve(dir, "./web/ops.ts") },
 				{ tag: "tame-ops-edit", src: web.resolve(dir, "./web/ops.ts") },
 				{ tag: "tame-ops-exec", src: web.resolve(dir, "./web/ops.ts") },
+				{ tag: "tame-ops-bash", src: web.resolve(dir, "./web/ops.ts") },
 			], [], web.resolve(dir, "./web/ops.css"));
 		}
-
 	}
 
 	newAgent(agent: IAgent) {
 		setEnv(agent, this.#localEnv);
 	}
 }
-
-
