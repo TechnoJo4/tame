@@ -1,4 +1,4 @@
-import { Emitter, tool, Type, type IAgent, type IHarness, type Plugin } from "@tame/sdk";
+import { tool, Type, type IAgent, type IHarness, type Plugin } from "@tame/sdk";
 import { promises as fs } from "node:fs";
 import { spawn } from "node:child_process";
 import process from "node:process";
@@ -19,38 +19,6 @@ export interface Env {
 	): Promise<{ stdout: string; stderr: string; exitCode: number }>;
 }
 
-export interface ReadEvent {
-	agent: IAgent;
-	path: string;
-	offset?: number;
-	limit?: number;
-	result?: Content;
-}
-
-export interface WriteEvent {
-	agent: IAgent;
-	path: string;
-	content: Content;
-	result?: string;
-}
-
-export interface ExecEvent {
-	agent: IAgent;
-	command: string[];
-	workdir?: string;
-	timeout: number;
-	env?: Record<string, string>;
-	stdout?: string;
-	stderr?: string;
-	exitCode?: number;
-}
-
-export interface OpsEvents {
-	read: ReadEvent;
-	write: WriteEvent;
-	exec: ExecEvent;
-}
-
 const dynamicEnvKey = Type.Union([
 	Type.Literal("MODEL"),
 	Type.Literal("AGENT_ID"),
@@ -59,7 +27,9 @@ const dynamicEnvKey = Type.Union([
 
 export const configSchema = Type.Object({
 	maxLines: Type.Number({ default: 2000 }),
+	defaultLines: Type.Number({ default: 200 }),
 	maxBytes: Type.Number({ default: 50 * 1024 }),
+	maxReadBytes: Type.Number({ default: 50 * 1024 * 1024 }),
 	timeout: Type.Number({ default: 120_000 }),
 	shell: Type.Array(Type.String(), { default: ["bash", "-lc"] }),
 	env: Type.Optional(Type.Object({
@@ -70,7 +40,7 @@ export const configSchema = Type.Object({
 		read: Type.Optional(Type.Boolean({ default: true })),
 		write: Type.Optional(Type.Boolean({ default: true })),
 		edit: Type.Optional(Type.Boolean({ default: true })),
-		exec: Type.Optional(Type.Boolean({ default: true })),
+		exec: Type.Optional(Type.Boolean({ default: false })),
 		bash: Type.Optional(Type.Boolean({ default: true })),
 	})),
 });
@@ -129,14 +99,13 @@ export class OpsPlugin implements Plugin {
 	id = "ops" as const;
 
 	config: OpsConfig;
-	emitter = new Emitter<OpsEvents>();
 
-	#localEnv: Env;
+	localEnv: Env;
 
 	constructor(config: OpsConfig) {
 		this.config = config;
 
-		this.#localEnv = {
+		this.localEnv = {
 			read: async (path) => {
 				const resolved = resolve(path);
 				try {
@@ -145,9 +114,9 @@ export class OpsPlugin implements Plugin {
 					throw new Error(`${resolved}: access failed`);
 				}
 				const stat = await fs.stat(resolved);
-				if (stat.size > config.maxBytes) {
+				if (stat.size > config.maxReadBytes) {
 					throw new Error(
-						`${resolved}: file too large (${stat.size} bytes, max ${config.maxBytes})`,
+						`${resolved}: file too large (${stat.size} bytes, max ${config.maxReadBytes})`,
 					);
 				}
 				return new Uint8Array(await fs.readFile(resolved));
@@ -180,33 +149,20 @@ export class OpsPlugin implements Plugin {
 					detached: true,
 					cwd: opts.workdir,
 					stdio: ["ignore", "pipe", "pipe"],
-					env: { ...process.env, ...config.env?.static, ...opts.env },
+					env: { ...process.env, ...config.env?.static, ...opts.env }
 				});
 
 				const stdout: string[] = [];
 				const stderr: string[] = [];
 				const decoder = new TextDecoder();
-				proc.stdout.on(
-					"data",
-					(data) => stdout.push(decoder.decode(data, { stream: true })),
-				);
-				proc.stderr.on(
-					"data",
-					(data) => stderr.push(decoder.decode(data, { stream: true })),
-				);
+				proc.stdout.on("data", (data) => stdout.push(decoder.decode(data, { stream: true })));
+				proc.stderr.on("data", (data) => stderr.push(decoder.decode(data, { stream: true })));
 
-				const onAbort = () => {
-					if (proc.pid) killTree(proc.pid);
-				};
+				const onAbort = () => { if (proc.pid && proc.exitCode === null) killTree(proc.pid); };
 				if (opts.signal?.aborted) onAbort();
 				else opts.signal?.addEventListener("abort", onAbort, { once: true });
 
-				const timeoutId = opts.timeout
-					? setTimeout(() => {
-						if (proc.pid && !proc.exitCode) killTree(proc.pid);
-					}, opts.timeout)
-					: undefined;
-
+				const timeoutId = opts.timeout ? setTimeout(onAbort, opts.timeout) : undefined;
 				await new Promise<void>((resolve, reject) => {
 					proc.once("close", () => resolve());
 					proc.once("error", reject);
@@ -222,68 +178,6 @@ export class OpsPlugin implements Plugin {
 				};
 			},
 		};
-
-		this.emitter.after("read", async (e) => {
-			if (e.result) return e;
-			const env = getEnv(e.agent);
-			const data = await env.read(e.path);
-			e.result = { type: "bytes", data };
-			return e;
-		});
-
-		this.emitter.after("read", async (e) => {
-			if (!e.result || e.result.type !== "bytes") return e;
-			let text = new TextDecoder().decode(e.result.data);
-
-			const lines = text.split("\n");
-			const startLine = e.offset ? Math.max(0, e.offset - 1) : 0;
-			const endLine = Math.min(startLine + (e.limit ?? config.maxLines), lines.length);
-
-			text = lines.slice(startLine, endLine).join("\n");
-			const notice = [
-				`showing lines ${startLine + 1}-${endLine}`,
-				endLine >= lines.length
-					? `end of file reached`
-					: `use offset=${endLine + 1} to continue`,
-			];
-			text += `\n\n[${notice.join(". ")}]`;
-
-			e.result = { type: "text", text };
-			return e;
-		});
-
-		this.emitter.after("write", async (e) => {
-			if (e.result) return e;
-			const env = getEnv(e.agent);
-			let existed = false;
-			try { await env.read(e.path); existed = true; } catch { /* ignore */ }
-			await env.write(e.path, e.content);
-			e.result = existed ? "ok" : `${e.path}: successfully created.`;
-			return e;
-		});
-
-		this.emitter.before("exec", async (e) => {
-			e.env = {
-				...(config.env?.static ?? {}),
-				...this.resolveDynamicEnv(e.agent),
-				...e.env,
-			};
-			return e;
-		});
-
-		this.emitter.after("exec", async (e) => {
-			if (e.stdout !== undefined || e.exitCode !== undefined) return e;
-			const env = getEnv(e.agent);
-			const res = await env.exec(e.command, {
-				workdir: e.workdir,
-				timeout: e.timeout,
-				env: e.env,
-			});
-			e.stdout = res.stdout;
-			e.stderr = res.stderr;
-			e.exitCode = res.exitCode;
-			return e;
-		});
 	}
 
 	resolveDynamicEnv(agent: IAgent): Record<string, string> {
@@ -315,12 +209,8 @@ export class OpsPlugin implements Plugin {
 		const oldContent = new TextDecoder().decode(data);
 		const newContent = fn(oldContent);
 
-		const e = await this.emitter.do("write", {
-			agent,
-			path,
-			content: { type: "text", text: newContent },
-		});
-		return e.result ?? "ok";
+		await env.write(path, { type: "text", text: newContent });
+		return "ok";
 	}
 
 	#tools = {
@@ -333,15 +223,30 @@ export class OpsPlugin implements Plugin {
 				limit: Type.Optional(Type.Number({ description: "Max number of lines to read" }))
 			}),
 			exec: async (args, agent) => {
-				const e = await this.emitter.do("read", {
-					agent,
-					path: args.path,
-					offset: args.offset,
-					limit: args.limit,
-				});
-				if (!e.result) throw new Error("no handler processed read");
-				if (e.result.type === "text") return e.result.text;
-				return "[binary data]";
+				const env = getEnv(agent);
+				const data = await env.read(args.path);
+				let text: string;
+				try {
+					text = new TextDecoder().decode(data);
+				} catch {
+					return "[binary data]";
+				}
+
+				const lines = text.split("\n");
+				const numLines = Math.min(args.limit ?? this.config.defaultLines, this.config.maxLines);
+				const startLine = args.offset ? Math.max(0, args.offset - 1) : 0;
+				const endLine = Math.min(startLine + numLines, lines.length);
+
+				text = lines.slice(startLine, endLine).join("\n");
+				const notice = [
+					`showing lines ${startLine + 1}-${endLine}`,
+					endLine >= lines.length
+						? `end of file reached`
+						: `use offset=${endLine + 1} to continue`,
+				];
+				text += `\n\n[${notice.join(". ")}]`;
+
+				return text;
 			},
 			view: {
 				compact: (args) => `Read ${args.path}`,
@@ -371,12 +276,11 @@ export class OpsPlugin implements Plugin {
 				content: Type.String({ description: "Text to write into the file" }),
 			}),
 			exec: async (args, agent) => {
-				const e = await this.emitter.do("write", {
-					agent,
-					path: args.path,
-					content: { type: "text", text: args.content },
-				});
-				return e.result ?? "ok";
+				const env = getEnv(agent);
+				let existed = false;
+				try { await env.read(args.path); existed = true; } catch { /* ignore */ }
+				await env.write(args.path, { type: "text", text: args.content });
+				return existed ? "ok" : `${args.path}: successfully created.`;
 			},
 			view: {
 				compact: (args) => `Write ${args.path}`,
@@ -444,16 +348,19 @@ export class OpsPlugin implements Plugin {
 				timeout: Type.Number({ description: "Timeout for the command in milliseconds" }),
 			}),
 			exec: async (args, agent) => {
-				const e = await this.emitter.do("exec", {
-					agent,
-					command: args.command,
+				const env = getEnv(agent);
+				const res = await env.exec(args.command, {
 					workdir: args.workdir,
 					timeout: args.timeout,
+					env: {
+						...(this.config.env?.static ?? {}),
+						...this.resolveDynamicEnv(agent),
+					},
 				});
 				return [
-					e.exitCode !== 0 ? `exited with code ${e.exitCode}.` : "",
-					e.stdout ? `stdout:\n${e.stdout}` : "",
-					e.stderr ? `stderr:\n${e.stderr}` : "",
+					res.exitCode !== 0 ? `exited with code ${res.exitCode}.` : "",
+					res.stdout ? `stdout:\n${res.stdout}` : "",
+					res.stderr ? `stderr:\n${res.stderr}` : "",
 				].filter((s) => s !== "").join("\n\n") || "ok";
 			},
 			view: {
@@ -508,16 +415,19 @@ export class OpsPlugin implements Plugin {
 			}),
 			exec: async (args, agent) => {
 				const command = [...this.config.shell, args.command];
-				const e = await this.emitter.do("exec", {
-					agent,
-					command,
+				const env = getEnv(agent);
+				const res = await env.exec(command, {
 					workdir: args.workdir,
 					timeout: args.timeout,
+					env: {
+						...(this.config.env?.static ?? {}),
+						...this.resolveDynamicEnv(agent),
+					},
 				});
 				return [
-					e.exitCode !== 0 ? `exited with code ${e.exitCode}.` : "",
-					e.stdout ? `stdout:\n${e.stdout}` : "",
-					e.stderr ? `stderr:\n${e.stderr}` : "",
+					res.exitCode !== 0 ? `exited with code ${res.exitCode}.` : "",
+					res.stdout ? `stdout:\n${res.stdout}` : "",
+					res.stderr ? `stderr:\n${res.stderr}` : "",
 				].filter((s) => s !== "").join("\n\n") || "ok";
 			},
 			view: {
@@ -581,12 +491,11 @@ export class OpsPlugin implements Plugin {
 				{ tag: "tame-ops-write", src: web.resolve(dir, "./web/ops.ts") },
 				{ tag: "tame-ops-edit", src: web.resolve(dir, "./web/ops.ts") },
 				{ tag: "tame-ops-exec", src: web.resolve(dir, "./web/ops.ts") },
-				{ tag: "tame-ops-bash", src: web.resolve(dir, "./web/ops.ts") },
 			], [], web.resolve(dir, "./web/ops.css"));
 		}
 	}
 
 	newAgent(agent: IAgent) {
-		setEnv(agent, this.#localEnv);
+		setEnv(agent, this.localEnv);
 	}
 }
