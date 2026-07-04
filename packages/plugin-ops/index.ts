@@ -381,36 +381,7 @@ export class OpsPlugin implements Plugin {
 						tag: "tame-ops-exec",
 						props: { command: cmd.join(" "), workdir: workdir ? contractHome(workdir) : undefined },
 					};
-				},
-				acp: ({ command }, result) => {
-					if (!command) return;
-					const cmd = stripShell(command);
-					const display = cmd.join(" ");
-					const content = [{
-						"type": "content",
-						"content": {
-							"type": "text",
-							"text": display.includes("`")
-								? "```\n" + display + "\n```\n"
-								: "`" + display + "`",
-						},
-					}];
-					if (result && !result.is_error) {
-						content.push({
-							"type": "content",
-							"content": {
-								"type": "text",
-								"text": result.content.includes("```")
-									? result.content
-									: "```\n" + result.content + "\n```\n",
-							},
-						});
-					}
-					return {
-						title: getExecName(cmd),
-						content,
-					};
-				},
+				}
 			},
 		}),
 		bash: tool({
@@ -447,34 +418,7 @@ export class OpsPlugin implements Plugin {
 						tag: "tame-ops-exec",
 						props: { command, workdir: workdir ? contractHome(workdir) : undefined },
 					};
-				},
-				acp: ({ command }, result) => {
-					if (!command) return;
-					const content = [{
-						"type": "content",
-						"content": {
-							"type": "text",
-							"text": command.includes("`")
-								? "```\n" + command + "\n```\n"
-								: "`" + command + "`",
-						},
-					}];
-					if (result && !result.is_error) {
-						content.push({
-							"type": "content",
-							"content": {
-								"type": "text",
-								"text": result.content.includes("```")
-									? result.content
-									: "```\n" + result.content + "\n```\n",
-							},
-						});
-					}
-					return {
-						title: getExecName([command]),
-						content,
-					};
-				},
+				}
 			},
 		}),
 	};
