@@ -6,3 +6,4 @@ export type { Registry } from "./registry-context.ts";
 export { agentIdContext } from "./agent-context.ts";
 export { rpcClientContext } from "./rpc-client-context.ts";
 export { registryContext } from "./registry-context.ts";
+export { settingsStoreContext, settingsPluginIdContext } from "./settings-context.ts";

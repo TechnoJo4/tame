@@ -7,7 +7,9 @@
 		"./placement": "./placement.ts",
 		"./agent-context": "./agent-context.ts",
 		"./rpc-client-context": "./rpc-client-context.ts",
-		"./registry-context": "./registry-context.ts"
+		"./registry-context": "./registry-context.ts",
+		"./settings-context": "./settings-context.ts",
+		"./settings-store": "./settings-store.ts"
 	},
 	"imports": {
 		"@lit/context": "npm:@lit/context@^1.1"

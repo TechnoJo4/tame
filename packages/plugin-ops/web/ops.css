@@ -2,50 +2,70 @@
 
 tame-ops-read, tame-ops-write, tame-ops-edit, tame-ops-exec { display: block; }
 
-tame-ops-read > span[data-label],
-tame-ops-write > span[data-label],
-tame-ops-edit > span[data-label],
-tame-ops-exec > span[data-label] {
+tame-ops-read span[data-label],
+tame-ops-write span[data-label],
+tame-ops-edit span[data-label],
+tame-ops-exec span[data-label] {
 	font-size: 12px; color: var(--tame-text-muted); display: block; margin-bottom: 4px;
 }
-tame-ops-exec > span[data-label] > code {
+tame-ops-exec span[data-label] > code {
 	font-size: 11px; background: var(--tame-surface); padding: 1px 4px; border-radius: 2px;
 }
 
-tame-ops-read > pre,
-tame-ops-write > pre,
-tame-ops-exec > pre {
+/* details wrapper (collapsable / collapsed) */
+tame-ops-read > details,
+tame-ops-write > details,
+tame-ops-edit > details,
+tame-ops-exec > details {
+	margin: 0;
+}
+tame-ops-read > details > summary,
+tame-ops-write > details > summary,
+tame-ops-edit > details > summary,
+tame-ops-exec > details > summary {
+	cursor: pointer; list-style: none;
+}
+tame-ops-read > details > summary::-webkit-details-marker,
+tame-ops-write > details > summary::-webkit-details-marker,
+tame-ops-edit > details > summary::-webkit-details-marker,
+tame-ops-exec > details > summary::-webkit-details-marker {
+	display: none;
+}
+
+tame-ops-read pre,
+tame-ops-write pre,
+tame-ops-exec pre {
 	font-size: 11px; color: var(--tame-text-secondary); white-space: pre-wrap;
 	max-height: 300px; overflow-y: auto; background: var(--tame-surface-alt);
 	padding: 6px 8px; border-radius: 4px; margin: 4px 0 0;
 }
-tame-ops-read > pre[data-error],
-tame-ops-write > pre[data-error],
-tame-ops-exec > pre[data-error] {
+tame-ops-read pre[data-error],
+tame-ops-write pre[data-error],
+tame-ops-exec pre[data-error] {
 	color: var(--tame-danger); border-left: 2px solid var(--tame-danger);
 }
 
-tame-ops-write > span[data-status],
-tame-ops-edit > span[data-status] {
+tame-ops-write span[data-status],
+tame-ops-edit span[data-status] {
 	font-size: 11px; color: var(--tame-text-dim); display: block; margin-top: 4px;
 }
-tame-ops-write > span[data-status][data-error],
-tame-ops-edit > span[data-status][data-error] {
+tame-ops-write span[data-status][data-error],
+tame-ops-edit span[data-status][data-error] {
 	color: var(--tame-danger);
 }
 
-tame-ops-edit > div {
+tame-ops-edit div {
 	margin: 4px 0 0; display: flex; flex-direction: column; gap: 2px;
 }
-tame-ops-edit > div > del,
-tame-ops-edit > div > ins {
+tame-ops-edit div > del,
+tame-ops-edit div > ins {
 	display: block; font-size: 11px; padding: 4px 6px; border-radius: 3px; margin: 0; white-space: pre-wrap;
 }
-tame-ops-edit > div > del {
+tame-ops-edit div > del {
 	background: color-mix(in srgb, var(--tame-danger) 8%, transparent);
 	color: var(--tame-danger);
 }
-tame-ops-edit > div > ins {
+tame-ops-edit div > ins {
 	background: color-mix(in srgb, var(--tame-success) 6%, transparent);
 	color: var(--tame-success);
 }

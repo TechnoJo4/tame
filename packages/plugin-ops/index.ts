@@ -451,7 +451,10 @@ export class OpsPlugin implements Plugin {
 				{ tag: "tame-ops-write", src: web.resolve(dir, "./web/ops.ts") },
 				{ tag: "tame-ops-edit", src: web.resolve(dir, "./web/ops.ts") },
 				{ tag: "tame-ops-exec", src: web.resolve(dir, "./web/ops.ts") },
-			], [], web.resolve(dir, "./web/ops.css"));
+				{ tag: "tame-ops-settings", src: web.resolve(dir, "./web/ops-settings.ts") },
+			], [
+				{ location: "modal:settings", tag: "tame-ops-settings" },
+			], web.resolve(dir, "./web/ops.css"));
 		}
 	}
 

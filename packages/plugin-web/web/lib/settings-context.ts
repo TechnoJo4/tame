@@ -1,13 +1,8 @@
-import { createContext } from "@lit/context";
-import type { SettingsStore } from "@tame/web-sdk";
-
-/** Root context: provided by <tame-web-shell>, consumed by all settings components. */
-export const settingsStoreContext = createContext<SettingsStore>(
-	Symbol("settingsStore"),
-);
-
-/** Form-level context: provided by <tame-web-settings-form>,
- *  consumed by convenience elements within that form. */
-export const settingsPluginIdContext = createContext<string>(
-	Symbol("settingsPluginId"),
-);
+// Re-export from web-sdk so shell components and plugin components
+// share the same context symbols. The symbols must be identical
+// across the shell bundle and plugin bundles -- a locally created
+// Symbol() in each bundle would be a different key.
+export {
+	settingsPluginIdContext,
+	settingsStoreContext,
+} from "@tame/web-sdk/settings-context";
