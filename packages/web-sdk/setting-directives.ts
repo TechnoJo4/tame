@@ -26,8 +26,9 @@ abstract class SettingDirective<T> extends AsyncDirective {
 			this.#defaultValue = defaultValue;
 
 			// part is set by lit before render() is called
-			const el = (this as unknown as { part?: { options?: { host: HTMLElement } } })
-				.part?.options?.host;
+			const el =
+				(this as unknown as { part?: { options?: { host: HTMLElement } } })
+					.part?.options?.host;
 			if (el) {
 				el.dispatchEvent(
 					new ContextEvent(
@@ -76,7 +77,11 @@ class Setting extends SettingDirective<unknown> {
 
 	protected coerce(raw: string | null): unknown {
 		if (raw === null) return null;
-		try { return JSON.parse(raw); } catch { return null; }
+		try {
+			return JSON.parse(raw);
+		} catch {
+			return null;
+		}
 	}
 }
 
@@ -89,7 +94,11 @@ class SettingBool extends SettingDirective<boolean> {
 
 	protected coerce(raw: string | null): boolean {
 		if (raw === null) return false;
-		try { return JSON.parse(raw) === true; } catch { return false; }
+		try {
+			return JSON.parse(raw) === true;
+		} catch {
+			return false;
+		}
 	}
 }
 
@@ -115,10 +124,13 @@ class SettingWhen extends SettingDirective<unknown> {
 }
 
 /** Returns the JSON-parsed value for a setting. Re-renders the binding on change. */
-export const setting: ReturnType<typeof directive> = directive(Setting);
+// deno-lint-ignore-next-line no-explicit-any
+export const setting = directive(Setting) as any;
 
 /** Boolean convenience -- returns boolean for lit bindings. */
-export const settingBool: ReturnType<typeof directive> = directive(SettingBool);
+// deno-lint-ignore-next-line no-explicit-any
+export const settingBool = directive(SettingBool) as any;
 
 /** Conditional rendering -- calls renderFn when value changes. */
-export const settingWhen: ReturnType<typeof directive> = directive(SettingWhen);
+// deno-lint-ignore-next-line no-explicit-any
+export const settingWhen = directive(SettingWhen) as any;
