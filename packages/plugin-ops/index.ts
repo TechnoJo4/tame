@@ -96,6 +96,17 @@ const killTree = (pid: number) => {
 	}
 };
 
+const formatExecResult = (res: { stdout: string; stderr: string; exit: "timeout" | "abort" | number }): string =>
+	[
+		res.exit !== 0
+			? typeof res.exit === "string"
+				? `killed by ${res.exit}.`
+				: `exited with code ${res.exit}.`
+			: "",
+		res.stdout ? `stdout:\n${res.stdout}` : "",
+		res.stderr ? `stderr:\n${res.stderr}` : "",
+	].filter((s) => s !== "").join("\n\n") || "ok";
+
 export class OpsPlugin implements Plugin {
 	id = "ops" as const;
 
@@ -219,6 +230,23 @@ export class OpsPlugin implements Plugin {
 
 		await env.write(path, { type: "text", text: newContent });
 		return "ok";
+	}
+
+	async #runExec(
+		agent: IAgent,
+		command: string[],
+		opts: { workdir?: string; timeout: number },
+	): Promise<string> {
+		const env = getEnv(agent);
+		const res = await env.exec(command, {
+			workdir: opts.workdir,
+			timeout: opts.timeout,
+			env: {
+				...(this.config.env?.static ?? {}),
+				...this.resolveDynamicEnv(agent),
+			},
+		});
+		return formatExecResult(res);
 	}
 
 	#tools = {
@@ -356,20 +384,10 @@ export class OpsPlugin implements Plugin {
 				timeout: Type.Number({ description: "Timeout for the command in milliseconds" }),
 			}),
 			exec: async (args, agent) => {
-				const env = getEnv(agent);
-				const res = await env.exec(args.command, {
+				return await this.#runExec(agent, args.command, {
 					workdir: args.workdir,
 					timeout: args.timeout,
-					env: {
-						...(this.config.env?.static ?? {}),
-						...this.resolveDynamicEnv(agent),
-					},
 				});
-				return [
-					res.exit !== 0 ? typeof res.exit === "string" ? `killed by ${res.exit}.` : `exited with code ${res.exit}.` : "",
-					res.stdout ? `stdout:\n${res.stdout}` : "",
-					res.stderr ? `stderr:\n${res.stderr}` : "",
-				].filter((s) => s !== "").join("\n\n") || "ok";
 			},
 			view: {
 				compact: ({ command }) => {
@@ -394,20 +412,10 @@ export class OpsPlugin implements Plugin {
 			}),
 			exec: async (args, agent) => {
 				const command = [...this.config.shell, args.command];
-				const env = getEnv(agent);
-				const res = await env.exec(command, {
+				return await this.#runExec(agent, command, {
 					workdir: args.workdir,
 					timeout: args.timeout,
-					env: {
-						...(this.config.env?.static ?? {}),
-						...this.resolveDynamicEnv(agent),
-					},
 				});
-				return [
-					res.exit !== 0 ? typeof res.exit === "string" ? `killed by ${res.exit}.` : `exited with code ${res.exit}.` : "",
-					res.stdout ? `stdout:\n${res.stdout}` : "",
-					res.stderr ? `stderr:\n${res.stderr}` : "",
-				].filter((s) => s !== "").join("\n\n") || "ok";
 			},
 			view: {
 				compact: ({ command }) => {
