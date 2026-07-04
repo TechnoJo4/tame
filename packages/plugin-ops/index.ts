@@ -32,6 +32,7 @@ export const configSchema = Type.Object({
 	maxReadBytes: Type.Number({ default: 50 * 1024 * 1024 }),
 	timeout: Type.Number({ default: 120_000 }),
 	shell: Type.Array(Type.String(), { default: ["bash", "-lc"] }),
+	defaultEnv: Type.String({ default: "local" }),
 	env: Type.Optional(Type.Object({
 		static: Type.Optional(Type.Object({}, { additionalProperties: Type.String() })),
 		dynamic: Type.Optional(Type.Object({}, { additionalProperties: dynamicEnvKey })),
@@ -98,9 +99,10 @@ const killTree = (pid: number) => {
 export class OpsPlugin implements Plugin {
 	id = "ops" as const;
 
-	config: OpsConfig;
-
+	#envs = new Map<string,Env>();
 	localEnv: Env;
+
+	config: OpsConfig;
 
 	constructor(config: OpsConfig) {
 		this.config = config;
@@ -183,6 +185,7 @@ export class OpsPlugin implements Plugin {
 				};
 			},
 		};
+		this.#envs.set("local", this.localEnv);
 	}
 
 	resolveDynamicEnv(agent: IAgent): Record<string, string> {
@@ -501,6 +504,9 @@ export class OpsPlugin implements Plugin {
 	}
 
 	newAgent(agent: IAgent) {
-		setEnv(agent, this.localEnv);
+		const env = this.#envs.get(this.config.defaultEnv);
+		if (env === undefined)
+			throw new Error(`default environment ${this.config.defaultEnv} does not exist`);
+		setEnv(agent, env);
 	}
 }
