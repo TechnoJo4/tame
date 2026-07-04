@@ -9,9 +9,16 @@
 		"./rpc-client-context": "./rpc-client-context.ts",
 		"./registry-context": "./registry-context.ts",
 		"./settings-context": "./settings-context.ts",
-		"./settings-store": "./settings-store.ts"
+		"./settings-store": "./settings-store.ts",
+		"./setting-directives": "./setting-directives.ts"
 	},
 	"imports": {
-		"@lit/context": "npm:@lit/context@^1.1"
+		"@lit/context": "npm:@lit/context@^1.1",
+		"lit": "npm:lit@3.3.3",
+		"lit/directive.js": "npm:lit@3.3.3/directive.js",
+		"lit/async-directive.js": "npm:lit@3.3.3/async-directive.js"
+	},
+	"compilerOptions": {
+		"lib": ["dom", "dom.iterable", "esnext"]
 	}
 }

@@ -4,7 +4,8 @@
 		"lit/decorators.js": "npm:lit@3.3.3/decorators.js",
 		"@lit/context": "npm:@lit/context@^1.1",
 		"@tame/web-sdk": "../../web-sdk/mod.ts",
-		"@tame/web-sdk/settings-context": "../../web-sdk/settings-context.ts"
+		"@tame/web-sdk/settings-context": "../../web-sdk/settings-context.ts",
+		"@tame/web-sdk/setting-directives": "../../web-sdk/setting-directives.ts"
 	},
 	"compilerOptions": {
 		"lib": ["dom", "dom.iterable", "esnext"],
