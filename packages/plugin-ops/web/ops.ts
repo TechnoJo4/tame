@@ -1,5 +1,8 @@
 import { html, LitElement, type TemplateResult } from "lit";
-import { settingWhen } from "@tame/web-sdk/setting-directives";
+import { property } from "lit/decorators.js";
+import { consume } from "@lit/context";
+import { settingsStoreContext } from "@tame/web-sdk/settings-context";
+import type { SettingsStore } from "@tame/web-sdk";
 
 // ---- shared helpers ----
 
@@ -10,6 +13,18 @@ type Visibility = "shown" | "hidden" | "collapsable" | "collapsed";
 
 const DEFAULT_VISIBILITY: Visibility = "collapsable";
 
+function parseVisibility(raw: string | null): Visibility {
+	switch (raw) {
+		case "shown":
+		case "hidden":
+		case "collapsable":
+		case "collapsed":
+			return raw;
+		default:
+			return DEFAULT_VISIBILITY;
+	}
+}
+
 /** Wrap a label + body pair according to the visibility setting.
  *  - hidden: label only, no body
  *  - shown: label + body, flat
@@ -17,13 +32,8 @@ const DEFAULT_VISIBILITY: Visibility = "collapsable";
 function withVisibility(
 	label: TemplateResult,
 	body: TemplateResult,
-	// deno-lint-ignore no-explicit-any
-	value: any,
+	v: Visibility,
 ): TemplateResult {
-	const v: Visibility = value === "shown" || value === "hidden" ||
-			value === "collapsable" || value === "collapsed"
-		? value
-		: DEFAULT_VISIBILITY;
 	switch (v) {
 		case "hidden":
 			return html`
@@ -48,9 +58,54 @@ function withVisibility(
 	}
 }
 
+/** Base class for ops tool views. Subscribes to a single settings key
+ *  on the "ops" plugin's SettingsStore and re-renders on change. */
+abstract class OpsView extends LitElement {
+	@consume({ context: settingsStoreContext })
+	@property({ attribute: false })
+	store: SettingsStore | undefined;
+
+	#unsub: (() => void) | null = null;
+
+	abstract get visibilityKey(): string;
+
+	override connectedCallback() {
+		super.connectedCallback();
+		this.#subscribe();
+	}
+
+	override disconnectedCallback() {
+		super.disconnectedCallback();
+		this.#unsub?.();
+		this.#unsub = null;
+	}
+
+	override willUpdate(changed: Map<string, unknown>) {
+		if (changed.has("store") && this.store) this.#subscribe();
+	}
+
+	#subscribe() {
+		if (!this.store || !this.visibilityKey) return;
+		this.#unsub?.();
+		this.#unsub = this.store.onChange(
+			"ops",
+			this.visibilityKey,
+			() => this.requestUpdate(),
+		);
+	}
+
+	#getVisibility(): Visibility {
+		return parseVisibility(this.store?.get("ops", this.visibilityKey) ?? null);
+	}
+
+	protected wrap(label: TemplateResult, body: TemplateResult): TemplateResult {
+		return withVisibility(label, body, this.#getVisibility());
+	}
+}
+
 // ---- tame-ops-read ----
 
-export class TameOpsRead extends LitElement {
+export class TameOpsRead extends OpsView {
 	static override properties = {
 		path: { type: String },
 		offset: { type: Number },
@@ -69,6 +124,10 @@ export class TameOpsRead extends LitElement {
 		return this;
 	}
 
+	get visibilityKey() {
+		return "readVisibility";
+	}
+
 	override render() {
 		const range = this.offset || this.limit
 			? ` [${this.offset ? `L${this.offset}` : ""}${
@@ -85,19 +144,14 @@ export class TameOpsRead extends LitElement {
 			: html`
 
 			`;
-		return settingWhen(
-			"ops",
-			"readVisibility",
-			DEFAULT_VISIBILITY,
-			(v: string) => withVisibility(label, body, v),
-		);
+		return this.wrap(label, body);
 	}
 }
 customElements.define("tame-ops-read", TameOpsRead);
 
 // ---- tame-ops-write ----
 
-export class TameOpsWrite extends LitElement {
+export class TameOpsWrite extends OpsView {
 	static override properties = {
 		path: { type: String },
 		content: { type: String },
@@ -112,6 +166,10 @@ export class TameOpsWrite extends LitElement {
 
 	override createRenderRoot() {
 		return this;
+	}
+
+	get visibilityKey() {
+		return "writeVisibility";
 	}
 
 	override render() {
@@ -133,19 +191,14 @@ export class TameOpsWrite extends LitElement {
 
 				`}
 		`;
-		return settingWhen(
-			"ops",
-			"writeVisibility",
-			DEFAULT_VISIBILITY,
-			(v: string) => withVisibility(label, body, v),
-		);
+		return this.wrap(label, body);
 	}
 }
 customElements.define("tame-ops-write", TameOpsWrite);
 
 // ---- tame-ops-edit ----
 
-export class TameOpsEdit extends LitElement {
+export class TameOpsEdit extends OpsView {
 	static override properties = {
 		path: { type: String },
 		oldString: { type: String },
@@ -162,6 +215,10 @@ export class TameOpsEdit extends LitElement {
 
 	override createRenderRoot() {
 		return this;
+	}
+
+	get visibilityKey() {
+		return "editVisibility";
 	}
 
 	override render() {
@@ -186,19 +243,14 @@ export class TameOpsEdit extends LitElement {
 
 				`}
 		`;
-		return settingWhen(
-			"ops",
-			"editVisibility",
-			DEFAULT_VISIBILITY,
-			(v: string) => withVisibility(label, body, v),
-		);
+		return this.wrap(label, body);
 	}
 }
 customElements.define("tame-ops-edit", TameOpsEdit);
 
 // ---- tame-ops-exec ----
 
-export class TameOpsExec extends LitElement {
+export class TameOpsExec extends OpsView {
 	static override properties = {
 		command: { type: String },
 		workdir: { type: String },
@@ -215,6 +267,10 @@ export class TameOpsExec extends LitElement {
 		return this;
 	}
 
+	get visibilityKey() {
+		return "execVisibility";
+	}
+
 	override render() {
 		const label = html`
 			exec <code>${this.command ?? "?"}</code>${this.workdir
@@ -228,12 +284,7 @@ export class TameOpsExec extends LitElement {
 			: html`
 
 			`;
-		return settingWhen(
-			"ops",
-			"execVisibility",
-			DEFAULT_VISIBILITY,
-			(v: string) => withVisibility(label, body, v),
-		);
+		return this.wrap(label, body);
 	}
 }
 customElements.define("tame-ops-exec", TameOpsExec);
