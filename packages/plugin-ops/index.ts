@@ -120,7 +120,7 @@ export class OpsPlugin implements Plugin {
 
 		this.localEnv = {
 			read: async (path) => {
-				const resolved = resolve(path);
+				const resolved = path.startsWith("~/") ? resolve(home, path) : resolve(path);
 				try {
 					await fs.access(resolved, fs.constants.R_OK);
 				} catch {
@@ -136,7 +136,7 @@ export class OpsPlugin implements Plugin {
 			},
 
 			write: async (path, content) => {
-				const resolved = resolve(path);
+				const resolved = path.startsWith("~/") ? resolve(home, path) : resolve(path);
 				const dir = dirname(resolved);
 				try {
 					await fs.mkdir(dir, { recursive: true });
@@ -151,6 +151,7 @@ export class OpsPlugin implements Plugin {
 
 			exec: async (command, opts) => {
 				if (opts.workdir) {
+					opts.workdir = opts.workdir.startsWith("~/") ? resolve(home, opts.workdir) : resolve(opts.workdir);
 					try {
 						await fs.access(opts.workdir, fs.constants.R_OK);
 					} catch {
