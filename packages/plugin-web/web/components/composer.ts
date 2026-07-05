@@ -47,9 +47,18 @@ export class TameComposer extends LitElement {
 	#doSend() {
 		const textarea = this.renderRoot.querySelector("textarea") as HTMLTextAreaElement;
 		const text = textarea?.value.trim();
-		if (!text) return;
-		textarea.value = "";
-		textarea.style.height = "auto";
+		if (!text) {
+			this.dispatchEvent(new CustomEvent("web:queue", {
+				bubbles: true,
+				composed: true,
+			}));
+			return;
+		}
+		// Clear via execCommand so the browser maintains its own undo
+		// stack — ctrl+z restores the content after sending.
+		textarea.focus();
+		textarea.select();
+		document.execCommand("delete");
 		this.dispatchEvent(new CustomEvent("web:send", {
 			detail: { text },
 			bubbles: true,

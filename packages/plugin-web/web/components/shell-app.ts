@@ -6,7 +6,7 @@ import { rpcClientContext, type RPCClientLike } from "@tame/web-sdk/rpc-client-c
 import { settingsStoreContext } from "../lib/settings-context.ts";
 import { LocalSettingsStore } from "../lib/settings-store.ts";
 import { connectRPC } from "../lib/rpc-transport.ts";
-import { send, abort } from "../lib/actions.ts";
+import { send, abort, queueCompletion } from "../lib/actions.ts";
 
 export class TameShell extends LitElement {
 	@property({ type: Boolean, state: true }) loading = true;
@@ -71,7 +71,25 @@ export class TameShell extends LitElement {
 			const text = (e as CustomEvent).detail?.text;
 			if (typeof text === "string" && this.#client && this.#agentId) {
 				this.idle = false;
+				this.dispatchEvent(new CustomEvent("web:echo", {
+					detail: {
+						item: {
+							type: "message",
+							role: "user",
+							content: [{ type: "text", text }],
+							key: `echo-user-${Date.now()}`,
+						},
+					},
+					bubbles: true,
+					composed: true,
+				}));
 				send(this.#client, this.#agentId, text);
+			}
+		});
+		this.addEventListener("web:queue", () => {
+			if (this.#client && this.#agentId) {
+				this.idle = false;
+				queueCompletion(this.#client, this.#agentId);
 			}
 		});
 		this.addEventListener("web:abort", () => {

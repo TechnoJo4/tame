@@ -34,10 +34,12 @@ export class TameThread extends LitElement {
 
 	override connectedCallback() {
 		super.connectedCallback();
+		this.addEventListener("web:echo", this.#onEcho);
 	}
 
 	override disconnectedCallback() {
 		super.disconnectedCallback();
+		this.removeEventListener("web:echo", this.#onEcho);
 		this.#virtualizer?.removeEventListener("scroll", this.#onScroll);
 		this.#unsubscribeAll();
 	}
@@ -118,6 +120,13 @@ export class TameThread extends LitElement {
 		}
 	};
 
+	#onEcho = (e: Event) => {
+		const item = (e as CustomEvent).detail?.item as MessageItem | undefined;
+		if (!item) return;
+		this.items = [...this.items, item];
+		this.#totalLoaded++;
+	};
+
 	#unsubscribeAll() {
 		for (const unsub of this.#unsubs) unsub();
 		this.#unsubs = [];
@@ -139,7 +148,8 @@ export class TameThread extends LitElement {
 		on("userMessage", (d) => {
 			const item = d.item as MessageItem | undefined;
 			if (!item) return;
-			this.items = [...this.items, item];
+			// strip local echo items, then append the server-confirmed message
+			this.items = [...this.items.filter((i) => !i.key.startsWith("echo-")), item];
 			this.#totalLoaded++;
 		});
 

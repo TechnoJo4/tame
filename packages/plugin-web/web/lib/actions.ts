@@ -13,6 +13,12 @@ export function abort(client: RPCClientLike, agentId: string): void {
 	client.call("@tame", "abort", { id: agentId });
 }
 
+/** Queue a completion on the active agent.  Useful for recovering from
+ *  an abort or LLM failure without sending a new message. */
+export function queueCompletion(client: RPCClientLike, agentId: string): void {
+	client.call("@tame", "queueCompletion", { id: agentId });
+}
+
 /** Create a fresh agent and return its id. */
 export async function newAgent(
 	client: RPCClientLike,
