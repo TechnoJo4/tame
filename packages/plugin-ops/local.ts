@@ -32,15 +32,15 @@ export default class LocalEnv implements Env {
 
 	async lock<T>(path: string, f: (env: FileEnv) => Promise<T>): Promise<T> {
 		const resolved = path.startsWith("~/") ? resolve(home, path) : resolve(path);
-		try {
-			await fs.access(resolved, fs.constants.R_OK);
-		} catch {
-			throw new Error(`${resolved}: access failed`);
-		}
 		const fileEnv: FileEnv = {
 			path: resolved,
 			read: async () => {
-				const stat = await fs.stat(resolved);
+				let stat;
+				try {
+					stat = await fs.stat(resolved);
+				} catch {
+					throw new Error(`${resolved}: access failed`);
+				}
 				if (stat.size > this.config.maxReadBytes)
 					throw new Error(`${resolved}: file too large (${stat.size} bytes, max ${this.config.maxReadBytes})`);
 				return new Uint8Array(await fs.readFile(resolved));
@@ -58,15 +58,14 @@ export default class LocalEnv implements Env {
 				await fs.writeFile(resolved, data);
 			}
 		};
-		if (this.#lock.has(resolved))
-			await this.#lock.get(resolved);
 
+		const prev = this.#lock.get(resolved) ?? Promise.resolve();
 		const p = Promise.withResolvers<void>();
 		this.#lock.set(resolved, p.promise);
 		try {
+			await prev;
 			return await f(fileEnv);
 		} finally {
-			this.#lock.delete(resolved);
 			p.resolve();
 		}
 	}
