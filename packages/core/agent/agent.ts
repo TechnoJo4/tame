@@ -84,7 +84,7 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 				is_error: e.error,
 				content: e.result
 			};
-			if (e.meta) {
+			if (e.meta !== undefined) {
 				call[tameContentMeta] ??= {};
 				call[tameContentMeta].toolMeta = e.meta;
 			}

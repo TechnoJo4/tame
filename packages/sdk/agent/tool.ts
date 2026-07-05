@@ -16,7 +16,7 @@ export interface Tool<TArgs extends TSchema, TMeta = unknown> {
 	desc: string;
 	/** Schema for the tool's parameters */
 	args: TArgs;
-	/** Implementation of the tool. This must return a string or object compatible with `JSON.stringify`. */
+	/** Implementation of the tool. */
 	exec: (args: Static<TArgs>, agent: IAgent) => Promise<ToolExecResult<TMeta>> | ToolExecResult<TMeta>;
 	/** View functions. */
 	view?: Record<string, (args: Static<TArgs>, result?: ToolResult, meta?: TMeta) => unknown>;
@@ -27,7 +27,7 @@ export interface AnyTool {
 	desc: string;
 	args: TSchema;
 	exec: (args: never, agent: IAgent) => Promise<unknown> | unknown;
-	view?: Record<string, (args: never, result?: ToolResult) => unknown>;
+	view?: Record<string, (args: never, result?: ToolResult, meta?: never) => unknown>;
 }
 
 /** Helper to let typescript infer the schema type */
