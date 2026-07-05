@@ -1,52 +1,11 @@
-import { tool, Type, type IAgent, type IHarness, type Plugin } from "@tame/sdk";
-import { promises as fs } from "node:fs";
-import { spawn } from "node:child_process";
-import process from "node:process";
-import { dirname, resolve } from "@std/path";
-import type { Static } from "typebox";
+import { tool, type ToolExecResult, Type, type IAgent, type IHarness, type Plugin } from "@tame/sdk";
 import type { WebPlugin } from "@tame/plugin-web/index";
+import type { Env } from "./env.ts";
+import type { OpsConfig } from "./config.ts";
+import LocalEnv from "./local.ts";
 
-export type Content =
-	| { type: "text"; text: string }
-	| { type: "bytes"; data: Uint8Array };
-
-export interface Env {
-	read(path: string): Promise<Uint8Array>;
-	write(path: string, content: Content): Promise<void>;
-	exec(
-		command: string[],
-		opts: { workdir?: string; timeout: number; signal?: AbortSignal; env?: Record<string, string> },
-	): Promise<{ stdout: string; stderr: string; exit: "timeout" | "abort" | number }>;
-}
-
-const dynamicEnvKey = Type.Union([
-	Type.Literal("MODEL"),
-	Type.Literal("AGENT_ID"),
-	Type.Literal("AGENT_SYSTEM"),
-]);
-
-export const configSchema = Type.Object({
-	maxLines: Type.Number({ default: 2000 }),
-	defaultLines: Type.Number({ default: 200 }),
-	maxBytes: Type.Number({ default: 50 * 1024 }),
-	maxReadBytes: Type.Number({ default: 50 * 1024 * 1024 }),
-	timeout: Type.Number({ default: 120_000 }),
-	shell: Type.Array(Type.String(), { default: ["bash", "-lc"] }),
-	defaultEnv: Type.String({ default: "local" }),
-	env: Type.Optional(Type.Object({
-		static: Type.Optional(Type.Object({}, { additionalProperties: Type.String() })),
-		dynamic: Type.Optional(Type.Object({}, { additionalProperties: dynamicEnvKey })),
-	})),
-	tools: Type.Optional(Type.Object({
-		read: Type.Optional(Type.Boolean({ default: true })),
-		write: Type.Optional(Type.Boolean({ default: true })),
-		edit: Type.Optional(Type.Boolean({ default: true })),
-		exec: Type.Optional(Type.Boolean({ default: false })),
-		bash: Type.Optional(Type.Boolean({ default: true })),
-	})),
-});
-
-export type OpsConfig = Static<typeof configSchema>;
+type ViewMeta = { path: string };
+type ExecViewMeta = { workdir?: string; }
 
 export const envKey = Symbol("tame:ops:env");
 
@@ -57,14 +16,6 @@ export function getEnv(agent: IAgent): Env {
 export function setEnv(agent: IAgent, env: Env) {
 	agent.pluginData.set(envKey, env);
 }
-
-const home = process.env.HOME ?? "";
-
-const contractHome = (path: string) => {
-	if (path === home) return "~";
-	if (home && path.startsWith(home + "/")) return "~" + path.slice(home.length);
-	return path;
-};
 
 const stripShell = (args: string[]): string[] => {
 	let i = 0;
@@ -81,23 +32,7 @@ const getExecName = (args: string[]): string => {
 	return s === -1 ? a[0] : a[0].slice(0, s);
 };
 
-const stripAnsi = (s: string) => // deno-lint-ignore no-control-regex
-	s.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "").replace(/\x1b\].*?(\x07|\x1b\\)/g, "");
-
-const killTree = (pid: number) => {
-	try {
-		process.kill(-pid, "SIGKILL");
-	} catch {
-		try {
-			process.kill(pid, "SIGKILL");
-		} catch {
-			// ignore
-		}
-	}
-};
-
-const formatExecResult = (res: { stdout: string; stderr: string; exit: "timeout" | "abort" | number }): string =>
-	[
+const formatExecResult = (res: { stdout: string; stderr: string; exit: "timeout" | "abort" | number }): string => [
 		res.exit !== 0
 			? typeof res.exit === "string"
 				? `killed by ${res.exit}.`
@@ -118,85 +53,7 @@ export class OpsPlugin implements Plugin {
 	constructor(config: OpsConfig) {
 		this.config = config;
 
-		this.localEnv = {
-			read: async (path) => {
-				const resolved = path.startsWith("~/") ? resolve(home, path) : resolve(path);
-				try {
-					await fs.access(resolved, fs.constants.R_OK);
-				} catch {
-					throw new Error(`${resolved}: access failed`);
-				}
-				const stat = await fs.stat(resolved);
-				if (stat.size > config.maxReadBytes) {
-					throw new Error(
-						`${resolved}: file too large (${stat.size} bytes, max ${config.maxReadBytes})`,
-					);
-				}
-				return new Uint8Array(await fs.readFile(resolved));
-			},
-
-			write: async (path, content) => {
-				const resolved = path.startsWith("~/") ? resolve(home, path) : resolve(path);
-				const dir = dirname(resolved);
-				try {
-					await fs.mkdir(dir, { recursive: true });
-				} catch {
-					throw new Error(`${dir}: failed to create directory`);
-				}
-				const data = content.type === "bytes"
-					? content.data
-					: new TextEncoder().encode(content.text);
-				await fs.writeFile(resolved, data);
-			},
-
-			exec: async (command, opts) => {
-				if (opts.workdir) {
-					opts.workdir = opts.workdir.startsWith("~/") ? resolve(home, opts.workdir) : resolve(opts.workdir);
-					try {
-						await fs.access(opts.workdir, fs.constants.R_OK);
-					} catch {
-						throw new Error(`${opts.workdir}: access failed`);
-					}
-				}
-				const [name, ...args] = command;
-				const proc = spawn(name, args, {
-					detached: true,
-					cwd: opts.workdir,
-					stdio: ["ignore", "pipe", "pipe"],
-					env: { ...process.env, ...config.env?.static, ...opts.env }
-				});
-
-				const stdout: string[] = [];
-				const stderr: string[] = [];
-				const decoder = new TextDecoder();
-				proc.stdout.on("data", (data) => stdout.push(decoder.decode(data, { stream: true })));
-				proc.stderr.on("data", (data) => stderr.push(decoder.decode(data, { stream: true })));
-
-				let abortReason: "abort" | "timeout" | undefined = undefined;
-				const onAbort = (reason: "abort" | "timeout") => {
-					if (proc.pid && proc.exitCode === null) killTree(proc.pid);
-					abortReason = reason;
-				};
-				const abortListener = () => onAbort("abort");
-				if (opts.signal?.aborted) onAbort("abort");
-				else opts.signal?.addEventListener("abort", abortListener, { once: true });
-
-				const timeoutId = opts.timeout ? setTimeout(() => onAbort("timeout"), opts.timeout) : undefined;
-				await new Promise<void>((resolve, reject) => {
-					proc.once("close", () => resolve());
-					proc.once("error", reject);
-				});
-
-				if (timeoutId) clearTimeout(timeoutId);
-				opts.signal?.removeEventListener("abort", abortListener);
-
-				return {
-					stdout: stripAnsi(stdout.join("")),
-					stderr: stripAnsi(stderr.join("")),
-					exit: abortReason ?? proc.exitCode ?? 1,
-				};
-			},
-		};
+		this.localEnv = new LocalEnv(config);
 		this.#envs.set("local", this.localEnv);
 	}
 
@@ -223,21 +80,23 @@ export class OpsPlugin implements Plugin {
 		agent: IAgent,
 		path: string,
 		fn: (content: string) => string,
-	): Promise<string> {
+	): Promise<ToolExecResult<ViewMeta>> {
 		const env = getEnv(agent);
-		const data = await env.read(path);
-		const oldContent = new TextDecoder().decode(data);
-		const newContent = fn(oldContent);
+		return await env.lock(path, async f => {
+			const data = await f.read();
+			const oldContent = new TextDecoder().decode(data);
+			const newContent = fn(oldContent);
 
-		await env.write(path, { type: "text", text: newContent });
-		return "ok";
+			await f.write({ type: "text", text: newContent });
+			return { content: "ok", meta: { path: env.contractPath(f.path) } };
+		});
 	}
 
 	async #runExec(
 		agent: IAgent,
 		command: string[],
 		opts: { workdir?: string; timeout: number },
-	): Promise<string> {
+	): Promise<ToolExecResult<ExecViewMeta>> {
 		const env = getEnv(agent);
 		const res = await env.exec(command, {
 			workdir: opts.workdir,
@@ -247,7 +106,7 @@ export class OpsPlugin implements Plugin {
 				...this.resolveDynamicEnv(agent),
 			},
 		});
-		return formatExecResult(res);
+		return { content: formatExecResult(res), meta: { workdir: opts.workdir && env.contractPath(opts.workdir) } };
 	}
 
 	#tools = {
@@ -261,7 +120,7 @@ export class OpsPlugin implements Plugin {
 			}),
 			exec: async (args, agent) => {
 				const env = getEnv(agent);
-				const data = await env.read(args.path);
+				const { data, path } = await env.lock(args.path, async env => ({ data: await env.read(), path: env.path }));
 				let text: string;
 				try {
 					text = new TextDecoder().decode(data);
@@ -283,16 +142,16 @@ export class OpsPlugin implements Plugin {
 				];
 				text += `\n\n[${notice.join(". ")}]`;
 
-				return text;
+				return { content: text, meta: { path: env.contractPath(path) } };
 			},
 			view: {
 				compact: (args) => `Read ${args.path}`,
-				web: (args) => ({
+				web: (args, _, meta) => ({
 					tag: "tame-ops-read",
-					props: { path: contractHome(args.path), offset: args.offset, limit: args.limit },
+					props: { path: meta?.path ?? args.path, offset: args.offset, limit: args.limit },
 				}),
-				acp: (args, result) => ({
-					title: `Read ${contractHome(args.path)}`,
+				acp: (args, result, meta) => ({
+					title: `Read ${meta?.path ?? args.path}`,
 					content: result ? [ {
 						"type": "content",
 						"content": {
@@ -314,20 +173,24 @@ export class OpsPlugin implements Plugin {
 			}),
 			exec: async (args, agent) => {
 				const env = getEnv(agent);
-				let existed = false;
-				try { await env.read(args.path); existed = true; } catch { /* ignore */ }
-				await env.write(args.path, { type: "text", text: args.content });
-				return existed ? "ok" : `${args.path}: successfully created.`;
+				// TODO: re-add existed check without having to do and discard a read
+				//let existed = false;
+				//try { await env.read(args.path); existed = true; } catch { /* ignore */ }
+				const path = await env.lock(args.path, async env => {
+					await env.write({ type: "text", text: args.content });
+					return env.path;
+				});
+				return { content: "ok", meta: { path: env.contractPath(path) } }; //existed ? "ok" : `${args.path}: successfully created.`;
 			},
 			view: {
 				compact: (args) => `Write ${args.path}`,
-				web: (args) => ({
+				web: (args, _, meta) => ({
 					tag: "tame-ops-write",
-					props: { path: contractHome(args.path), content: args.content },
+					props: { path: meta?.path ?? args.path, content: args.content },
 				}),
-				acp: (args) => ({
+				acp: (args, _, meta) => ({
 					kind: "edit",
-					title: `Write ${contractHome(args.path)}`,
+					title: `Write ${meta?.path ?? args.path}`,
 					content: [ {
 						"type": "content",
 						"content": {
@@ -362,12 +225,12 @@ export class OpsPlugin implements Plugin {
 			},
 			view: {
 				compact: (args) => `Edit ${args.path}`,
-				web: (args) => ({
+				web: (args, _, meta) => ({
 					tag: "tame-ops-edit",
-					props: { path: contractHome(args.path), oldString: args.oldString, newString: args.newString },
+					props: { path: meta?.path ?? args.path, oldString: args.oldString, newString: args.newString },
 				}),
-				acp: (args) => ({
-					title: `Edit ${contractHome(args.path)}`,
+				acp: (args, _, meta) => ({
+					title: `Edit ${meta?.path ?? args.path}`,
 				}),
 			},
 		}),
@@ -394,11 +257,11 @@ export class OpsPlugin implements Plugin {
 				compact: ({ command }) => {
 					return `exec ${getExecName(command)}`;
 				},
-				web: ({ command, workdir }) => {
+				web: ({ command }, _, meta) => {
 					const cmd = stripShell(command);
 					return {
 						tag: "tame-ops-exec",
-						props: { command: cmd.join(" "), workdir: workdir ? contractHome(workdir) : undefined },
+						props: { command: cmd.join(" "), workdir: meta?.workdir },
 					};
 				}
 			},
@@ -422,10 +285,10 @@ export class OpsPlugin implements Plugin {
 				compact: ({ command }) => {
 					return `exec ${getExecName([command])}`;
 				},
-				web: ({ command, workdir }) => {
+				web: ({ command }, _, meta) => {
 					return {
 						tag: "tame-ops-exec",
-						props: { command, workdir: workdir ? contractHome(workdir) : undefined },
+						props: { command, workdir: meta?.workdir },
 					};
 				}
 			},
