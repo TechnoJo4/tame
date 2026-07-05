@@ -2,7 +2,6 @@ import { Tiktoken } from "js-tiktoken/lite";
 import { type Static, Type } from "typebox";
 import type { IAgent, IHarness, InputMessage, InputContent, AssistantMessage } from "@tame/sdk";
 import { type Plugin, StringEnum, tameMsgMeta, tameContentMeta } from "@tame/sdk";
-import type { MemoryPlugin } from "@tame/plugin-memory/index";
 
 const target = Type.Union([
 	Type.Object({ type: Type.Literal("tokens"), tokens: Type.Number() }),
@@ -43,14 +42,12 @@ export class CompactPlugin implements Plugin {
 
 	#config: CompactConfig;
 	#enc!: Tiktoken;
-	#memory?: MemoryPlugin;
 
 	constructor(config: CompactConfig) {
 		this.#config = config;
 	}
 
-	async init(harness: IHarness) {
-		this.#memory = harness.getPlugin<MemoryPlugin>("memory");
+	async init() {
 		const rank = await import(`npm:js-tiktoken/ranks/${this.#config.estimation.encoding}`);
 		this.#enc = new Tiktoken(rank.default);
 	}
@@ -253,16 +250,6 @@ export class CompactPlugin implements Plugin {
 
 		if (calls_text !== "")
 			summary += "\n\nTool calls:" + calls_text;
-
-		if (this.#memory) {
-			const mem = this.#memory.getAgentMemory(agent);
-			if (mem.length > 0) {
-				summary += "\n\nSession memory (calls to `remember`):"
-				for (const [i,m] of mem.entries())
-					if (!m.forgotten)
-						summary += `\n- #${i+1}: ${m.text}`;
-			}
-		}
 
 		return summary + "\n</history>";
 	}
