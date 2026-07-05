@@ -18,6 +18,7 @@ import {
 	type CompletionEvent,
 	type IdleEvent,
 	type AgentStopReason,
+	tameContentMeta,
 } from "@tame/sdk";
 
 export type { AgentStopReason };
@@ -83,6 +84,10 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 				is_error: e.error,
 				content: e.result
 			};
+			if (e.meta) {
+				call[tameContentMeta] ??= {};
+				call[tameContentMeta].toolMeta = e.meta;
+			}
 
 			this.#pendingToolCalls.delete(e.toolUse);
 			if (this.#pendingToolCalls.size === 0 && !this.#abortedToolCalls.has(e.toolUse))
@@ -154,7 +159,7 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 		try {
 			const tool = this.tools.get(call.name)! as Tool<TSchema>;
 			assertSchema(call.input, tool.args, "", this.#validators.get(tool)!);
-			return tool.view?.[view]?.(call.input, call.result);
+			return tool.view?.[view]?.(call.input, call.result, call[tameContentMeta]?.toolMeta);
 		} catch (e) {
 			if (!(e instanceof ValidationError)) {
 				console.warn("error while viewing tool call:", call, e);
@@ -169,13 +174,17 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 			const args = assertSchema(call.input, tool.args, `invalid args to "${call.name}":`, this.#validators.get(tool)!);
 
 			let res = await (tool as Tool<TSchema>).exec(args, this);
-			if (typeof res !== "string")
-				res = JSON.stringify(res);
+			let meta;
+			if (typeof res !== "string") {
+				meta = res.meta;
+				res = res.content;
+			}
 
 			this.fire("toolResult", {
 				toolUse: call.id,
 				error: false,
 				result: res as string,
+				meta,
 				messageIdx
 			});
 		} catch (e) {

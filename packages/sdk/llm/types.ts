@@ -22,6 +22,8 @@ export interface TameContentMeta {
 	reasoningDetailType?: string;
 	/** For reasoning_details blocks: the index in the details array. */
 	reasoningIndex?: number;
+	/** Tool-defined result/view metadata. */
+	toolMeta?: unknown;
 }
 
 export interface Text {

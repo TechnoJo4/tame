@@ -20,6 +20,7 @@ export interface ToolResultEvent {
 	error: boolean;
 	result: string;
 	messageIdx: number;
+	meta?: unknown;
 }
 
 export interface CompletionEvent {
