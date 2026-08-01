@@ -11,7 +11,7 @@
 	},
 	"lint": {
 		"rules": {
-			"exclude": ["require-await", "no-explicit-any"]
+			"exclude": ["require-await", "no-explicit-any", "no-slow-types"]
 		}
 	},
 	"fmt": {

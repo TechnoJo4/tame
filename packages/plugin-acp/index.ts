@@ -1,7 +1,7 @@
 import * as acp from "@agentclientprotocol/sdk";
 import { type Static, Type } from "typebox";
 
-import type { IAgent, IHarness, Plugin, InputContent, InputMessage, AgentStopReason } from "@tame/sdk";
+import type { IAgent, IHarness, Plugin, InputContent, InputMessage, AgentStopReason, ToolUse } from "@tame/sdk";
 import { tool } from "@tame/sdk";
 import { getAgentHistory, type HistoryPlugin } from "@tame/plugin-history/index";
 import type { CommandsPlugin } from "@tame/plugin-commands/index";
@@ -252,7 +252,7 @@ export class ACPAdapter implements acp.Agent {
 		agent.after("toolResult", async (e) => {
 			const call = agent.context.flatMap(m => m.content)
 				.find(c => c.type === "tool_use" && c.id === e.toolUse);
-			const view = call ? agent.viewToolCall("acp", call) : undefined;
+			const view = call ? agent.viewToolCall("acp", call as ToolUse) : undefined;
 			this.#connection.sessionUpdate({
 				sessionId: agent.id,
 				update: {

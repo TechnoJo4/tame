@@ -31,7 +31,7 @@ export default class LocalEnv implements Env {
 	}
 
 	async lock<T>(path: string, f: (env: FileEnv) => Promise<T>): Promise<T> {
-		const resolved = path.startsWith("~/") ? resolve(home, path) : resolve(path);
+		const resolved = path.startsWith("~/") ? resolve(home, path.substring(2)) : resolve(path);
 		const fileEnv: FileEnv = {
 			path: resolved,
 			read: async () => {
