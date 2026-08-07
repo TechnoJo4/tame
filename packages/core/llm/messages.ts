@@ -43,8 +43,15 @@ export class AnthropicMessagesProvider implements InferenceProvider {
     #convertMessages(messages: InputMessage[]): object[] {
         const res = [];
         for (const m of messages) {
-            res.push(this.#convertMessage(m));
-            const calls = m.content.filter(c => c.type === "tool_use");
+            // Tool results are attached to tool_use blocks after execution;
+            // calls without one (aborted/hanging/restored) must not be sent
+            // as tool_result blocks, and dangling tool_use blocks are invalid
+            // on the wire. Drop them (and the message if nothing remains).
+            const content = m.content.filter(c => c.type !== "tool_use" || c.result);
+            if (content.length === 0)
+                continue;
+            res.push(this.#convertMessage({ ...m, content }));
+            const calls = content.filter(c => c.type === "tool_use");
             if (calls.length > 0)
                 res.push({
                     role: "user",
