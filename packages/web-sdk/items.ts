@@ -16,6 +16,8 @@ export type TextOrThinking =
 
 export interface ToolCallItem {
 	type: "tool_call";
+	/** Set when this tool call belongs to an automated assistant message. */
+	role?: "tame";
 	id: string;
 	name: string;
 	input: Record<string, unknown>;

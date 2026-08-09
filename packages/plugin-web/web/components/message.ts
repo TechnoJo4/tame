@@ -5,7 +5,11 @@ import { type Registry, registryContext } from "@tame/web-sdk";
 import { settingsStoreContext } from "../lib/settings-context.ts";
 import type { SettingsStore } from "@tame/web-sdk";
 import type { MessageItem, TextOrThinking } from "@tame/web-sdk";
-import { AUTOMATED_VISIBILITY_KEY, type MessageVisibility, parseMessageVisibility } from "../lib/message-visibility.ts";
+import {
+	AUTOMATED_VISIBILITY_KEY,
+	type MessageVisibility,
+	parseMessageVisibility,
+} from "../lib/message-visibility.ts";
 
 const SETTINGS_PLUGIN = "web";
 const FORMAT_KEYS: Record<string, string> = {

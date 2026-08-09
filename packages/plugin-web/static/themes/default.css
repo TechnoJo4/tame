@@ -138,6 +138,16 @@ tame-web-message[data-role="tame"] {
 tame-web-message[data-role="tame"] > details > summary {
 	cursor: pointer;
 }
+tame-web-thread details[data-role="tame"] > summary {
+	cursor: pointer;
+}
+tame-web-thread details[data-role="tame"] > summary > span[data-label="role"] {
+	display: block;
+	font-size: 11px;
+	color: var(--tame-text-muted);
+	margin-bottom: 4px;
+	text-transform: uppercase;
+}
 tame-web-message > span[data-label="role"],
 tame-web-message > details > summary > span[data-label="role"] {
 	display: block;

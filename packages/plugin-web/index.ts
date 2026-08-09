@@ -1,4 +1,9 @@
-import { type IAgent, type IHarness, type Plugin, tameMsgMeta } from "@tame/sdk";
+import {
+	type IAgent,
+	type IHarness,
+	type Plugin,
+	tameMsgMeta,
+} from "@tame/sdk";
 import { Type } from "typebox";
 import { call } from "@tame/rpc-sdk";
 import { resolve } from "@std/path";
@@ -6,7 +11,11 @@ import { serve } from "./serve.ts";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
 import type { ComponentDef, Placement } from "@tame/web-sdk/placement";
 import { basePlugins, terserPlugin } from "./build-config.ts";
-import { assistantBlocksToItems, contextToItems, paginateItems } from "./items.ts";
+import {
+	assistantBlocksToItems,
+	contextToItems,
+	paginateItems,
+} from "./items.ts";
 
 export type { ComponentDef, Placement } from "@tame/web-sdk/placement";
 

@@ -1,5 +1,10 @@
 import { type IAgent, type InputMessage, tameMsgMeta } from "@tame/sdk";
-import type { MessageItem, TextOrThinking, ThreadItem, ToolCallItem } from "@tame/web-sdk";
+import type {
+	MessageItem,
+	TextOrThinking,
+	ThreadItem,
+	ToolCallItem,
+} from "@tame/web-sdk";
 
 export function messageRole(msg: InputMessage): MessageItem["role"] {
 	return msg[tameMsgMeta]?.automated ? "tame" : msg.role;
@@ -50,6 +55,7 @@ export function contextToItems(agent: IAgent): ThreadItem[] {
 					} | undefined;
 					const toolItem: ToolCallItem = {
 						type: "tool_call",
+						role: role === "tame" ? "tame" : undefined,
 						id: block.id,
 						name: block.name,
 						input: block.input,
@@ -113,6 +119,7 @@ export function assistantBlocksToItems(
 			} | undefined;
 			const toolItem: ToolCallItem = {
 				type: "tool_call",
+				role: role === "tame" ? "tame" : undefined,
 				id: block.id,
 				name: block.name,
 				input: block.input,
@@ -132,7 +139,9 @@ export function assistantBlocksToItems(
 			type: "message",
 			role,
 			content: [...textBlocks],
-			key: `msg-live-${items.length > 0 ? (items[0] as ToolCallItem).id ?? "t" : "t"}`,
+			key: `msg-live-${
+				items.length > 0 ? (items[0] as ToolCallItem).id ?? "t" : "t"
+			}`,
 		});
 	}
 

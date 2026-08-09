@@ -5,9 +5,15 @@ import "@lit-labs/virtualizer";
 import type { LitVirtualizer } from "@lit-labs/virtualizer";
 import { RangeChangedEvent } from "@lit-labs/virtualizer/events.js";
 import { agentIdContext } from "@tame/web-sdk";
-import { rpcClientContext, type RPCClientLike } from "@tame/web-sdk/rpc-client-context";
+import {
+	rpcClientContext,
+	type RPCClientLike,
+} from "@tame/web-sdk/rpc-client-context";
 import { settingsStoreContext } from "../lib/settings-context.ts";
-import { AUTOMATED_VISIBILITY_KEY, parseMessageVisibility } from "../lib/message-visibility.ts";
+import {
+	AUTOMATED_VISIBILITY_KEY,
+	parseMessageVisibility,
+} from "../lib/message-visibility.ts";
 import type { SettingsStore } from "@tame/web-sdk";
 import type { MessageItem, ThreadItem, ToolCallItem } from "@tame/web-sdk";
 
@@ -116,7 +122,8 @@ export class TameThread extends LitElement {
 		const el = this.#virtualizer;
 		if (!el) return;
 		const threshold = 48;
-		const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
+		const atBottom =
+			el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
 		if (atBottom && !this.#pinned) {
 			this.#pinned = true;
 			this.#pinToBottom();
@@ -168,7 +175,20 @@ export class TameThread extends LitElement {
 			this.store?.get("web", AUTOMATED_VISIBILITY_KEY) ?? null,
 		);
 		if (visibility !== "hidden") return this.items;
-		return this.items.filter((item) => item.type !== "message" || item.role !== "tame");
+		return this.items.filter((item) => item.role !== "tame");
+	}
+
+	#renderToolView(item: ToolCallItem) {
+		return html`
+			<tame-web-tool-view
+				.toolUseId=${item.id}
+				.toolName=${item.name}
+				.toolInput=${item.input}
+				.result=${item.result ?? null}
+				.isError=${item.isError ?? false}
+				.view=${item.view ?? null}
+			></tame-web-tool-view>
+		`;
 	}
 
 	#subscribeToAgent() {
@@ -266,16 +286,31 @@ export class TameThread extends LitElement {
 	#renderItem = (item: ThreadItem) => {
 		if (item.type === "tool_call") {
 			const ti = item as ToolCallItem;
-			return html`
-				<tame-web-tool-view
-					.toolUseId=${ti.id}
-					.toolName=${ti.name}
-					.toolInput=${ti.input}
-					.result=${ti.result ?? null}
-					.isError=${ti.isError ?? false}
-					.view=${ti.view ?? null}
-				></tame-web-tool-view>
-			`;
+			if (ti.role !== "tame") return this.#renderToolView(ti);
+			switch (
+				parseMessageVisibility(
+					this.store?.get("web", AUTOMATED_VISIBILITY_KEY) ?? null,
+				)
+			) {
+				case "hidden":
+					return html``;
+				case "collapsable":
+					return html`
+						<details data-role="tame" open>
+							<summary><span data-label="role">tame</span></summary>
+							${this.#renderToolView(ti)}
+						</details>
+					`;
+				case "collapsed":
+					return html`
+						<details data-role="tame">
+							<summary><span data-label="role">tame</span></summary>
+							${this.#renderToolView(ti)}
+						</details>
+					`;
+				default:
+					return this.#renderToolView(ti);
+			}
 		}
 		const mi = item as MessageItem;
 		return html`<tame-web-message .item=${mi}></tame-web-message>`;
