@@ -309,7 +309,12 @@ export class TameThread extends LitElement {
 						</details>
 					`;
 				default:
-					return this.#renderToolView(ti);
+					return html`
+						<section data-role="tame">
+							<span data-label="role">tame</span>
+							${this.#renderToolView(ti)}
+						</section>
+					`;
 			}
 		}
 		const mi = item as MessageItem;
