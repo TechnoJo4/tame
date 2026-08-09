@@ -10,6 +10,10 @@ export function messageRole(msg: InputMessage): MessageItem["role"] {
 	return msg[tameMsgMeta]?.automated ? "tame" : msg.role;
 }
 
+function messageKey(messageIdx: number, segmentIdx: number): string {
+	return `msg-${messageIdx}${segmentIdx === 0 ? "" : `-${segmentIdx}`}`;
+}
+
 // ---- context → items conversion ----
 
 /** Convert an agent's full context to ThreadItem[] with pre-resolved web views.
@@ -22,13 +26,14 @@ export function contextToItems(agent: IAgent): ThreadItem[] {
 	for (const msg of agent.context) {
 		if (msg.role === "user") {
 			const role = messageRole(msg);
+			let segmentIdx = 0;
 			for (const block of msg.content) {
 				if (block.type === "text") {
 					items.push({
 						type: "message",
 						role,
 						content: [{ type: "text", text: block.text }],
-						key: `msg-${msgIdx}`,
+						key: messageKey(msgIdx, segmentIdx++),
 					});
 				}
 			}
@@ -37,6 +42,7 @@ export function contextToItems(agent: IAgent): ThreadItem[] {
 			// assistant message: text/thinking blocks → message item,
 			// tool_use blocks → tool_call items with pre-resolved views
 			const textBlocks: TextOrThinking[] = [];
+			let segmentIdx = 0;
 
 			for (const block of msg.content) {
 				if (block.type === "tool_use") {
@@ -45,7 +51,7 @@ export function contextToItems(agent: IAgent): ThreadItem[] {
 							type: "message",
 							role,
 							content: [...textBlocks],
-							key: `msg-${msgIdx}`,
+							key: messageKey(msgIdx, segmentIdx++),
 						});
 						textBlocks.length = 0;
 					}
@@ -80,7 +86,7 @@ export function contextToItems(agent: IAgent): ThreadItem[] {
 					type: "message",
 					role,
 					content: [...textBlocks],
-					key: `msg-${msgIdx}`,
+					key: messageKey(msgIdx, segmentIdx++),
 				});
 			}
 		}

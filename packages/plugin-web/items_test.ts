@@ -85,9 +85,11 @@ Deno.test("automated assistant tool calls retain tame visibility metadata", () =
 				name: "read",
 				input: { path: "x" },
 			},
+			{ type: "text", text: "tool complete" },
 		],
 		[tameMsgMeta]: { automated: true },
 	}]));
 
-	assertEquals(items.map((item) => item.role), ["tame", "tame"]);
+	assertEquals(items.map((item) => item.role), ["tame", "tame", "tame"]);
+	assertEquals(items.map((item) => item.key), ["msg-0", "call-1", "msg-0-1"]);
 });
