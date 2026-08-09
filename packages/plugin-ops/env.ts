@@ -22,6 +22,9 @@ export interface FileEnv {
 }
 
 export interface Env {
+	readonly defaultWorkdir: string;
+	resolvePath(path: string, base?: string): string;
+	validateWorkdir(path: string): Promise<void>;
 	exec(command: string[], opts: ExecOpts): Promise<ExecResult>;
 	lock<T>(path: string, f: (env: FileEnv) => Promise<T>): Promise<T>;
 	contractPath(path: string): string;

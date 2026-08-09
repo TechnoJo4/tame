@@ -1,11 +1,12 @@
-import type { ExecOpts, ExecResult, FileEnv, Env } from "./env.ts";
+import type { Env, ExecOpts, ExecResult, FileEnv } from "./env.ts";
 import { promises as fs } from "node:fs";
 import { spawn } from "node:child_process";
-import { dirname, resolve } from "@std/path";
+import { dirname, isAbsolute, resolve } from "@std/path";
 import type { OpsConfig } from "./config.ts";
 
 const home = process.env.HOME ?? "";
 
+// deno-fmt-ignore
 const stripAnsi = (s: string) => // deno-lint-ignore no-control-regex
 	s.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "").replace(/\x1b\].*?(\x07|\x1b\\)/g, "");
 
@@ -25,13 +26,36 @@ export default class LocalEnv implements Env {
 	#lock = new Map<string, Promise<void>>();
 
 	config: OpsConfig;
+	readonly defaultWorkdir: string;
 
 	constructor(config: OpsConfig) {
 		this.config = config;
+		this.defaultWorkdir = this.resolvePath(config.workdir);
+	}
+
+	resolvePath(path: string, base = process.cwd()): string {
+		if (path === "~") return resolve(home);
+		if (path.startsWith("~/")) return resolve(home, path.substring(2));
+		return isAbsolute(path) ? resolve(path) : resolve(base, path);
+	}
+
+	async validateWorkdir(path: string): Promise<void> {
+		const resolved = this.resolvePath(path);
+		try {
+			await fs.access(resolved, fs.constants.R_OK | fs.constants.X_OK);
+			if (!(await fs.stat(resolved)).isDirectory()) {
+				throw new Error(`${resolved}: not a directory`);
+			}
+		} catch (e) {
+			if (e instanceof Error && e.message.endsWith(": not a directory")) {
+				throw e;
+			}
+			throw new Error(`${resolved}: access failed`);
+		}
 	}
 
 	async lock<T>(path: string, f: (env: FileEnv) => Promise<T>): Promise<T> {
-		const resolved = path.startsWith("~/") ? resolve(home, path.substring(2)) : resolve(path);
+		const resolved = this.resolvePath(path);
 		const fileEnv: FileEnv = {
 			path: resolved,
 			read: async () => {
@@ -41,8 +65,11 @@ export default class LocalEnv implements Env {
 				} catch {
 					throw new Error(`${resolved}: access failed`);
 				}
-				if (stat.size > this.config.maxReadBytes)
-					throw new Error(`${resolved}: file too large (${stat.size} bytes, max ${this.config.maxReadBytes})`);
+				if (stat.size > this.config.maxReadBytes) {
+					throw new Error(
+						`${resolved}: file too large (${stat.size} bytes, max ${this.config.maxReadBytes})`,
+					);
+				}
 				return new Uint8Array(await fs.readFile(resolved));
 			},
 			write: async (content) => {
@@ -56,7 +83,7 @@ export default class LocalEnv implements Env {
 					? content.data
 					: new TextEncoder().encode(content.text);
 				await fs.writeFile(resolved, data);
-			}
+			},
 		};
 
 		const prev = this.#lock.get(resolved) ?? Promise.resolve();
@@ -72,7 +99,9 @@ export default class LocalEnv implements Env {
 
 	async exec(command: string[], opts: ExecOpts): Promise<ExecResult> {
 		if (opts.workdir) {
-			opts.workdir = opts.workdir.startsWith("~/") ? resolve(home, opts.workdir) : resolve(opts.workdir);
+			opts.workdir = opts.workdir.startsWith("~/")
+				? resolve(home, opts.workdir)
+				: resolve(opts.workdir);
 			try {
 				await fs.access(opts.workdir, fs.constants.R_OK);
 			} catch {
@@ -84,14 +113,20 @@ export default class LocalEnv implements Env {
 			detached: true,
 			cwd: opts.workdir,
 			stdio: ["ignore", "pipe", "pipe"],
-			env: { ...process.env, ...opts.env }
+			env: { ...process.env, ...opts.env },
 		});
 
 		const stdout: string[] = [];
 		const stderr: string[] = [];
 		const decoder = new TextDecoder();
-		proc.stdout.on("data", (data) => stdout.push(decoder.decode(data, { stream: true })));
-		proc.stderr.on("data", (data) => stderr.push(decoder.decode(data, { stream: true })));
+		proc.stdout.on(
+			"data",
+			(data) => stdout.push(decoder.decode(data, { stream: true })),
+		);
+		proc.stderr.on(
+			"data",
+			(data) => stderr.push(decoder.decode(data, { stream: true })),
+		);
 
 		let abortReason: "abort" | "timeout" | undefined = undefined;
 		const onAbort = (reason: "abort" | "timeout") => {
@@ -102,7 +137,9 @@ export default class LocalEnv implements Env {
 		if (opts.signal?.aborted) onAbort("abort");
 		else opts.signal?.addEventListener("abort", abortListener, { once: true });
 
-		const timeoutId = opts.timeout ? setTimeout(() => onAbort("timeout"), opts.timeout) : undefined;
+		const timeoutId = opts.timeout
+			? setTimeout(() => onAbort("timeout"), opts.timeout)
+			: undefined;
 		await new Promise<void>((resolve, reject) => {
 			proc.once("close", () => resolve());
 			proc.once("error", reject);
@@ -120,7 +157,9 @@ export default class LocalEnv implements Env {
 
 	contractPath(path: string): string {
 		if (path === home) return "~";
-		if (home && path.startsWith(home + "/")) return "~" + path.slice(home.length);
+		if (home && (path.startsWith(home + "/") || path.startsWith(home + "\\"))) {
+			return "~" + path.slice(home.length);
+		}
 		return path;
 	}
-};
+}

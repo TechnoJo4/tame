@@ -1,15 +1,26 @@
 import * as acp from "@agentclientprotocol/sdk";
 import { type Static, Type } from "typebox";
 
-import type { IAgent, IHarness, Plugin, InputContent, InputMessage, AgentStopReason, ToolUse } from "@tame/sdk";
+import type {
+	AgentStopReason,
+	IAgent,
+	IHarness,
+	InputContent,
+	InputMessage,
+	Plugin,
+	ToolUse,
+} from "@tame/sdk";
 import { tool } from "@tame/sdk";
-import { getAgentHistory, type HistoryPlugin } from "@tame/plugin-history/index";
+import {
+	getAgentHistory,
+	type HistoryPlugin,
+} from "@tame/plugin-history/index";
 import type { CommandsPlugin } from "@tame/plugin-commands/index";
 
 const tcpListen = Type.Object({
 	transport: Type.Literal("tcp"),
 	hostname: Type.String(),
-	port: Type.Number()
+	port: Type.Number(),
 });
 
 const unixListen = Type.Object({
@@ -19,12 +30,13 @@ const unixListen = Type.Object({
 
 export const configSchema = Type.Object({
 	listen: Type.Union([tcpListen, unixListen]),
-	tools: Type.Boolean({ default: false })
+	tools: Type.Boolean({ default: false }),
 });
 
 export type Config = Static<typeof configSchema>;
 
-const acpToolSystem = `\n\nYou are connected to a user through ACP (Agent Client Protocol).
+const acpToolSystem =
+	`\n\nYou are connected to a user through ACP (Agent Client Protocol).
 
 The ACP user's environment has a separate file system, and may run a different operating system.
 Tools which act through ACP may behave differently from your other tools.`;
@@ -37,7 +49,7 @@ const stopReasonMap: Record<AgentStopReason, acp.StopReason> = {
 	pause_turn: "end_turn",
 	refusal: "refusal",
 	aborted: "cancelled",
-	error: "cancelled"
+	error: "cancelled",
 };
 
 export class ACPAdapter implements acp.Agent {
@@ -49,7 +61,11 @@ export class ACPAdapter implements acp.Agent {
 	#sessions = new Map<string, IAgent>();
 	#clientCaps: acp.ClientCapabilities = {};
 
-	constructor(harness: IHarness, connection: acp.AgentSideConnection, config: Config) {
+	constructor(
+		harness: IHarness,
+		connection: acp.AgentSideConnection,
+		config: Config,
+	) {
 		this.#harness = harness;
 		this.#connection = connection;
 		this.#config = config;
@@ -57,10 +73,13 @@ export class ACPAdapter implements acp.Agent {
 		this.#commands = this.#harness.getPlugin<CommandsPlugin>("commands");
 	}
 
-	async initialize(params: acp.InitializeRequest): Promise<acp.InitializeResponse> {
-		if (params.clientCapabilities)
+	async initialize(
+		params: acp.InitializeRequest,
+	): Promise<acp.InitializeResponse> {
+		if (params.clientCapabilities) {
 			this.#clientCaps = params.clientCapabilities;
-		
+		}
+
 		return {
 			protocolVersion: acp.PROTOCOL_VERSION,
 			agentCapabilities: {
@@ -68,36 +87,48 @@ export class ACPAdapter implements acp.Agent {
 				sessionCapabilities: {
 					list: this.#history && {},
 				},
-			}
+			},
 		};
 	}
 
-	async newSession(_params: acp.NewSessionRequest): Promise<acp.NewSessionResponse> {
+	async newSession(
+		_params: acp.NewSessionRequest,
+	): Promise<acp.NewSessionResponse> {
 		const agent = this.#harness.newAgent();
 		this.#setupAgent(agent);
 		return { sessionId: agent.id };
 	}
 
-	async loadSession(params: acp.LoadSessionRequest): Promise<acp.LoadSessionResponse> {
+	async loadSession(
+		params: acp.LoadSessionRequest,
+	): Promise<acp.LoadSessionResponse> {
 		let agent = this.#sessions.get(params.sessionId);
-		if (!agent)
+		if (!agent) {
 			agent = this.#harness.getAgent(params.sessionId);
-		if (!agent)
+		}
+		if (!agent) {
 			agent = await this.#history!.loadAgent(params.sessionId);
-		if (!agent)
-			throw new Error(`could not find or load agent with id '${params.sessionId}'`);
+		}
+		if (!agent) {
+			throw new Error(
+				`could not find or load agent with id '${params.sessionId}'`,
+			);
+		}
 		this.#setupAgent(agent);
 
 		const hist = getAgentHistory(agent);
 		if (hist.title) this.#sendTitle(agent.id, hist.title);
 
-		for (const m of agent.context)
+		for (const m of agent.context) {
 			this.#sendMessage(agent.id, m, true);
+		}
 
 		return {};
 	}
 
-	async listSessions(_params: acp.ListSessionsRequest): Promise<acp.ListSessionsResponse> {
+	async listSessions(
+		_params: acp.ListSessionsRequest,
+	): Promise<acp.ListSessionsResponse> {
 		const sessions: acp.SessionInfo[] = [];
 		for (const sess of await this.#history!.list()) {
 			const agent = this.#sessions.get(sess.id);
@@ -119,7 +150,9 @@ export class ACPAdapter implements acp.Agent {
 		return { sessions };
 	}
 
-	async authenticate(_params: acp.AuthenticateRequest): Promise<acp.AuthenticateResponse | void> {
+	async authenticate(
+		_params: acp.AuthenticateRequest,
+	): Promise<acp.AuthenticateResponse | void> {
 		return {};
 	}
 
@@ -129,21 +162,47 @@ export class ACPAdapter implements acp.Agent {
 
 		const content = this.#contentFromACP(params.prompt);
 
-		const firstText = content.find(c => c.type === "text");
+		const firstText = content.find((c) => c.type === "text");
 		if (this.#commands && firstText?.text?.startsWith("/")) {
 			agent.context.push({ role: "user", content });
 			const idlePromise = agent.waitFor("idle");
 			try {
-				await this.#commands.dispatch(agent, firstText.text);
+				const result = await this.#commands.dispatch(agent, firstText.text);
+				if (result) {
+					agent.fire("assistantMessage", {
+						msg: {
+							role: "assistant",
+							content: [{ type: "text", text: result }],
+							stop_reason: "end_turn",
+							model: "command",
+							usage: {
+								cache_creation_input_tokens: 0,
+								cache_read_input_tokens: 0,
+								input_tokens: 0,
+								output_tokens: 0,
+								service_tier: "standard",
+							},
+						},
+					});
+				}
 			} catch (e) {
 				agent.fire("assistantMessage", {
 					msg: {
 						role: "assistant",
-						content: [{ type: "text", text: `Error: ${e instanceof Error ? e.message : String(e)}` }],
+						content: [{
+							type: "text",
+							text: `Error: ${e instanceof Error ? e.message : String(e)}`,
+						}],
 						stop_reason: "end_turn",
 						model: "command",
-						usage: { cache_creation_input_tokens: 0, cache_read_input_tokens: 0, input_tokens: 0, output_tokens: 0, service_tier: "standard" }
-					}
+						usage: {
+							cache_creation_input_tokens: 0,
+							cache_read_input_tokens: 0,
+							input_tokens: 0,
+							output_tokens: 0,
+							service_tier: "standard",
+						},
+					},
 				});
 			}
 			agent.fire("idle", { stopReason: "end_turn" });
@@ -159,8 +218,8 @@ export class ACPAdapter implements acp.Agent {
 		agent.fire("userMessage", {
 			msg: {
 				role: "user",
-				content
-			}
+				content,
+			},
 		});
 		const idle = await agent.waitFor("idle");
 
@@ -188,25 +247,33 @@ export class ACPAdapter implements acp.Agent {
 					name: "acpRead",
 					desc: "Read a text file from the ACP client's environment",
 					args: Type.Object({
-						path: Type.String({ description: "Absolute path to the file to read" }),
-						offset: Type.Optional(Type.Number({ description: "Line number to start reading from (1-based)" })),
-						limit: Type.Optional(Type.Number({ description: "Maximum number of lines to read" }))
+						path: Type.String({
+							description: "Absolute path to the file to read",
+						}),
+						offset: Type.Optional(
+							Type.Number({
+								description: "Line number to start reading from (1-based)",
+							}),
+						),
+						limit: Type.Optional(
+							Type.Number({ description: "Maximum number of lines to read" }),
+						),
 					}),
 					exec: async (args) => {
 						const res = await this.#connection.readTextFile({
 							sessionId: agent.id,
 							path: args.path,
 							line: args.offset,
-							limit: args.limit
+							limit: args.limit,
 						});
 						return res.content;
 					},
 					view: {
 						acp: (args) => ({
 							kind: "read",
-							title: `Read ${args.path} (ACP)`
-						})
-					}
+							title: `Read ${args.path} (ACP)`,
+						}),
+					},
 				}));
 			}
 
@@ -215,19 +282,26 @@ export class ACPAdapter implements acp.Agent {
 					name: "acpWrite",
 					desc: "Write a text file in the ACP client's environment",
 					args: Type.Object({
-						path: Type.String({ description: "Absolute path to the file to read" }),
-						content: Type.String({ description: "The text content to write to the file" })
+						path: Type.String({
+							description: "Absolute path to the file to read",
+						}),
+						content: Type.String({
+							description: "The text content to write to the file",
+						}),
 					}),
 					exec: async (args) => {
-						await this.#connection.writeTextFile({ sessionId: agent.id, ...args });
+						await this.#connection.writeTextFile({
+							sessionId: agent.id,
+							...args,
+						});
 						return "Success.";
 					},
 					view: {
 						acp: (args) => ({
 							kind: "edit",
-							title: `Write ${args.path} (ACP)`
-						})
-					}
+							title: `Write ${args.path} (ACP)`,
+						}),
+					},
 				}));
 			}
 		}
@@ -237,11 +311,11 @@ export class ACPAdapter implements acp.Agent {
 				sessionId: agent.id,
 				update: {
 					sessionUpdate: "available_commands_update",
-					availableCommands: [...this.#commands.list()].map(c => ({
+					availableCommands: [...this.#commands.list()].map((c) => ({
 						name: c.name,
 						description: c.description,
-					}))
-				}
+					})),
+				},
 			});
 		}
 
@@ -250,17 +324,19 @@ export class ACPAdapter implements acp.Agent {
 			return e;
 		});
 		agent.after("toolResult", async (e) => {
-			const call = agent.context.flatMap(m => m.content)
-				.find(c => c.type === "tool_use" && c.id === e.toolUse);
-			const view = call ? agent.viewToolCall("acp", call as ToolUse) : undefined;
+			const call = agent.context.flatMap((m) => m.content)
+				.find((c) => c.type === "tool_use" && c.id === e.toolUse);
+			const view = call
+				? agent.viewToolCall("acp", call as ToolUse)
+				: undefined;
 			this.#connection.sessionUpdate({
 				sessionId: agent.id,
 				update: {
 					sessionUpdate: "tool_call_update",
 					toolCallId: e.toolUse,
 					status: e.error ? "failed" : "completed",
-					...(typeof view === "object" ? view : {})
-				}
+					...(typeof view === "object" ? view : {}),
+				},
 			});
 			return e;
 		});
@@ -271,12 +347,16 @@ export class ACPAdapter implements acp.Agent {
 			sessionId,
 			update: {
 				sessionUpdate: "session_info_update",
-				title
-			}
-		})
+				title,
+			},
+		});
 	}
 
-	#sendMessage(sessionId: string, msg: InputMessage, noToolResult: boolean = false) {
+	#sendMessage(
+		sessionId: string,
+		msg: InputMessage,
+		noToolResult: boolean = false,
+	) {
 		for (const block of msg.content) {
 			switch (block.type) {
 				case "thinking":
@@ -286,18 +366,20 @@ export class ACPAdapter implements acp.Agent {
 							sessionUpdate: "agent_thought_chunk",
 							content: {
 								type: "text",
-								text: block.thinking
-							}
-						}
+								text: block.thinking,
+							},
+						},
 					});
 					break;
 				case "text":
 					this.#connection.sessionUpdate({
 						sessionId,
 						update: {
-							sessionUpdate: msg.role === "assistant" ? "agent_message_chunk" : "user_message_chunk",
-							content: block
-						}
+							sessionUpdate: msg.role === "assistant"
+								? "agent_message_chunk"
+								: "user_message_chunk",
+							content: block,
+						},
 					});
 					break;
 				case "tool_use": {
@@ -311,13 +393,11 @@ export class ACPAdapter implements acp.Agent {
 							toolCallId: block.id,
 							title: block.name,
 							status: block.result
-								? block.result.is_error
-									? "failed"
-									: "completed"
+								? block.result.is_error ? "failed" : "completed"
 								: "in_progress",
 							rawInput: block.input,
-							...(typeof view === "object" ? view : {})
-						}
+							...(typeof view === "object" ? view : {}),
+						},
 					});
 					break;
 				}
@@ -337,7 +417,7 @@ export class ACPAdapter implements acp.Agent {
 					break;
 			}
 		}
-		return [ { type: "text", text } ];
+		return [{ type: "text", text }];
 	}
 }
 
@@ -353,7 +433,9 @@ export class ACPPlugin implements Plugin {
 	async init(harness: IHarness) {
 		let listener: Deno.TcpListener | Deno.UnixListener;
 		if (this.#config.listen.transport === "unix") {
-			try { await Deno.remove(this.#config.listen.path); } catch {
+			try {
+				await Deno.remove(this.#config.listen.path);
+			} catch {
 				// ignore
 			}
 			listener = Deno.listen(this.#config.listen);
@@ -364,7 +446,10 @@ export class ACPPlugin implements Plugin {
 		for await (const conn of listener) {
 			if ("setKeepAlive" in conn) conn.setKeepAlive(true);
 			const stream = acp.ndJsonStream(conn.writable, conn.readable);
-			new acp.AgentSideConnection((conn) => new ACPAdapter(harness, conn, this.#config), stream);
+			new acp.AgentSideConnection(
+				(conn) => new ACPAdapter(harness, conn, this.#config),
+				stream,
+			);
 		}
 	}
 }
