@@ -135,17 +135,20 @@ tame-web-message[data-role="tame"] {
 	border-left: 2px solid var(--tame-border-light);
 	color: var(--tame-text-secondary);
 }
-tame-web-message[data-role="tame"] > details > summary {
-	cursor: pointer;
-}
+tame-web-message[data-role="tame"] > details > summary,
 tame-web-thread details[data-role="tame"] > summary {
 	cursor: pointer;
+	color: var(--tame-text-muted);
+}
+tame-web-message[data-role="tame"] > details > summary::marker,
+tame-web-thread details[data-role="tame"] > summary::marker {
+	color: var(--tame-text-muted);
 }
 tame-web-thread details[data-role="tame"] > summary > span[data-label="role"] {
-	display: block;
+	display: inline;
 	font-size: 11px;
-	color: var(--tame-text-muted);
-	margin-bottom: 4px;
+	color: inherit;
+	margin-bottom: 0;
 	text-transform: uppercase;
 }
 tame-web-thread section[data-role="tame"] {
@@ -163,12 +166,18 @@ tame-web-thread section[data-role="tame"] > span[data-label="role"] {
 	margin-bottom: 4px;
 	text-transform: uppercase;
 }
-tame-web-message > span[data-label="role"],
-tame-web-message > details > summary > span[data-label="role"] {
+tame-web-message > span[data-label="role"] {
 	display: block;
 	font-size: 11px;
 	color: var(--tame-text-muted);
 	margin-bottom: 4px;
+	text-transform: uppercase;
+}
+tame-web-message > details > summary > span[data-label="role"] {
+	display: inline;
+	font-size: 11px;
+	color: inherit;
+	margin-bottom: 0;
 	text-transform: uppercase;
 }
 tame-web-message > pre {
