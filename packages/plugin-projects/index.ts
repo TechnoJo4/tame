@@ -11,6 +11,7 @@ import type { HistoryHook, HistoryPlugin } from "@tame/plugin-history/index";
 import type { OpsPlugin } from "@tame/plugin-ops/index";
 import { envKey, getEnv, setWorkdir } from "@tame/plugin-ops/index";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
+import type { WebPlugin } from "@tame/plugin-web/index";
 import { rpcSchema } from "./rpc-schema.ts";
 import type { ProjectConfig, ProjectsConfig } from "./config.ts";
 
@@ -68,6 +69,8 @@ export class ProjectsPlugin implements Plugin {
 
 	readonly #projects: Map<string, ProjectConfig>;
 	#harness?: IHarness;
+	#history?: HistoryPlugin;
+	#rpc?: RPCPlugin;
 
 	constructor(config: ProjectsConfig) {
 		this.#projects = validateConfig(config);
@@ -85,6 +88,7 @@ export class ProjectsPlugin implements Plugin {
 		this.#harness = harness;
 
 		const rpc = harness.getPlugin<RPCPlugin>("rpc");
+		this.#rpc = rpc;
 		rpc?.register("projects", {
 			newAgent: call({
 				...rpcSchema.newAgent,
@@ -92,9 +96,31 @@ export class ProjectsPlugin implements Plugin {
 					id: (await this.createAgent(project)).id,
 				}),
 			}),
+			listSessions: call({
+				...rpcSchema.listSessions,
+				call: async () => ({ sessions: await this.listSessions() }),
+			}),
+			loadSession: call({
+				...rpcSchema.loadSession,
+				call: async ({ id }) => {
+					if (!this.#history) {
+						throw new Error("plugin-history is not installed");
+					}
+					return { id: (await this.#history.loadAgent(id)).id };
+				},
+			}),
 		});
 
 		const history = harness.getPlugin<HistoryPlugin>("history");
+		this.#history = history;
+		history?.onSessionsChanged(() =>
+			this.#rpc?.emit({
+				type: "event",
+				plugin: "projects",
+				event: "sessionsChanged",
+				data: {},
+			})
+		);
 		history?.addHook<ProjectAgentData | null>(
 			"projects",
 			{
@@ -110,6 +136,22 @@ export class ProjectsPlugin implements Plugin {
 				},
 			} satisfies HistoryHook<ProjectAgentData | null>,
 		);
+
+		const web = harness.getPlugin<WebPlugin>("web");
+		if (web) {
+			const dir = import.meta.dirname!;
+			await web.register("projects", [{
+				tag: "tame-project-sessions",
+				src: web.resolve(dir, "./web/project-sessions.ts"),
+			}], [{
+				location: "panel:sidebar",
+				tag: "tame-project-sessions",
+				props: {
+					projects: this.listProjects().map((project) => project.name),
+					hasHistory: history !== undefined,
+				},
+			}], web.resolve(dir, "./web/project-sessions.css"));
+		}
 	}
 
 	newAgent(agent: IAgent) {
@@ -162,6 +204,31 @@ export class ProjectsPlugin implements Plugin {
 		if (!project || !this.#harness || !agent.pluginData.has(envKey)) return;
 		if (!this.#harness.getPlugin<OpsPlugin>("ops")) return;
 		setWorkdir(agent, getEnv(agent).resolvePath(localPath(project.workdir)));
+	}
+
+	async listSessions() {
+		if (!this.#history) return [];
+		const sessions = await this.#history.list();
+		const results = await Promise.all(sessions.map(async (session) => {
+			try {
+				const history = await this.#history!.load(session.id);
+				const data = history.extra.projects;
+				const project = data && typeof data === "object" && "project" in data &&
+						typeof data.project === "string"
+					? data.project
+					: undefined;
+				return { ...session, project };
+			} catch (e) {
+				console.warn(
+					`plugin-projects: skipping unreadable session ${session.id}:`,
+					e,
+				);
+				return null;
+			}
+		}));
+		return results.filter((session): session is NonNullable<typeof session> =>
+			session !== null
+		);
 	}
 
 	async #readFiles(

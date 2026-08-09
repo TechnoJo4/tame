@@ -857,6 +857,12 @@
           "npm:lit@3.3.3"
         ]
       },
+      "packages/plugin-projects/web": {
+        "dependencies": [
+          "npm:@lit/context@^1.1.0",
+          "npm:lit@3.3.3"
+        ]
+      },
       "packages/plugin-web": {
         "dependencies": [
           "npm:@rollup/plugin-alias@5.1.1",

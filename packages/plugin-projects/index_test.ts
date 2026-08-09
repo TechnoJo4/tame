@@ -27,10 +27,12 @@ Deno.test("project agents inject files, set ops cwd, and persist identity", asyn
 	const history = {
 		addHook: (_key: string, hook: HistoryHook<ProjectAgentData | null>) =>
 			historyHook = hook,
+		onSessionsChanged: () => () => {},
 	};
 	const rpc = {
 		register: (_plugin: string, routes: { newAgent: ProjectRoute }) =>
 			projectRoute = routes.newAgent,
+		emit: () => {},
 	};
 	const harness = {
 		getPlugin: <T>(id: string) => {

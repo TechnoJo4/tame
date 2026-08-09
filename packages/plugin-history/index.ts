@@ -1,7 +1,18 @@
 /// <reference path="./rpc.d.ts" />
-import { Thread, tameDataFolder, tameMsgMeta, type Plugin, type IAgent, type IHarness, type InputMessage, type TameMessageMeta, type ToolUse } from "@tame/sdk";
+import {
+	type IAgent,
+	type IHarness,
+	type InputMessage,
+	type Plugin,
+	tameDataFolder,
+	type TameMessageMeta,
+	tameMsgMeta,
+	Thread,
+	type ToolUse,
+} from "@tame/sdk";
 import { call } from "@tame/rpc-sdk";
 import { rpcSchema } from "./rpc-schema.ts";
+import type { HistoryConfig } from "./config.ts";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
 import type { WebPlugin } from "@tame/plugin-web/index";
 import { promises as fs } from "node:fs";
@@ -36,7 +47,7 @@ export type PersistedMessage = InputMessage & {
 export type PersistedHistory = History & {
 	context: PersistedMessage[];
 	history: PersistedMessage[];
-}
+};
 
 export interface HistoryAgentData {
 	title?: string;
@@ -47,26 +58,27 @@ export interface HistoryAgentData {
 export const messageToPersisted = (msg: InputMessage): PersistedMessage => ({
 	...msg,
 	[tameMsgMeta]: undefined,
-	_tame: msg?.[tameMsgMeta]
+	_tame: msg?.[tameMsgMeta],
 });
 
 export const messageFromPersisted = (msg: PersistedMessage): InputMessage => ({
 	...msg,
-	[tameMsgMeta]: msg?._tame
+	[tameMsgMeta]: msg?._tame,
 });
 
 export const cloneMessage = (msg: InputMessage): InputMessage => ({
 	...structuredClone(msg),
-	[tameMsgMeta]: msg[tameMsgMeta]
+	[tameMsgMeta]: msg[tameMsgMeta],
 });
 
 export const getAgentHistory = (agent: IAgent): HistoryAgentData => {
-	if (!agent.pluginData.has(dataKey))
+	if (!agent.pluginData.has(dataKey)) {
 		agent.pluginData.set(dataKey, {
-			history: []
+			history: [],
 		});
+	}
 	return agent.pluginData.get(dataKey) as HistoryAgentData;
-}
+};
 
 export interface HistoryHook<T> {
 	save(agent: IAgent): T;
@@ -86,8 +98,19 @@ export class HistoryPlugin implements Plugin {
 	#dirtyAgents = new Set<IAgent>();
 	/** Debounce window in ms. */
 	#debounceMs = 5000;
+	#config: HistoryConfig;
+	#sessionListeners = new Set<() => void>();
 
 	enabled?: true;
+
+	constructor(config: HistoryConfig = { sidebar: true }) {
+		this.#config = config;
+	}
+
+	onSessionsChanged(listener: () => void): () => void {
+		this.#sessionListeners.add(listener);
+		return () => this.#sessionListeners.delete(listener);
+	}
 
 	async init(harness: IHarness) {
 		this.#harness = harness;
@@ -119,9 +142,14 @@ export class HistoryPlugin implements Plugin {
 			const dir = import.meta.dirname!;
 			web.register("history", [
 				{ tag: "tame-history", src: web.resolve(dir, "./web/history.ts") },
-				{ tag: "tame-history-session-title", src: web.resolve(dir, "./web/session-title.ts") },
+				{
+					tag: "tame-history-session-title",
+					src: web.resolve(dir, "./web/session-title.ts"),
+				},
 			], [
-				{ location: "panel:sidebar", tag: "tame-history" },
+				...(this.#config.sidebar
+					? [{ location: "panel:sidebar", tag: "tame-history" }]
+					: []),
 				{ location: "topbar:center", tag: "tame-history-session-title" },
 			], web.resolve(dir, "./web/history.css"));
 		}
@@ -150,7 +178,9 @@ export class HistoryPlugin implements Plugin {
 		agent.after("userMessage", async (e) => {
 			const hist = getAgentHistory(agent);
 			if (!hist.title) {
-				const text = e.msg.content.filter(c => c.type === "text").map(c => c.text).join("");
+				const text = e.msg.content.filter((c) => c.type === "text").map((c) =>
+					c.text
+				).join("");
 				if (text.length > 0) {
 					const nl = text.indexOf("\n");
 					hist.title = nl !== -1 ? text.substring(0, nl) : text;
@@ -172,12 +202,14 @@ export class HistoryPlugin implements Plugin {
 			for (let i = hist.history.length - 1; i >= 0; i--) {
 				const m = hist.history[i];
 				if (m.role !== "assistant") continue;
-				const call = m.content.find(c => c.type === "tool_use" && c.id === e.toolUse) as ToolUse | undefined;
+				const call = m.content.find((c) =>
+					c.type === "tool_use" && c.id === e.toolUse
+				) as ToolUse | undefined;
 				if (call) {
 					call.result = {
 						type: "tool_result",
 						is_error: e.error,
-						content: structuredClone(e.result)
+						content: structuredClone(e.result),
 					};
 					break;
 				}
@@ -188,8 +220,9 @@ export class HistoryPlugin implements Plugin {
 	}
 
 	addHook<T>(key: string, hook: HistoryHook<T>): void {
-		if (this.#hooks.has(key))
+		if (this.#hooks.has(key)) {
 			throw new Error(`duplicate history hook key '${key}'`);
+		}
 		this.#hooks.set(key, hook);
 	}
 
@@ -209,7 +242,9 @@ export class HistoryPlugin implements Plugin {
 				system: agent.system,
 				context: agent.context.map(messageToPersisted),
 				history: data.history.map(messageToPersisted),
-				extra: Object.fromEntries(this.#hooks.entries().map(([k, v]) => [k, v.save(agent)])),
+				extra: Object.fromEntries(
+					this.#hooks.entries().map(([k, v]) => [k, v.save(agent)]),
+				),
 				lastMessageAt: now,
 			};
 			console.log(`saving agent ${agent.id}`);
@@ -223,12 +258,16 @@ export class HistoryPlugin implements Plugin {
 		const index: SessionInfo[] = await this.list();
 		for (const agent of agents) {
 			const ad = getAgentHistory(agent);
-			const s = index.find(s => s.id === agent.id);
+			const s = index.find((s) => s.id === agent.id);
 			if (s) {
 				s.title = ad.title;
 				s.lastMessageAt = ad.lastMessageAt;
 			} else {
-				index.push({ id: agent.id, title: ad.title, lastMessageAt: ad.lastMessageAt });
+				index.push({
+					id: agent.id,
+					title: ad.title,
+					lastMessageAt: ad.lastMessageAt,
+				});
 			}
 		}
 		console.log("saving index for update");
@@ -241,9 +280,14 @@ export class HistoryPlugin implements Plugin {
 		const data = await fs.readFile(indexFile, { encoding: "utf-8" });
 		const index: SessionInfo[] = JSON.parse(data);
 		const files = await fs.readdir(historyFolder, { withFileTypes: true });
-		for (const file of files)
-			if (file.isFile() && file.name !== "index.json" && !index.find(s => s.id === file.name))
+		for (const file of files) {
+			if (
+				file.isFile() && file.name !== "index.json" &&
+				!index.find((s) => s.id === file.name)
+			) {
 				index.push({ id: file.name });
+			}
+		}
 
 		// fallback: use file mtime for sessions missing lastMessageAt (pre-feature sessions)
 		await Promise.all(index.map(async (s) => {
@@ -260,7 +304,9 @@ export class HistoryPlugin implements Plugin {
 	}
 
 	async load(id: string): Promise<History> {
-		const json = await fs.readFile(resolve(historyFolder, id), { encoding: "utf-8" });
+		const json = await fs.readFile(resolve(historyFolder, id), {
+			encoding: "utf-8",
+		});
 		const data: PersistedHistory = JSON.parse(json);
 		return {
 			...data,
@@ -276,13 +322,19 @@ export class HistoryPlugin implements Plugin {
 	}
 
 	#emitSessionsChanged(sessions: SessionInfo[]) {
-		this.#rpc?.emit({ type: "event", plugin: "history", event: "sessionsChanged", data: { sessions } });
+		for (const listener of this.#sessionListeners) listener();
+		this.#rpc?.emit({
+			type: "event",
+			plugin: "history",
+			event: "sessionsChanged",
+			data: { sessions },
+		});
 	}
 
 	async historyToAgent(history: History): Promise<IAgent> {
 		const agent = this.#harness!.newAgent({
 			system: history.system,
-			id: history.id
+			id: history.id,
 		});
 		agent.context = history.context;
 		Object.assign(getAgentHistory(agent), {
@@ -291,10 +343,12 @@ export class HistoryPlugin implements Plugin {
 			lastMessageAt: history.lastMessageAt,
 		} as HistoryAgentData);
 
-		for (const [k,v] of Object.entries(history.extra ?? {})) {
+		for (const [k, v] of Object.entries(history.extra ?? {})) {
 			const hook = this.#hooks.get(k);
 			if (!hook) {
-				console.warn(`extra data '${k}' in history for agent but hook not found`)
+				console.warn(
+					`extra data '${k}' in history for agent but hook not found`,
+				);
 				continue;
 			}
 			hook.load(agent, v);
