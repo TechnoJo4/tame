@@ -1,4 +1,4 @@
-import type { Plugin, IHarness, IAgent } from "@tame/sdk";
+import { type IAgent, type IHarness, type Plugin, tameMsgMeta } from "@tame/sdk";
 import { Type } from "typebox";
 import { call } from "@tame/rpc-sdk";
 import { resolve } from "@std/path";
@@ -6,7 +6,7 @@ import { serve } from "./serve.ts";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
 import type { ComponentDef, Placement } from "@tame/web-sdk/placement";
 import { basePlugins, terserPlugin } from "./build-config.ts";
-import { contextToItems, assistantBlocksToItems, paginateItems } from "./items.ts";
+import { assistantBlocksToItems, contextToItems, paginateItems } from "./items.ts";
 
 export type { ComponentDef, Placement } from "@tame/web-sdk/placement";
 
@@ -62,7 +62,12 @@ export class WebPlugin implements Plugin {
 	}
 
 	/** Register components and placements for a plugin. Called during init(). */
-	async register(pluginId: string, components: ComponentDef[], placements: Placement[], css?: string): Promise<void> {
+	async register(
+		pluginId: string,
+		components: ComponentDef[],
+		placements: Placement[],
+		css?: string,
+	): Promise<void> {
 		const tsFiles: { src: string; tag: string }[] = [];
 
 		for (const c of components) {
@@ -82,19 +87,31 @@ export class WebPlugin implements Plugin {
 		// copy CSS file to build output so it can be served
 		if (css) {
 			const outDir = `${this.#buildDir}/plugins/${pluginId}`;
-			try { Deno.mkdirSync(outDir, { recursive: true }); } catch { /* exists */ }
+			try {
+				Deno.mkdirSync(outDir, { recursive: true });
+			} catch { /* exists */ }
 			const basename = css.split("/").pop()!;
 			const outPath = `${outDir}/${basename}`;
-			try { Deno.copyFileSync(css, outPath); } catch { /* not found */ }
-			this.#stylesheets.set(pluginId, `/static/plugins/${pluginId}/${basename}`);
+			try {
+				Deno.copyFileSync(css, outPath);
+			} catch { /* not found */ }
+			this.#stylesheets.set(
+				pluginId,
+				`/static/plugins/${pluginId}/${basename}`,
+			);
 		}
 
 		this.#placements.push(...placements);
 	}
 
-	async #transpile(pluginId: string, files: { src: string; tag: string }[]): Promise<void> {
+	async #transpile(
+		pluginId: string,
+		files: { src: string; tag: string }[],
+	): Promise<void> {
 		const outDir = `${this.#buildDir}/plugins/${pluginId}`;
-		try { Deno.mkdirSync(outDir, { recursive: true }); } catch { /* exists */ }
+		try {
+			Deno.mkdirSync(outDir, { recursive: true });
+		} catch { /* exists */ }
 
 		const { rollup } = await import("rollup");
 
@@ -134,13 +151,27 @@ export class WebPlugin implements Plugin {
 			const { rollup } = await import("rollup");
 
 			// if vendor bundles are missing (fresh clone), do a full build
-			try { Deno.statSync(litJs); Deno.statSync(litContextJs); Deno.statSync(webSdkJs); } catch {
+			try {
+				Deno.statSync(litJs);
+				Deno.statSync(litContextJs);
+				Deno.statSync(webSdkJs);
+			} catch {
 				await this.#buildVendorBundles(rollup, staticDir);
 			}
 
 			const build = await rollup({
 				input: shellTs,
-				external: ["lit", "lit/decorators.js", "lit/directive.js", "lit/async-directive.js", "@lit/context", /^@tame\/rpc-client/, /^@tame\/web-sdk/, "typebox", "typebox/compile"],
+				external: [
+					"lit",
+					"lit/decorators.js",
+					"lit/directive.js",
+					"lit/async-directive.js",
+					"@lit/context",
+					/^@tame\/rpc-client/,
+					/^@tame\/web-sdk/,
+					"typebox",
+					"typebox/compile",
+				],
 				plugins: basePlugins(this.#rootDir),
 			});
 			await build.write({
@@ -152,7 +183,10 @@ export class WebPlugin implements Plugin {
 			});
 			await build.close();
 		} catch (e) {
-			console.warn("plugin-web: shell rebuild failed, using existing shell.js:", e);
+			console.warn(
+				"plugin-web: shell rebuild failed, using existing shell.js:",
+				e,
+			);
 		}
 	}
 
@@ -161,18 +195,35 @@ export class WebPlugin implements Plugin {
 		const entry = (name: string, content: string) => {
 			Deno.writeTextFileSync(`${this.#buildDir}/${name}.entry.ts`, content);
 		};
-		entry("lit", `export * from "lit";\nexport * from "lit/decorators.js";\nexport * from "lit/directive.js";\nexport * from "lit/async-directive.js";\n`);
-		entry("typebox",
+		entry(
+			"lit",
+			`export * from "lit";\nexport * from "lit/decorators.js";\nexport * from "lit/directive.js";\nexport * from "lit/async-directive.js";\n`,
+		);
+		entry(
+			"typebox",
 			`export * from "typebox";\nexport { default } from "typebox";\n` +
-			`export { Compile, Code, Validator } from "typebox/compile";\n` +
-			`export { default as compileDefault } from "typebox/compile";\n`);
-		entry("tame-rpc-client",
+				`export { Compile, Code, Validator } from "typebox/compile";\n` +
+				`export { default as compileDefault } from "typebox/compile";\n`,
+		);
+		entry(
+			"tame-rpc-client",
 			`export { RPCClient } from "@tame/rpc-client";\n` +
-			`export { wsToStream } from "@tame/rpc-client/stream";\n`);
-		entry("lit-context", `export { createContext, ContextProvider, ContextConsumer, ContextEvent, provide, consume } from "@lit/context";\n`);
-		entry("web-sdk", `export { agentIdContext, rpcClientContext, registryContext, settingsStoreContext, settingsPluginIdContext } from "@tame/web-sdk";\nexport { setting, settingBool, settingWhen } from "@tame/web-sdk/setting-directives";\n`);
+				`export { wsToStream } from "@tame/rpc-client/stream";\n`,
+		);
+		entry(
+			"lit-context",
+			`export { createContext, ContextProvider, ContextConsumer, ContextEvent, provide, consume } from "@lit/context";\n`,
+		);
+		entry(
+			"web-sdk",
+			`export { agentIdContext, rpcClientContext, registryContext, settingsStoreContext, settingsPluginIdContext } from "@tame/web-sdk";\nexport { setting, settingBool, settingWhen } from "@tame/web-sdk/setting-directives";\n`,
+		);
 
-		const bundle = async (name: string, externals: string[] = [], noMinify = false) => {
+		const bundle = async (
+			name: string,
+			externals: string[] = [],
+			noMinify = false,
+		) => {
 			const b = await rollup({
 				input: `${this.#buildDir}/${name}.entry.ts`,
 				external: externals,
@@ -194,8 +245,18 @@ export class WebPlugin implements Plugin {
 		await bundle("web-sdk", ["lit", "@lit/context"]);
 
 		// cleanup entry files
-		for (const name of ["lit", "typebox", "tame-rpc-client", "lit-context", "web-sdk"]) {
-			try { Deno.removeSync(`${this.#buildDir}/${name}.entry.ts`); } catch { /* */ }
+		for (
+			const name of [
+				"lit",
+				"typebox",
+				"tame-rpc-client",
+				"lit-context",
+				"web-sdk",
+			]
+		) {
+			try {
+				Deno.removeSync(`${this.#buildDir}/${name}.entry.ts`);
+			} catch { /* */ }
 		}
 	}
 
@@ -214,11 +275,16 @@ export class WebPlugin implements Plugin {
 			getRegistry: call({
 				input: Type.Object({}),
 				output: Type.Object({
-					components: Type.Record(Type.String(), Type.Object({ src: Type.String() })),
+					components: Type.Record(
+						Type.String(),
+						Type.Object({ src: Type.String() }),
+					),
 					placements: Type.Array(Type.Object({
 						location: Type.String(),
 						tag: Type.String(),
-						props: Type.Optional(Type.Object({}, { additionalProperties: true })),
+						props: Type.Optional(
+							Type.Object({}, { additionalProperties: true }),
+						),
 					})),
 					stylesheets: Type.Record(Type.String(), Type.String()),
 				}),
@@ -250,7 +316,10 @@ export class WebPlugin implements Plugin {
 					if (!agent) throw new Error(`agent ${id} not found`);
 					const all = contextToItems(agent);
 					return {
-						items: paginateItems(all, offset, limit) as unknown as Record<string, unknown>[],
+						items: paginateItems(all, offset, limit) as unknown as Record<
+							string,
+							unknown
+						>[],
 						total: all.length,
 					};
 				},
@@ -260,9 +329,16 @@ export class WebPlugin implements Plugin {
 		// register web's own settings component at the settings modal placement
 		const dir = import.meta.dirname!;
 		await this.register("web", [
-			{ tag: "tame-web-settings", src: this.resolve(dir, "./web/components/web-settings.ts") },
+			{
+				tag: "tame-web-settings",
+				src: this.resolve(dir, "./web/components/web-settings.ts"),
+			},
 		], [
-			{ location: "modal:settings", tag: "tame-web-settings", props: { pluginId: "web" } },
+			{
+				location: "modal:settings",
+				tag: "tame-web-settings",
+				props: { pluginId: "web" },
+			},
 		]);
 
 		serve(this.#config, this.#components, this.#stylesheets, rpc);
@@ -290,7 +366,7 @@ export class WebPlugin implements Plugin {
 			emit("userMessage", {
 				item: {
 					type: "message",
-					role: "user",
+					role: e.msg[tameMsgMeta]?.automated ? "tame" : "user",
 					content,
 					key: `live-user-${Date.now()}`,
 				},
@@ -299,7 +375,11 @@ export class WebPlugin implements Plugin {
 		});
 
 		agent.after("assistantMessage", async (e) => {
-			const items = assistantBlocksToItems(e.msg.content, agent);
+			const items = assistantBlocksToItems(
+				e.msg.content,
+				agent,
+				e.msg[tameMsgMeta]?.automated === true,
+			);
 			if (items.length === 0) return e;
 			emit("assistantMessage", { items });
 			return e;

@@ -130,7 +130,16 @@ tame-web-message {
 tame-web-message[data-role="user"] {
 	background: var(--tame-surface);
 }
-tame-web-message > span[data-label="role"] {
+tame-web-message[data-role="tame"] {
+	background: var(--tame-surface-alt);
+	border-left: 2px solid var(--tame-border-light);
+	color: var(--tame-text-secondary);
+}
+tame-web-message[data-role="tame"] > details > summary {
+	cursor: pointer;
+}
+tame-web-message > span[data-label="role"],
+tame-web-message > details > summary > span[data-label="role"] {
 	display: block;
 	font-size: 11px;
 	color: var(--tame-text-muted);

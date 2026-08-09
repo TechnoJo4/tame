@@ -1,5 +1,9 @@
-import type { InputMessage, IAgent } from "@tame/sdk";
-import type { ThreadItem, MessageItem, ToolCallItem, TextOrThinking } from "@tame/web-sdk";
+import { type IAgent, type InputMessage, tameMsgMeta } from "@tame/sdk";
+import type { MessageItem, TextOrThinking, ThreadItem, ToolCallItem } from "@tame/web-sdk";
+
+export function messageRole(msg: InputMessage): MessageItem["role"] {
+	return msg[tameMsgMeta]?.automated ? "tame" : msg.role;
+}
 
 // ---- context → items conversion ----
 
@@ -12,17 +16,19 @@ export function contextToItems(agent: IAgent): ThreadItem[] {
 
 	for (const msg of agent.context) {
 		if (msg.role === "user") {
+			const role = messageRole(msg);
 			for (const block of msg.content) {
 				if (block.type === "text") {
 					items.push({
 						type: "message",
-						role: "user",
+						role,
 						content: [{ type: "text", text: block.text }],
 						key: `msg-${msgIdx}`,
 					});
 				}
 			}
 		} else {
+			const role = messageRole(msg);
 			// assistant message: text/thinking blocks → message item,
 			// tool_use blocks → tool_call items with pre-resolved views
 			const textBlocks: TextOrThinking[] = [];
@@ -32,14 +38,16 @@ export function contextToItems(agent: IAgent): ThreadItem[] {
 					if (textBlocks.length > 0) {
 						items.push({
 							type: "message",
-							role: "assistant",
+							role,
 							content: [...textBlocks],
 							key: `msg-${msgIdx}`,
 						});
 						textBlocks.length = 0;
 					}
-					const view = agent.viewToolCall("web", block) as
-						{ tag: string; props: Record<string, unknown> } | undefined;
+					const view = agent.viewToolCall("web", block) as {
+						tag: string;
+						props: Record<string, unknown>;
+					} | undefined;
 					const toolItem: ToolCallItem = {
 						type: "tool_call",
 						id: block.id,
@@ -64,7 +72,7 @@ export function contextToItems(agent: IAgent): ThreadItem[] {
 			if (textBlocks.length > 0) {
 				items.push({
 					type: "message",
-					role: "assistant",
+					role,
 					content: [...textBlocks],
 					key: `msg-${msgIdx}`,
 				});
@@ -81,24 +89,28 @@ export function contextToItems(agent: IAgent): ThreadItem[] {
 export function assistantBlocksToItems(
 	blocks: InputMessage["content"],
 	agent: IAgent,
+	automated = false,
 ): ThreadItem[] {
 	const items: ThreadItem[] = [];
 	const textBlocks: TextOrThinking[] = [];
+	const role: MessageItem["role"] = automated ? "tame" : "assistant";
 
 	for (const block of blocks) {
 		if (block.type === "tool_use") {
 			if (textBlocks.length > 0) {
 				items.push({
 					type: "message",
-					role: "assistant",
+					role,
 					content: [...textBlocks],
 					key: `msg-live-${block.id}`,
 				});
 				textBlocks.length = 0;
 			}
 			// results won't exist yet for live events (tool hasn't executed)
-			const view = agent.viewToolCall("web", block) as
-				{ tag: string; props: Record<string, unknown> } | undefined;
+			const view = agent.viewToolCall("web", block) as {
+				tag: string;
+				props: Record<string, unknown>;
+			} | undefined;
 			const toolItem: ToolCallItem = {
 				type: "tool_call",
 				id: block.id,
@@ -118,7 +130,7 @@ export function assistantBlocksToItems(
 	if (textBlocks.length > 0) {
 		items.push({
 			type: "message",
-			role: "assistant",
+			role,
 			content: [...textBlocks],
 			key: `msg-live-${items.length > 0 ? (items[0] as ToolCallItem).id ?? "t" : "t"}`,
 		});

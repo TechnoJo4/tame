@@ -3,7 +3,7 @@ export type ThreadItem = MessageItem | ToolCallItem;
 
 export interface MessageItem {
 	type: "message";
-	role: "user" | "assistant";
+	role: "user" | "assistant" | "tame";
 	content: TextOrThinking[];
 	/** Stable key for virtual-list diffing. Set server-side during
 	 *  context→items conversion. */
