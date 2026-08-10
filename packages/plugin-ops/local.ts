@@ -45,6 +45,15 @@ export default class LocalEnv implements Env {
 		const resolved = this.resolvePath(path);
 		const fileEnv: FileEnv = {
 			path: resolved,
+			exists: async () => {
+				try {
+					await fs.stat(resolved);
+					return true;
+				} catch (e) {
+					if ((e as NodeJS.ErrnoException).code === "ENOENT") return false;
+					throw new Error(`${resolved}: access failed`);
+				}
+			},
 			read: async () => {
 				let stat;
 				try {

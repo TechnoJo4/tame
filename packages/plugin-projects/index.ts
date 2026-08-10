@@ -1,5 +1,4 @@
 import { promises as fs } from "node:fs";
-import { isAbsolute, relative, resolve } from "@std/path";
 import {
 	type IAgent,
 	type IHarness,
@@ -8,7 +7,7 @@ import {
 } from "@tame/sdk";
 import { call } from "@tame/rpc-sdk";
 import type { HistoryHook, HistoryPlugin } from "@tame/plugin-history/index";
-import type { OpsPlugin } from "@tame/plugin-ops/index";
+import type { Env, OpsPlugin } from "@tame/plugin-ops/index";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
 import type { WebPlugin } from "@tame/plugin-web/index";
 import { rpcSchema } from "./rpc-schema.ts";
@@ -27,16 +26,25 @@ const setProject = (agent: IAgent, project?: string) => {
 	agent.pluginData.set(dataKey, { project });
 };
 
-const home = process.env.HOME ?? ".";
-
-const localPath = (path: string): string => {
-	if (path === "~") return home;
-	if (path.startsWith("~/")) return resolve(home, path.substring(2));
-	return resolve(path);
-};
-
 const projectFiles = (project: ProjectConfig): string[] =>
 	project.files ?? ["AGENTS.md"];
+
+const isAbsolutePath = (path: string): boolean =>
+	path.startsWith("/") || path.startsWith("\\") || /^[A-Za-z]:[\\/]/.test(path);
+
+const escapesWorkdir = (path: string): boolean => {
+	let depth = 0;
+	for (const part of path.split(/[\\/]+/)) {
+		if (!part || part === ".") continue;
+		if (part === "..") {
+			if (depth === 0) return true;
+			--depth;
+		} else {
+			++depth;
+		}
+	}
+	return false;
+};
 
 const validateConfig = (config: ProjectsConfig): Map<string, ProjectConfig> => {
 	const projects = new Map<string, ProjectConfig>();
@@ -47,12 +55,8 @@ const validateConfig = (config: ProjectsConfig): Map<string, ProjectConfig> => {
 			);
 		}
 
-		const workdir = localPath(project.workdir);
 		for (const file of projectFiles(project)) {
-			const path = localPath(resolve(workdir, file));
-			const escaped = isAbsolute(relative(workdir, path)) ||
-				relative(workdir, path).startsWith("..");
-			if (isAbsolute(file) || escaped) {
+			if (isAbsolutePath(file) || escapesWorkdir(file)) {
 				throw new Error(
 					`invalid project "${project.name}": file "${file}" must be relative to its workdir`,
 				);
@@ -68,6 +72,7 @@ export class ProjectsPlugin implements Plugin {
 
 	readonly #projects: Map<string, ProjectConfig>;
 	#harness?: IHarness;
+	#ops?: OpsPlugin;
 	#history?: HistoryPlugin;
 	#rpc?: RPCPlugin;
 
@@ -85,6 +90,7 @@ export class ProjectsPlugin implements Plugin {
 
 	async init(harness: IHarness) {
 		this.#harness = harness;
+		this.#ops = harness.getPlugin<OpsPlugin>("ops");
 
 		const rpc = harness.getPlugin<RPCPlugin>("rpc");
 		this.#rpc = rpc;
@@ -165,8 +171,14 @@ export class ProjectsPlugin implements Plugin {
 		if (!this.#harness) {
 			throw new Error("plugin-projects is not initialized");
 		}
+		if (!this.#ops) {
+			throw new Error("plugin-projects requires plugin-ops");
+		}
 
-		const workdir = localPath(project.workdir);
+		const agent = this.#harness.newAgent();
+		setProject(agent, name);
+		const env = this.#ops.getEnv(agent);
+		const workdir = env.resolvePath(project.workdir);
 		try {
 			if (!(await fs.stat(workdir)).isDirectory()) {
 				throw new Error(`${workdir}: not a directory`);
@@ -178,12 +190,8 @@ export class ProjectsPlugin implements Plugin {
 			throw new Error(`project "${name}" workdir ${workdir}: access failed`);
 		}
 
-		const files = await this.#readFiles(project, workdir);
-		const agent = this.#harness.newAgent();
-		setProject(agent, name);
-
-		const ops = this.#harness.getPlugin<OpsPlugin>("ops");
-		if (ops && agent.pluginData.has(envKey)) this.#applyOpsWorkdir(agent, name);
+		this.#ops.setWorkdir(agent, workdir);
+		const files = await this.#readFiles(env, project, workdir);
 
 		for (const [path, content] of files) {
 			agent.context.push({
@@ -200,9 +208,11 @@ export class ProjectsPlugin implements Plugin {
 
 	#applyOpsWorkdir(agent: IAgent, name: string) {
 		const project = this.#projects.get(name);
-		if (!project || !this.#harness || !agent.pluginData.has(envKey)) return;
-		if (!this.#harness.getPlugin<OpsPlugin>("ops")) return;
-		setWorkdir(agent, getEnv(agent).resolvePath(localPath(project.workdir)));
+		if (!project || !this.#ops) return;
+		this.#ops.setWorkdir(
+			agent,
+			this.#ops.getEnv(agent).resolvePath(project.workdir),
+		);
 	}
 
 	async listSessions() {
@@ -231,18 +241,27 @@ export class ProjectsPlugin implements Plugin {
 	}
 
 	async #readFiles(
+		env: Env,
 		project: ProjectConfig,
 		workdir: string,
 	): Promise<[string, string][]> {
 		const files: [string, string][] = [];
 		for (const file of projectFiles(project)) {
-			const path = localPath(resolve(workdir, file));
+			const path = env.resolvePath(workdir, file);
 			try {
-				files.push([path, await fs.readFile(path, { encoding: "utf-8" })]);
+				const content = await env.lock(path, async (fileEnv) => {
+					if (!await fileEnv.exists()) return undefined;
+					return new TextDecoder().decode(await fileEnv.read());
+				});
+				if (content !== undefined) {
+					files.push([env.contractPath(path), content]);
+				}
 			} catch (e) {
-				if ((e as NodeJS.ErrnoException).code === "ENOENT") continue;
 				throw new Error(
-					`project "${project.name}" file ${path}: access failed`,
+					`project "${project.name}" file ${
+						env.contractPath(path)
+					}: access failed`,
+					{ cause: e },
 				);
 			}
 		}

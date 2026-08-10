@@ -17,6 +17,7 @@ export interface ExecResult {
 
 export interface FileEnv {
 	path: string;
+	exists(): Promise<boolean>;
 	read(): Promise<Uint8Array>;
 	write(content: Content): Promise<void>;
 }

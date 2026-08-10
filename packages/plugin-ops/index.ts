@@ -13,6 +13,8 @@ import type { Env } from "./env.ts";
 import type { OpsConfig } from "./config.ts";
 import LocalEnv from "./local.ts";
 
+export type { Env } from "./env.ts";
+
 interface ViewMeta {
 	path: string;
 }
