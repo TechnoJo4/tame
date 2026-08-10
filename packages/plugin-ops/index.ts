@@ -2,8 +2,9 @@ import {
 	type IAgent,
 	type IHarness,
 	type Plugin,
-	tool,
 	type ToolExecResult,
+	key,
+	tool,
 	Type,
 } from "@tame/sdk";
 import type { WebPlugin } from "@tame/plugin-web/index";
@@ -12,33 +13,18 @@ import type { Env } from "./env.ts";
 import type { OpsConfig } from "./config.ts";
 import LocalEnv from "./local.ts";
 
-type ViewMeta = { path: string };
-type ExecViewMeta = { workdir?: string };
-
-export const envKey = Symbol("tame:ops:env");
-export const workdirKey = Symbol("tame:ops:workdir");
-
-export function getEnv(agent: IAgent): Env {
-	return agent.pluginData.get(envKey) as Env;
+interface ViewMeta {
+	path: string;
+}
+interface ExecViewMeta {
+	workdir?: string;
+}
+interface AgentData {
+	env: Env;
+	workdir: string;
 }
 
-export function setEnv(agent: IAgent, env: Env) {
-	agent.pluginData.set(envKey, env);
-	setWorkdir(agent, env.defaultWorkdir);
-}
-
-export function getWorkdir(agent: IAgent): string {
-	return agent.pluginData.get(workdirKey) as string;
-}
-
-export function setWorkdir(agent: IAgent, workdir: string) {
-	agent.pluginData.set(workdirKey, workdir);
-}
-
-function resolvePath(agent: IAgent, path: string): string {
-	const env = getEnv(agent);
-	return env.resolvePath(path, getWorkdir(agent));
-}
+const envKey = key<AgentData>("tame:ops:env");
 
 const stripShell = (args: string[]): string[] => {
 	let i = 0;
@@ -107,8 +93,8 @@ export class OpsPlugin implements Plugin {
 		path: string,
 		fn: (content: string) => string,
 	): Promise<ToolExecResult<ViewMeta>> {
-		const env = getEnv(agent);
-		const resolved = resolvePath(agent, path);
+		const env = this.getEnv(agent);
+		const resolved = this.#resolvePath(agent, path);
 		return await env.lock(resolved, async (f) => {
 			const data = await f.read();
 			const oldContent = new TextDecoder().decode(data);
@@ -119,15 +105,50 @@ export class OpsPlugin implements Plugin {
 		});
 	}
 
+	setEnv(agent: IAgent, env: Env) {
+		agent.setPluginData(envKey, {
+			env,
+			workdir: env.defaultWorkdir
+		});
+	}
+
+	#getAgentData(agent: IAgent): AgentData {
+		const data = agent.getPluginData(envKey);
+		if (data !== undefined) return data;
+
+		const env = this.#envs.get(this.config.defaultEnv);
+		if (env === undefined)
+			throw new Error(`default environment ${this.config.defaultEnv} does not exist`);
+		this.setEnv(agent, env);
+		return agent.getPluginData(envKey)!;
+	}
+
+	getEnv(agent: IAgent): Env {
+		return this.#getAgentData(agent).env;
+	}
+
+	getWorkdir(agent: IAgent): string {
+		return this.#getAgentData(agent).workdir;
+	}
+
+	setWorkdir(agent: IAgent, workdir: string) {
+		this.#getAgentData(agent).workdir = workdir;
+	}
+
+	#resolvePath(agent: IAgent, path: string): string {
+		const env = this.getEnv(agent);
+		return env.resolvePath(path, this.getWorkdir(agent));
+	}
+
 	async #runExec(
 		agent: IAgent,
 		command: string[],
 		opts: { workdir?: string; timeout: number },
 	): Promise<ToolExecResult<ExecViewMeta>> {
-		const env = getEnv(agent);
+		const env = this.getEnv(agent);
 		const workdir = env.resolvePath(
-			opts.workdir ?? getWorkdir(agent),
-			getWorkdir(agent),
+			opts.workdir ?? this.getWorkdir(agent),
+			this.getWorkdir(agent),
 		);
 		const res = await env.exec(command, {
 			workdir,
@@ -404,13 +425,13 @@ export class OpsPlugin implements Plugin {
 			name: "cd",
 			description: "Change the current ops working directory: /cd [path]",
 			run: async (agent, param) => {
-				const env = getEnv(agent);
+				const env = this.getEnv(agent);
 				const path = param?.trim();
 				const workdir = path
-					? env.resolvePath(path, getWorkdir(agent))
+					? env.resolvePath(path, this.getWorkdir(agent))
 					: env.defaultWorkdir;
 				await env.validateWorkdir(workdir);
-				setWorkdir(agent, workdir);
+				this.setWorkdir(agent, workdir);
 				return env.contractPath(workdir);
 			},
 		});
@@ -435,12 +456,6 @@ export class OpsPlugin implements Plugin {
 	}
 
 	newAgent(agent: IAgent) {
-		const env = this.#envs.get(this.config.defaultEnv);
-		if (env === undefined) {
-			throw new Error(
-				`default environment ${this.config.defaultEnv} does not exist`,
-			);
-		}
-		setEnv(agent, env);
+		this.#getAgentData(agent);
 	}
 }
