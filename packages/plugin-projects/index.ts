@@ -9,7 +9,6 @@ import {
 import { call } from "@tame/rpc-sdk";
 import type { HistoryHook, HistoryPlugin } from "@tame/plugin-history/index";
 import type { OpsPlugin } from "@tame/plugin-ops/index";
-import { envKey, getEnv, setWorkdir } from "@tame/plugin-ops/index";
 import type { RPCPlugin } from "@tame/plugin-rpc/index";
 import type { WebPlugin } from "@tame/plugin-web/index";
 import { rpcSchema } from "./rpc-schema.ts";

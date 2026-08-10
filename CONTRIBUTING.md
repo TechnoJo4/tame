@@ -34,8 +34,6 @@ each plugin directory contains:
 - `main.ts` -- default-exported plugin instance, constructed with config. this is what the harness loads.
 - `README.md` -- usage docs (optional but encouraged)
 
-plugins communicate via `harness.getPlugin<T>(id)`. this is the intended interop mechanism. plugins should not import each other's internals directly unless they own the dependency (e.g., `ops` owns the `Env` interface; `acp` owns `ACPAdapter`).
-
 ### how to write a plugin
 
 1. create `plugins/<name>/index.ts`:
@@ -71,11 +69,9 @@ export default new MyPlugin(readTameConfig("my-plugin.json", configSchema));
 
 ### plugin config
 
-plugins that need config should export `configSchema` from `index.ts` and use `readTameConfig("filename.json", configSchema)` in `main.ts`. config files live in `~/.tame/`. plugins without config (like `plugin-history`) can just `new Plugin()` directly. there's no hot-reload -- restart to pick up changes.
+plugins that need config should export `configSchema` from `index.ts` and use `readTameConfig("filename.json", configSchema)` in `main.ts`.
 
-### plugin data
-
-`agent.pluginData` is a `Map<symbol, unknown>`. use a module-level `Symbol()` as the key. this is per-agent state that plugins can read/write.
+plugins without config (like `plugin-history`) can just `new Plugin()` directly.
 
 ## dependencies
 
@@ -95,3 +91,24 @@ shared deps managed via root `deno.json` imports:
 | `typebox` | npm | runtime schema validation |
 
 the acp plugin additionally pulls `@agentclientprotocol/sdk` from npm at runtime.
+
+## review guide
+
+things to pay attention to during review.
+
+### isolation
+
+- plugins can only import types from each other; functions go into the plugin class, obtained via `harness.getPlugin<T>(id)`
+- plugins must not export their plugin data keys
+
+### other common mistakes
+
+- typebox:
+  - do not combine `Type.Optional` and defaults
+  - push defaults deep
+  - example of a good schema: `Type.Object({ example: Type.Boolean({ default: true }) }, { default: {} })`
+
+### code conventions
+
+- private class fields use `#` prefix
+

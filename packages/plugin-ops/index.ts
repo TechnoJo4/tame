@@ -136,7 +136,7 @@ export class OpsPlugin implements Plugin {
 
 	#resolvePath(agent: IAgent, path: string): string {
 		const env = this.getEnv(agent);
-		return env.resolvePath(path, this.getWorkdir(agent));
+		return env.resolvePath(this.getWorkdir(agent), path);
 	}
 
 	async #runExec(
@@ -146,7 +146,7 @@ export class OpsPlugin implements Plugin {
 	): Promise<ToolExecResult<ExecViewMeta>> {
 		const env = this.getEnv(agent);
 		const workdir = opts.workdir
-			? env.resolvePath(opts.workdir, this.getWorkdir(agent))
+			? this.#resolvePath(agent, opts.workdir)
 			: this.getWorkdir(agent);
 
 		const res = await env.exec(command, {
@@ -425,11 +425,10 @@ export class OpsPlugin implements Plugin {
 			description: "Change the current ops working directory: /cd [path]",
 			run: async (agent, param) => {
 				const env = this.getEnv(agent);
-				const path = param?.trim();
-				const workdir = path
-					? env.resolvePath(path, this.getWorkdir(agent))
+				param = param?.trim();
+				const workdir = param
+					? this.#resolvePath(agent, param)
 					: env.defaultWorkdir;
-				await env.validateWorkdir(workdir);
 				this.setWorkdir(agent, workdir);
 				return env.contractPath(workdir);
 			},

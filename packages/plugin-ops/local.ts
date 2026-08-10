@@ -1,7 +1,7 @@
 import type { Env, ExecOpts, ExecResult, FileEnv } from "./env.ts";
 import { promises as fs } from "node:fs";
 import { spawn } from "node:child_process";
-import { dirname, isAbsolute, resolve } from "@std/path";
+import { dirname, resolve } from "@std/path";
 import type { OpsConfig } from "./config.ts";
 
 const home = process.env.HOME ?? "";
@@ -33,25 +33,12 @@ export default class LocalEnv implements Env {
 		this.defaultWorkdir = this.resolvePath(config.localEnv.workdir);
 	}
 
-	resolvePath(path: string, base = process.cwd()): string {
-		if (path === "~") return resolve(home);
-		if (path.startsWith("~/")) return resolve(home, path.substring(2));
-		return isAbsolute(path) ? resolve(path) : resolve(base, path);
-	}
-
-	async validateWorkdir(path: string): Promise<void> {
-		const resolved = this.resolvePath(path);
-		try {
-			await fs.access(resolved, fs.constants.R_OK | fs.constants.X_OK);
-			if (!(await fs.stat(resolved)).isDirectory()) {
-				throw new Error(`${resolved}: not a directory`);
-			}
-		} catch (e) {
-			if (e instanceof Error && e.message.endsWith(": not a directory")) {
-				throw e;
-			}
-			throw new Error(`${resolved}: access failed`);
-		}
+	resolvePath(...pathSegments: string[]): string {
+		return resolve(...pathSegments.map(seg => {
+			if (seg === "~") return resolve(home);
+			if (seg.startsWith("~/")) return resolve(home, seg.substring(2));
+			return seg;
+		}));
 	}
 
 	async lock<T>(path: string, f: (env: FileEnv) => Promise<T>): Promise<T> {
@@ -99,9 +86,7 @@ export default class LocalEnv implements Env {
 
 	async exec(command: string[], opts: ExecOpts): Promise<ExecResult> {
 		if (opts.workdir) {
-			opts.workdir = opts.workdir.startsWith("~/")
-				? resolve(home, opts.workdir)
-				: resolve(opts.workdir);
+			opts.workdir = this.resolvePath(opts.workdir);
 			try {
 				await fs.access(opts.workdir, fs.constants.R_OK);
 			} catch {
@@ -119,14 +104,8 @@ export default class LocalEnv implements Env {
 		const stdout: string[] = [];
 		const stderr: string[] = [];
 		const decoder = new TextDecoder();
-		proc.stdout.on(
-			"data",
-			(data) => stdout.push(decoder.decode(data, { stream: true })),
-		);
-		proc.stderr.on(
-			"data",
-			(data) => stderr.push(decoder.decode(data, { stream: true })),
-		);
+		proc.stdout.on("data", (data) => stdout.push(decoder.decode(data, { stream: true })));
+		proc.stderr.on("data", (data) => stderr.push(decoder.decode(data, { stream: true })));
 
 		let abortReason: "abort" | "timeout" | undefined = undefined;
 		const onAbort = (reason: "abort" | "timeout") => {
