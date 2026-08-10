@@ -18,6 +18,7 @@ import {
 	type CompletionEvent,
 	type IdleEvent,
 	type AgentStopReason,
+	type Key,
 	tameContentMeta,
 } from "@tame/sdk";
 
@@ -162,6 +163,14 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 				});
 			});
 		}
+	}
+
+	setPluginData<T>(key: Key<T>, data: T): void {
+		this.pluginData.set(key, data);
+	}
+
+	getPluginData<T>(key: Key<T>): T | undefined {
+		return this.pluginData.get(key) as T | undefined;
 	}
 
 	addTool(tool: AnyTool) {

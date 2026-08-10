@@ -1,5 +1,6 @@
 import type { InferenceProvider, InputMessage, UserMessage, AssistantMessage, ToolUse, StopReason, MessageRequest } from "../llm/types.ts";
 import type { AnyTool } from "./tool.ts";
+import type { Key } from "./key.ts";
 import type { Plugin } from "./plugin.ts";
 import type { Emitter } from "@tame/sdk";
 
@@ -48,6 +49,9 @@ export interface IAgent extends Emitter<AgentEvents> {
 	context: InputMessage[];
 	tools: Map<string, AnyTool>;
 	pluginData: Map<symbol, unknown>;
+
+	setPluginData<T>(key: Key<T>, data: T): void;
+	getPluginData<T>(key: Key<T>): T | undefined;
 
 	addTool(tool: AnyTool): void;
 	viewToolCall(view: string, call: ToolUse): unknown;
