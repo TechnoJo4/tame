@@ -98,15 +98,20 @@ things to pay attention to during review.
 
 ### isolation
 
-- plugins can only import types from each other; functions go into the plugin class, obtained via `harness.getPlugin<T>(id)`
+the rule is simple: plugins can only import types from each other.
+
+what this means:
+
+- plugins should only export types to each other
+- functions go into the plugin class, obtained via `harness.getPlugin<T>(id)`
 - plugins must not export their plugin data keys
 
 ### other common mistakes
 
 - typebox:
   - do not combine `Type.Optional` and defaults
-  - push defaults deep
-  - example of a good schema: `Type.Object({ example: Type.Boolean({ default: true }) }, { default: {} })`
+  - use schema `default` when values are static, use `Type.Optional` and typescript `??` only when values are dynamic
+  - push defaults deep, e.g. `Type.Object({ example: Type.Boolean({ default: true }) }, { default: {} })`
 
 ### code conventions
 
