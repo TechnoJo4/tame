@@ -71,7 +71,6 @@ export class OpsPlugin implements Plugin {
 
 	resolveDynamicEnv(agent: IAgent): Record<string, string> {
 		const env: Record<string, string> = {};
-		if (!this.config.env?.dynamic) return env;
 		for (const [key, source] of Object.entries(this.config.env.dynamic)) {
 			switch (source) {
 				case "model":
@@ -146,15 +145,15 @@ export class OpsPlugin implements Plugin {
 		opts: { workdir?: string; timeout: number },
 	): Promise<ToolExecResult<ExecViewMeta>> {
 		const env = this.getEnv(agent);
-		const workdir = env.resolvePath(
-			opts.workdir ?? this.getWorkdir(agent),
-			this.getWorkdir(agent),
-		);
+		const workdir = opts.workdir
+			? env.resolvePath(opts.workdir, this.getWorkdir(agent))
+			: this.getWorkdir(agent);
+
 		const res = await env.exec(command, {
 			workdir,
 			timeout: opts.timeout,
 			env: {
-				...(this.config.env?.static ?? {}),
+				...this.config.env.static,
 				...this.resolveDynamicEnv(agent),
 			},
 		});
@@ -182,9 +181,9 @@ export class OpsPlugin implements Plugin {
 				),
 			}),
 			exec: async (args, agent) => {
-				const env = getEnv(agent);
+				const env = this.getEnv(agent);
 				const { data, path } = await env.lock(
-					resolvePath(agent, args.path),
+					this.#resolvePath(agent, args.path),
 					async (env) => ({ data: await env.read(), path: env.path }),
 				);
 				let text: string;
@@ -250,12 +249,12 @@ export class OpsPlugin implements Plugin {
 				content: Type.String({ description: "Text to write into the file" }),
 			}),
 			exec: async (args, agent) => {
-				const env = getEnv(agent);
+				const env = this.getEnv(agent);
 				// TODO: re-add existed check without having to do and discard a read
 				//let existed = false;
 				//try { await env.read(args.path); existed = true; } catch { /* ignore */ }
 				const path = await env.lock(
-					resolvePath(agent, args.path),
+					this.#resolvePath(agent, args.path),
 					async (env) => {
 						await env.write({ type: "text", text: args.content });
 						return env.path;
@@ -411,13 +410,13 @@ export class OpsPlugin implements Plugin {
 	};
 
 	async init(harness: IHarness) {
-		const enabled = this.config.tools ?? {};
+		const enabled = this.config.tools;
 		const tools = [
-			enabled.read !== false ? this.#tools.read : null,
-			enabled.write !== false ? this.#tools.write : null,
-			enabled.edit !== false ? this.#tools.edit : null,
-			enabled.exec !== false ? this.#tools.exec : null,
-			enabled.bash !== false ? this.#tools.bash : null,
+			enabled.read ? this.#tools.read : null,
+			enabled.write ? this.#tools.write : null,
+			enabled.edit ? this.#tools.edit : null,
+			enabled.exec ? this.#tools.exec : null,
+			enabled.bash ? this.#tools.bash : null,
 		].filter((t): t is NonNullable<typeof t> => t !== null);
 		harness.addTools(...tools);
 

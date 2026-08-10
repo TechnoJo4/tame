@@ -30,7 +30,7 @@ export default class LocalEnv implements Env {
 
 	constructor(config: OpsConfig) {
 		this.config = config;
-		this.defaultWorkdir = this.resolvePath(config.workdir);
+		this.defaultWorkdir = this.resolvePath(config.localEnv.workdir);
 	}
 
 	resolvePath(path: string, base = process.cwd()): string {

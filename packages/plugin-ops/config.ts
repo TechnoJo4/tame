@@ -13,23 +13,21 @@ export const configSchema = Type.Object({
 	maxReadBytes: Type.Number({ default: 50 * 1024 * 1024 }),
 	timeout: Type.Number({ default: 120_000 }),
 	shell: Type.Array(Type.String(), { default: ["bash", "-lc"] }),
-	workdir: Type.String({ default: "." }),
 	defaultEnv: Type.String({ default: "local" }),
-	env: Type.Optional(Type.Object({
-		static: Type.Optional(
-			Type.Object({}, { additionalProperties: Type.String() }),
-		),
-		dynamic: Type.Optional(
-			Type.Object({}, { additionalProperties: dynamicEnvKey }),
-		),
-	})),
-	tools: Type.Optional(Type.Object({
-		read: Type.Optional(Type.Boolean({ default: true })),
-		write: Type.Optional(Type.Boolean({ default: true })),
-		edit: Type.Optional(Type.Boolean({ default: true })),
-		exec: Type.Optional(Type.Boolean({ default: false })),
-		bash: Type.Optional(Type.Boolean({ default: true })),
-	})),
+	localEnv: Type.Object({
+		workdir: Type.String({ default: "." }),
+	}, { default: {} }),
+	env: Type.Object({
+		static: Type.Object({}, { additionalProperties: Type.String(), default: {} }),
+		dynamic: Type.Object({}, { additionalProperties: dynamicEnvKey, default: {} }),
+	}, { default: {} }),
+	tools: Type.Object({
+		read: Type.Boolean({ default: true }),
+		write: Type.Boolean({ default: true }),
+		edit: Type.Boolean({ default: true }),
+		exec: Type.Boolean({ default: false }),
+		bash: Type.Boolean({ default: true }),
+	}, { default: {} }),
 });
 
 export type OpsConfig = Static<typeof configSchema>;

@@ -122,24 +122,21 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 
 	override abort(): void {
 		super.abort();
-		for (const t of this.#pendingToolCalls)
-			this.#abortedToolCalls.add(t);
-		this.#pendingToolCalls.clear();
-		this.#completionQueued = false;
-		// Every tool_use in context must have a result: providers emit
-		// tool_result blocks for them and crash on missing ones. Calls that
-		// never got executed (hanging tools, queued executions skipped by the
-		// aborted thread) get marked as errored here.
-		for (const msg of this.context) {
-			for (const c of msg.content) {
+
+		for (const msg of this.context) // TODO: unslop
+			for (const c of msg.content)
 				if (c.type === "tool_use" && !c.result)
 					c.result = {
 						type: "tool_result",
 						is_error: true,
 						content: "aborted by user"
 					};
-			}
-		}
+
+		for (const t of this.#pendingToolCalls)
+			this.#abortedToolCalls.add(t);
+
+		this.#pendingToolCalls.clear();
+		this.#completionQueued = false;
 		this.fire("idle", { stopReason: "aborted" });
 	}
 
