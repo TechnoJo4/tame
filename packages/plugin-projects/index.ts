@@ -1,4 +1,3 @@
-import { promises as fs } from "node:fs";
 import {
 	type IAgent,
 	type IHarness,
@@ -15,53 +14,15 @@ import type { ProjectConfig, ProjectsConfig } from "./config.ts";
 
 const dataKey = Symbol("tame:projects:agent-data");
 
-export interface ProjectAgentData {
+interface ProjectAgentData {
 	project?: string;
 }
-
-export const getProject = (agent: IAgent): string | undefined =>
-	(agent.pluginData.get(dataKey) as ProjectAgentData | undefined)?.project;
-
-const setProject = (agent: IAgent, project?: string) => {
-	agent.pluginData.set(dataKey, { project });
-};
-
-const projectFiles = (project: ProjectConfig): string[] =>
-	project.files ?? ["AGENTS.md"];
-
-const isAbsolutePath = (path: string): boolean =>
-	path.startsWith("/") || path.startsWith("\\") || /^[A-Za-z]:[\\/]/.test(path);
-
-const escapesWorkdir = (path: string): boolean => {
-	let depth = 0;
-	for (const part of path.split(/[\\/]+/)) {
-		if (!part || part === ".") continue;
-		if (part === "..") {
-			if (depth === 0) return true;
-			--depth;
-		} else {
-			++depth;
-		}
-	}
-	return false;
-};
 
 const validateConfig = (config: ProjectsConfig): Map<string, ProjectConfig> => {
 	const projects = new Map<string, ProjectConfig>();
 	for (const project of config.projects) {
-		if (projects.has(project.name)) {
-			throw new Error(
-				`invalid projects config: duplicate project name "${project.name}"`,
-			);
-		}
-
-		for (const file of projectFiles(project)) {
-			if (isAbsolutePath(file) || escapesWorkdir(file)) {
-				throw new Error(
-					`invalid project "${project.name}": file "${file}" must be relative to its workdir`,
-				);
-			}
-		}
+		if (projects.has(project.name))
+			throw new Error(`invalid projects config: duplicate project name "${project.name}"`);
 		projects.set(project.name, project);
 	}
 	return projects;
@@ -71,8 +32,8 @@ export class ProjectsPlugin implements Plugin {
 	id = "projects" as const;
 
 	readonly #projects: Map<string, ProjectConfig>;
-	#harness?: IHarness;
-	#ops?: OpsPlugin;
+	#harness!: IHarness;
+	#ops!: OpsPlugin;
 	#history?: HistoryPlugin;
 	#rpc?: RPCPlugin;
 
@@ -88,9 +49,15 @@ export class ProjectsPlugin implements Plugin {
 		return this.#projects.get(name);
 	}
 
+	setProject(agent: IAgent, project?: string) {
+		agent.pluginData.set(dataKey, { project });
+	}
+
 	async init(harness: IHarness) {
 		this.#harness = harness;
-		this.#ops = harness.getPlugin<OpsPlugin>("ops");
+		const ops = harness.getPlugin<OpsPlugin>("ops")
+		if (!ops) throw new Error("plugin-projects requires plugin-ops")
+		this.#ops = ops;
 
 		const rpc = harness.getPlugin<RPCPlugin>("rpc");
 		this.#rpc = rpc;
@@ -130,12 +97,12 @@ export class ProjectsPlugin implements Plugin {
 			"projects",
 			{
 				save: (agent) => {
-					const project = getProject(agent);
+					const project = this.#getProject(agent);
 					return project ? { project } : null;
 				},
 				load: (agent, data) => {
 					if (data?.project) {
-						setProject(agent, data.project);
+						this.setProject(agent, data.project);
 						this.#applyOpsWorkdir(agent, data.project);
 					}
 				},
@@ -159,40 +126,24 @@ export class ProjectsPlugin implements Plugin {
 		}
 	}
 
+	#getProject(agent: IAgent): string | undefined {
+		return (agent.pluginData.get(dataKey) as ProjectAgentData | undefined)
+			?.project;
+	}
+
 	newAgent(agent: IAgent) {
-		setProject(agent);
+		this.setProject(agent);
 	}
 
 	async createAgent(name: string): Promise<IAgent> {
 		const project = this.#projects.get(name);
-		if (!project) {
-			throw new Error(`unknown project "${name}"`);
-		}
-		if (!this.#harness) {
-			throw new Error("plugin-projects is not initialized");
-		}
-		if (!this.#ops) {
-			throw new Error("plugin-projects requires plugin-ops");
-		}
+		if (!project) throw new Error(`unknown project "${name}"`);
 
 		const agent = this.#harness.newAgent();
-		setProject(agent, name);
+		this.setProject(agent, name);
+		this.#applyOpsWorkdir(agent, name);
 		const env = this.#ops.getEnv(agent);
-		const workdir = env.resolvePath(project.workdir);
-		try {
-			if (!(await fs.stat(workdir)).isDirectory()) {
-				throw new Error(`${workdir}: not a directory`);
-			}
-		} catch (e) {
-			if (e instanceof Error && e.message.endsWith(": not a directory")) {
-				throw e;
-			}
-			throw new Error(`project "${name}" workdir ${workdir}: access failed`);
-		}
-
-		this.#ops.setWorkdir(agent, workdir);
-		const files = await this.#readFiles(env, project, workdir);
-
+		const files = await this.#readFiles(env, project, project.workdir);
 		for (const [path, content] of files) {
 			agent.context.push({
 				role: "user",
@@ -208,15 +159,13 @@ export class ProjectsPlugin implements Plugin {
 
 	#applyOpsWorkdir(agent: IAgent, name: string) {
 		const project = this.#projects.get(name);
-		if (!project || !this.#ops) return;
-		this.#ops.setWorkdir(
-			agent,
-			this.#ops.getEnv(agent).resolvePath(project.workdir),
-		);
+		if (!project) return;
+		this.#ops.setWorkdir(agent, this.#ops.getEnv(agent).resolvePath(project.workdir));
 	}
 
 	async listSessions() {
 		if (!this.#history) return [];
+
 		const sessions = await this.#history.list();
 		const results = await Promise.all(sessions.map(async (session) => {
 			try {
@@ -235,18 +184,15 @@ export class ProjectsPlugin implements Plugin {
 				return null;
 			}
 		}));
+
 		return results.filter((session): session is NonNullable<typeof session> =>
 			session !== null
 		);
 	}
 
-	async #readFiles(
-		env: Env,
-		project: ProjectConfig,
-		workdir: string,
-	): Promise<[string, string][]> {
+	async #readFiles(env: Env, project: ProjectConfig, workdir: string): Promise<[string, string][]> {
 		const files: [string, string][] = [];
-		for (const file of projectFiles(project)) {
+		for (const file of project.files) {
 			const path = env.resolvePath(workdir, file);
 			try {
 				const content = await env.lock(path, async (fileEnv) => {
@@ -257,12 +203,7 @@ export class ProjectsPlugin implements Plugin {
 					files.push([env.contractPath(path), content]);
 				}
 			} catch (e) {
-				throw new Error(
-					`project "${project.name}" file ${
-						env.contractPath(path)
-					}: access failed`,
-					{ cause: e },
-				);
+				throw new Error(`project "${project.name}" file ${env.contractPath(path)}: access failed`, { cause: e });
 			}
 		}
 		return files;
