@@ -14,8 +14,8 @@
 			"default": [
 				"./.agents/skills",
 				"./.tame/skills",
-				"/home/coder/.agents/skills",
-				"/home/coder/.tame/skills"
+				"C:\\Users\\Admin\\.agents\\skills",
+				"C:\\Users\\Admin\\source\\tame\\.data\\skills"
 			]
 		},
 		"maxDepth": {

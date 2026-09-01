@@ -1,0 +1,13 @@
+{
+	"type": "object",
+	"required": [
+		"sidebar"
+	],
+	"properties": {
+		"sidebar": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"$schema": "https://json-schema.org/draft/2020-12/schema"
+}

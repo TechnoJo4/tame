@@ -2,18 +2,32 @@
 	"type": "object",
 	"required": [
 		"maxLines",
+		"defaultLines",
 		"maxBytes",
+		"maxReadBytes",
 		"timeout",
-		"shell"
+		"shell",
+		"defaultEnv",
+		"localEnv",
+		"env",
+		"tools"
 	],
 	"properties": {
 		"maxLines": {
 			"type": "number",
 			"default": 2000
 		},
+		"defaultLines": {
+			"type": "number",
+			"default": 200
+		},
 		"maxBytes": {
 			"type": "number",
 			"default": 51200
+		},
+		"maxReadBytes": {
+			"type": "number",
+			"default": 52428800
 		},
 		"timeout": {
 			"type": "number",
@@ -29,15 +43,37 @@
 				"-lc"
 			]
 		},
+		"defaultEnv": {
+			"type": "string",
+			"default": "local"
+		},
+		"localEnv": {
+			"type": "object",
+			"required": [
+				"workdir"
+			],
+			"properties": {
+				"workdir": {
+					"type": "string",
+					"default": "."
+				}
+			},
+			"default": {}
+		},
 		"env": {
 			"type": "object",
+			"required": [
+				"static",
+				"dynamic"
+			],
 			"properties": {
 				"static": {
 					"type": "object",
 					"properties": {},
 					"additionalProperties": {
 						"type": "string"
-					}
+					},
+					"default": {}
 				},
 				"dynamic": {
 					"type": "object",
@@ -57,12 +93,21 @@
 								"const": "AGENT_SYSTEM"
 							}
 						]
-					}
+					},
+					"default": {}
 				}
-			}
+			},
+			"default": {}
 		},
 		"tools": {
 			"type": "object",
+			"required": [
+				"read",
+				"write",
+				"edit",
+				"exec",
+				"bash"
+			],
 			"properties": {
 				"read": {
 					"type": "boolean",
@@ -78,9 +123,14 @@
 				},
 				"exec": {
 					"type": "boolean",
+					"default": false
+				},
+				"bash": {
+					"type": "boolean",
 					"default": true
 				}
-			}
+			},
+			"default": {}
 		}
 	},
 	"$schema": "https://json-schema.org/draft/2020-12/schema"

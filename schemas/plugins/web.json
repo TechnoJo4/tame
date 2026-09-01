@@ -1,0 +1,26 @@
+{
+	"type": "object",
+	"properties": {
+		"listen": {
+			"type": "object",
+			"properties": {
+				"hostname": {
+					"type": "string"
+				},
+				"port": {
+					"type": "number"
+				}
+			}
+		},
+		"staticDir": {
+			"type": "string"
+		},
+		"buildShell": {
+			"type": "boolean"
+		},
+		"sourceMaps": {
+			"type": "boolean"
+		}
+	},
+	"$schema": "https://json-schema.org/draft/2020-12/schema"
+}
