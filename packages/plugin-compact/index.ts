@@ -1,4 +1,4 @@
-import type {AssistantMessage, IAgent, IHarness, InputContent, InputMessage} from "@tame/sdk";
+import type {AssistantMessage, IAgent, InputContent, InputMessage} from "@tame/sdk";
 import {type Plugin, StringEnum, tameContentMeta, tameMsgMeta} from "@tame/sdk";
 import {Tiktoken} from "js-tiktoken/lite";
 import {type Static, Type} from "typebox";

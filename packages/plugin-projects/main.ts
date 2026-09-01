@@ -5,6 +5,4 @@ import {ProjectsPlugin} from "./index.ts";
 
 export {configSchema} from "./config.ts";
 
-export default new ProjectsPlugin(
-    readTameConfig("projects.json", configSchema),
-);
+export default new ProjectsPlugin(readTameConfig("projects.json", configSchema));

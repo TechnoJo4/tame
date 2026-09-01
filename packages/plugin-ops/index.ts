@@ -8,6 +8,8 @@ import LocalEnv from "./local.ts";
 
 export type {Env} from "./env.ts";
 
+export {configSchema} from "./config.ts";
+
 interface ViewMeta {
 	path: string;
 }

@@ -8,6 +8,8 @@ import {type IAgent, type IHarness, type Plugin, tameMsgMeta,} from "@tame/sdk";
 import type {ProjectConfig, ProjectsConfig} from "./config.ts";
 import {rpcSchema} from "./rpc-schema.ts";
 
+export {configSchema} from "./config.ts";
+
 const dataKey = Symbol("tame:projects:agent-data");
 
 interface ProjectAgentData {
@@ -44,7 +46,8 @@ export class ProjectsPlugin implements Plugin {
 	async init(harness: IHarness) {
 		this.#harness = harness;
 		const ops = harness.getPlugin<OpsPlugin>("ops")
-		if (!ops) throw new Error("plugin-projects requires plugin-ops") this.#ops = ops;
+		if (!ops) throw new Error("plugin-projects requires plugin-ops");
+		this.#ops = ops;
 
 		const rpc = harness.getPlugin<RPCPlugin>("rpc");
 		this.#rpc = rpc;

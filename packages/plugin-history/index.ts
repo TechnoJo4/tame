@@ -9,6 +9,8 @@ import {promises as fs} from "node:fs";
 import type {HistoryConfig} from "./config.ts";
 import {rpcSchema} from "./rpc-schema.ts";
 
+export {configSchema} from "./config.ts";
+
 const historyFolder = resolve(tameDataFolder, "history");
 const indexFile = resolve(historyFolder, "index.json");
 

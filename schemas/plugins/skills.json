@@ -1,7 +1,6 @@
 {
 	"type": "object",
 	"required": [
-		"paths",
 		"maxDepth",
 		"excludeDirs"
 	],
@@ -10,13 +9,7 @@
 			"type": "array",
 			"items": {
 				"type": "string"
-			},
-			"default": [
-				"./.agents/skills",
-				"./.tame/skills",
-				"C:\\Users\\Admin\\.agents\\skills",
-				"C:\\Users\\Admin\\source\\tame\\.data\\skills"
-			]
+			}
 		},
 		"maxDepth": {
 			"type": "number",

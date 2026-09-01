@@ -7,14 +7,7 @@ import type {Static} from "typebox";
 const home = Deno.env.get("HOME");
 
 export const configSchema = Type.Object({
-	paths: Type.Array(Type.String(), {
-		default: [
-			"./.agents/skills",
-			"./.tame/skills",
-			resolve(home!, ".agents/skills"),
-			resolve(tameDataFolder, "skills"),
-		],
-	}),
+	paths: Type.Optional(Type.Array(Type.String())),
 	maxDepth: Type.Number({default: 4}),
 	excludeDirs: Type.Array(Type.String(), {default: [".git", "node_modules", ".venv", "__pycache__"]}),
 	addCatalog: Type.Optional(Type.Boolean({default: true})),
@@ -123,7 +116,15 @@ export class SkillsPlugin implements Plugin {
 	#config: SkillsConfig;
 	#skills = new Map<string, Skill>();
 
-	constructor(config: SkillsConfig) { this.#config = config; }
+	constructor(config: SkillsConfig) {
+		config.paths ??= [
+			"./.agents/skills",
+			"./.tame/skills",
+			resolve(home!, ".agents/skills"),
+			resolve(tameDataFolder, "skills"),
+		];
+		this.#config = config;
+	}
 
 	async scanDir(
 	    dir: string,
@@ -191,7 +192,7 @@ export class SkillsPlugin implements Plugin {
 	async discoverSkills(): Promise<Map<string, Skill>> {
 		const results = new Map<string, Skill>();
 
-		for (const rawPath of this.#config.paths) { await this.scanDir(resolve(rawPath), 1, results); }
+		for (const rawPath of this.#config.paths!) { await this.scanDir(resolve(rawPath), 1, results); }
 
 		return results;
 	}

@@ -96,6 +96,12 @@ the acp plugin additionally pulls `@agentclientprotocol/sdk` from npm at runtime
 
 things to pay attention to during review.
 
+### guidelines
+
+- use `just fmt`
+- if config schemas were modified, run `just gen-schemas`
+- if RPC schemas were modified, run `just gen-rpc-types`
+
 ### isolation
 
 the rule is simple: plugins can only import types from each other.

@@ -43,22 +43,6 @@
 					"type": "object",
 					"required": [
 						"type",
-						"messages"
-					],
-					"properties": {
-						"type": {
-							"type": "string",
-							"const": "messages"
-						},
-						"messages": {
-							"type": "number"
-						}
-					}
-				},
-				{
-					"type": "object",
-					"required": [
-						"type",
 						"tokens"
 					],
 					"properties": {
@@ -67,6 +51,22 @@
 							"const": "tokens"
 						},
 						"tokens": {
+							"type": "number"
+						}
+					}
+				},
+				{
+					"type": "object",
+					"required": [
+						"type",
+						"messages"
+					],
+					"properties": {
+						"type": {
+							"type": "string",
+							"const": "messages"
+						},
+						"messages": {
 							"type": "number"
 						}
 					}

@@ -21,13 +21,13 @@ let count = 0;
 const schemas: Record<string, object> = {};
 
 for (const name of pluginNames) {
-	const mainPath = resolve(packagesDir, `plugin-${name}`, "main.ts");
+	const indexPath = resolve(packagesDir, `plugin-${name}`, "index.ts");
 	let mod;
 	try {
-		mod = await import(toFileUrl(mainPath).toString());
+		mod = await import(toFileUrl(indexPath).toString());
 	} catch (e) {
 		console.warn(
-		    `gen-plugin-schemas: skipping ${name}: could not import main.ts (${e instanceof Error ? e.message : e})`);
+		    `gen-plugin-schemas: skipping ${name}: could not import index.ts (${e instanceof Error ? e.message : e})`);
 		continue;
 	}
 
