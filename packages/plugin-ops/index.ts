@@ -6,9 +6,8 @@ import type {OpsConfig} from "./config.ts";
 import type {Env} from "./env.ts";
 import LocalEnv from "./local.ts";
 
-export type {Env} from "./env.ts";
-
 export {configSchema} from "./config.ts";
+export type {Env} from "./env.ts";
 
 interface ViewMeta {
 	path: string;
