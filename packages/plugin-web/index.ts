@@ -1,4 +1,4 @@
-import {resolve} from "@std/path";
+import {resolve, basename} from "@std/path";
 import type {RPCPlugin} from "@tame/plugin-rpc/index";
 import {call} from "@tame/rpc-sdk";
 import {type IAgent, type IHarness, type Plugin, tameMsgMeta,} from "@tame/sdk";
@@ -73,8 +73,7 @@ export class WebPlugin implements Plugin {
 			if (c.src.endsWith(".ts")) {
 				tsFiles.push({ src: c.src, tag: c.tag });
 			} else {
-				const basename = c.src.split("/").pop()!;
-				const url = `/static/plugins/${pluginId}/${basename}`;
+				const url = `/static/plugins/${pluginId}/${basename(c.src)}`;
 				this.#components.set(c.tag, { src: c.src, url });
 			}
 		}
@@ -88,15 +87,15 @@ export class WebPlugin implements Plugin {
 				Deno.mkdirSync(outDir, { recursive: true });
 			} catch { /* exists */
 			}
-			const basename = css.split("/").pop()!;
-			const outPath = `${outDir}/${basename}`;
+			const base = basename(css);
+			const outPath = `${outDir}/${base}`;
 			try {
 				Deno.copyFileSync(css, outPath);
 			} catch { /* not found */
 			}
 			this.#stylesheets.set(
 			    pluginId,
-			    `/static/plugins/${pluginId}/${basename}`,
+			    `/static/plugins/${pluginId}/${base}`,
 			);
 		}
 
@@ -122,16 +121,16 @@ export class WebPlugin implements Plugin {
 					external: [/^lit/, /^@lit\//, /^@tame\/web-sdk/, /^typebox/],
 					plugins: basePlugins(this.#rootDir),
 				});
-				const basename = src.split("/").pop()!.replace(/\.ts$/, ".js");
+				const outName = basename(src).replace(/\.ts$/, ".js");
 				await build.write({
-					file: `${outDir}/${basename}`,
+					file: `${outDir}/${outName}`,
 					format: "esm",
 					plugins: [terserPlugin],
 					sourcemap: this.#config.sourceMaps,
 				});
 				await build.close();
-				const url = `/static/plugins/${pluginId}/${basename}`;
-				this.#components.set(tag, { src: `${outDir}/${basename}`, url });
+				const url = `/static/plugins/${pluginId}/${outName}`;
+				this.#components.set(tag, { src: `${outDir}/${outName}`, url });
 			} catch (e) { console.warn(`plugin-web: rollup failed for ${tag} (${src}):`, e); }
 		}
 	}
