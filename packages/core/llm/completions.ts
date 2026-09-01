@@ -2,13 +2,15 @@ import {type AssistantMessage, type Content, type InferenceProvider, type InputM
 
 import {InferenceError} from "./error.ts";
 
+type StringRecord = Record<string, unknown>;
+
 interface ThinkingBlock {
 	text: string;
 	reasoningField: string;
 	reasoningDetailType?: string;
 	index?: number;
 	signature?: string;
-	providerData?: Record<string, unknown>;
+	providerData?: StringRecord;
 }
 
 function collectThinking(content: Content[]): ThinkingBlock[] {
@@ -17,7 +19,7 @@ function collectThinking(content: Content[]): ThinkingBlock[] {
 		if (c.type === "thinking" || c.type === "redacted_thinking") {
 			const meta = c[tameContentMeta] as TameContentMeta | undefined;
 			if (!meta?.reasoningField) continue;
-			const pd = (meta.providerData ?? {}) as Record<string, unknown>;
+			const pd = (meta.providerData ?? {}) as StringRecord;
 			blocks.push({
 				text: c.type === "thinking" ? c.thinking : "",
 				reasoningField: meta.reasoningField,
@@ -31,7 +33,7 @@ function collectThinking(content: Content[]): ThinkingBlock[] {
 	return blocks;
 }
 
-function applyThinking(msg: Record<string, unknown>, blocks: ThinkingBlock[]) {
+function applyThinking(msg: StringRecord, blocks: ThinkingBlock[]) {
 	const byField = new Map<string, ThinkingBlock[]>();
 	for (const b of blocks) {
 		const existing = byField.get(b.reasoningField);
@@ -44,9 +46,9 @@ function applyThinking(msg: Record<string, unknown>, blocks: ThinkingBlock[]) {
 	for (const [field, group] of byField) {
 		switch (field) {
 		case "reasoning_details": {
-			const arr: Record<string, unknown>[] = [];
+			const arr: StringRecord[] = [];
 			for (const b of group) {
-				const detail: Record<string, unknown> = {
+				const detail: StringRecord = {
 					...b.providerData,
 					type: b.reasoningDetailType ?? "reasoning.text",
 				};
@@ -83,10 +85,9 @@ export class CompletionsProvider implements InferenceProvider {
 		if (defaultModel) this.defaultModel = defaultModel;
 	}
 
-	#convertContent(content: Content[]):
-	    { textParts: Record<string, unknown>[]; toolCalls: Record<string, unknown>[] } {
-		const textParts: Record<string, unknown>[] = [];
-		const toolCalls: Record<string, unknown>[] = [];
+	#convertContent(content: Content[]): { textParts: StringRecord[]; toolCalls: StringRecord[] } {
+		const textParts: StringRecord[] = [];
+		const toolCalls: StringRecord[] = [];
 		for (const c of content) {
 			const extra = c[tameContentMeta]?.providerData ?? {};
 			switch (c.type) {
@@ -98,22 +99,23 @@ export class CompletionsProvider implements InferenceProvider {
 				// handled at message level via applyThinking
 				break;
 			case "tool_use":
-				toolCalls.push({
-					id: c.id,
-					type: "function",
-					function: {
-						name: c.name,
-						arguments: JSON.stringify(c.input),
-					},
-					...extra,
-				});
+				if (c.result)
+					toolCalls.push({
+						id: c.id,
+						type: "function",
+						function: {
+							name: c.name,
+							arguments: JSON.stringify(c.input),
+						},
+						...extra,
+					});
 				break;
 			}
 		}
 		return { textParts, toolCalls };
 	}
 
-	#convertTools(tools: MessageRequest["tools"]): Record<string, unknown>[]|undefined {
+	#convertTools(tools: MessageRequest["tools"]): StringRecord[]|undefined {
 		if (!tools || tools.length === 0) return undefined;
 		return tools.map((t) => ({
 			                 type: "function" as const,
@@ -125,8 +127,8 @@ export class CompletionsProvider implements InferenceProvider {
 		                 }));
 	}
 
-	#convertMessages(messages: InputMessage[], system?: string): Record<string, unknown>[] {
-		const res: Record<string, unknown>[] = [];
+	#convertMessages(messages: InputMessage[], system?: string): StringRecord[] {
+		const res: StringRecord[] = [];
 
 		if (system) { res.push({ role: "system", content: system }); }
 
@@ -136,25 +138,18 @@ export class CompletionsProvider implements InferenceProvider {
 			const { textParts, toolCalls } = this.#convertContent(m.content);
 
 			if (m.role === "user") {
-				const content: unknown = textParts.length === 1 && toolCalls.length === 0
-				                             ? (textParts[0] as { text: string }).text
-				                             : textParts;
+				const content = textParts.length === 1 && toolCalls.length === 0 ? textParts[0].text : textParts;
 				res.push({ role: "user", content, ...extra });
 			} else {
 				const textContent = textParts.map((p) => (p as { text: string }).text).join("\n");
-				const msg: Record<string, unknown> = {
-					role: "assistant",
-					...extra,
-				};
+				const msg: StringRecord = { role: "assistant", ...extra };
 				if (textContent) msg["content"] = textContent;
 				if (toolCalls.length > 0) msg["tool_calls"] = toolCalls;
 				if (thinking.length > 0) applyThinking(msg, thinking);
-				res.push(msg);
+				if (textContent || toolCalls.length > 0 || thinking.length > 0) res.push(msg);
 
 				// tool results
-				const callsWithResults = m.content.filter(
-				    (c) => c.type === "tool_use" && c.result,
-				);
+				const callsWithResults = m.content.filter((c) => c.type === "tool_use" && c.result);
 				for (const c of callsWithResults) {
 					const call = c as ToolUse;
 					const resultExtra = call.result![tameContentMeta]?.providerData ?? {};
@@ -186,11 +181,11 @@ export class CompletionsProvider implements InferenceProvider {
 		}
 	}
 
-	#parseResponse(data: Record<string, unknown>): AssistantMessage {
-		const choice = (data["choices"] as Record<string, unknown>[])?.[0] ?? {};
-		const message = (choice["message"] ?? {}) as Record<string, unknown>;
-		const usage = (data["usage"] ?? {}) as Record<string, unknown>;
-		const usageDetails = usage["prompt_tokens_details"] as Record<string, unknown>| undefined;
+	#parseResponse(data: StringRecord): AssistantMessage {
+		const choice = (data["choices"] as StringRecord[])?.[0] ?? {};
+		const message = (choice["message"] ?? {}) as StringRecord;
+		const usage = (data["usage"] ?? {}) as StringRecord;
+		const usageDetails = usage["prompt_tokens_details"] as StringRecord | undefined;
 
 		const content: Content[] = [];
 
@@ -226,11 +221,11 @@ export class CompletionsProvider implements InferenceProvider {
 		}
 
 		// reasoning_details
-		const reasoningDetails = message["reasoning_details"] as Record<string, unknown>[] | undefined;
+		const reasoningDetails = message["reasoning_details"] as StringRecord[] | undefined;
 		if (reasoningDetails) {
 			for (const rd of reasoningDetails) {
 				const detailType = rd["type"] as string;
-				const providerData: Record<string, unknown> = {};
+				const providerData: StringRecord = {};
 				// capture every field not explicitly stored in TameContentMeta
 				for (const k of ["signature", "format", "id", "data"] as const) {
 					if (rd[k] !== undefined) providerData[k] = rd[k];
@@ -263,11 +258,11 @@ export class CompletionsProvider implements InferenceProvider {
 		}
 
 		// tool calls
-		const toolCalls = message["tool_calls"] as Record<string, unknown>[] | undefined;
+		const toolCalls = message["tool_calls"] as StringRecord[] | undefined;
 		if (toolCalls) {
 			for (const tc of toolCalls) {
-				let input: Record<string, unknown> = {};
-				const fn = tc["function"] as Record<string, unknown>| undefined;
+				let input: StringRecord = {};
+				const fn = tc["function"] as StringRecord | undefined;
 				try {
 					input = JSON.parse(
 					    (fn?.["arguments"] as string) ?? "{}",
@@ -276,7 +271,7 @@ export class CompletionsProvider implements InferenceProvider {
 				}
 
 				// capture unknown tool_call-level fields for round-tripping
-				const tcProviderData: Record<string, unknown> = {};
+				const tcProviderData: StringRecord = {};
 				const knownTcFields = new Set(["id", "type", "function"]);
 				for (const k of Object.keys(tc)) {
 					if (!knownTcFields.has(k)) tcProviderData[k] = tc[k];
@@ -311,7 +306,7 @@ export class CompletionsProvider implements InferenceProvider {
 			"tool_calls",
 			"role",
 		]);
-		const msgProviderData: Record<string, unknown> = {};
+		const msgProviderData: StringRecord = {};
 		for (const k of Object.keys(message)) {
 			if (!handledMessageFields.has(k)) { msgProviderData[k] = message[k]; }
 		}
@@ -329,7 +324,7 @@ export class CompletionsProvider implements InferenceProvider {
 	}
 
 	async complete(req: MessageRequest, signal?: AbortSignal): Promise<AssistantMessage> {
-		const body: Record<string, unknown> = {
+		const body: StringRecord = {
 			model: req.model ?? this.defaultModel,
 			max_tokens: req.max_tokens,
 			messages: this.#convertMessages(req.messages, req.system),
