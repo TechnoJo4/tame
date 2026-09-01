@@ -1,0 +1,17 @@
+# https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+---
+BasedOnStyle: Microsoft
+IndentWidth: 4
+---
+Language: JavaScript
+AllowShortBlocksOnASingleLine: Always
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: true
+BreakBeforeBraces: Attach
+Cpp11BracedListStyle: Block
+InsertNewlineAtEOF: true
+JavaScriptWrapImports: false
+SpacesInContainerLiterals: false
+UseTab: ForIndentation
+...
