@@ -146,9 +146,12 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 
 	viewToolCall(view: string, call: ToolUse) {
 		try {
-			const tool = this.tools.get(call.name)! as Tool<TSchema>;
-			assertSchema(call.input, tool.args, "", this.#validators.get(tool)!);
-			return tool.view?.[view]?.(call.input, call.result, call[tameContentMeta]?.toolMeta);
+			const tool = this.tools.get(call.name);
+			if (tool === undefined) return;
+			const validator = this.#validators.get(tool);
+			if (validator === undefined) return;
+			assertSchema(call.input, tool.args, "", validator);
+			return (tool as Tool<TSchema>).view?.[view]?.(call.input, call.result, call[tameContentMeta]?.toolMeta);
 		} catch (e) {
 			if (!(e instanceof ValidationError)) { console.warn("error while viewing tool call:", call, e); }
 			return undefined;
