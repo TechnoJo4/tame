@@ -6,6 +6,6 @@
 		"./index": "./index.ts"
 	},
 	"imports": {
-		"@agentclientprotocol/sdk": "npm:@agentclientprotocol/sdk@^0.18.0"
+		"@agentclientprotocol/sdk": "npm:@agentclientprotocol/sdk@^0.18.2"
 	}
 }

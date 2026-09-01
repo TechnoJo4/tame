@@ -11,6 +11,6 @@
 		"@rollup/plugin-node-resolve": "npm:@rollup/plugin-node-resolve@16.0.1",
 		"@rollup/plugin-alias": "npm:@rollup/plugin-alias@5.1.1",
 		"@rollup/plugin-terser": "npm:@rollup/plugin-terser@0.4.4",
-		"tslib": "npm:tslib@^2"
+		"tslib": "npm:tslib@^2.8.1"
 	}
 }

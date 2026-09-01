@@ -2,12 +2,12 @@
   "version": "5",
   "specifiers": {
     "jsr:@std/assert@^1.0.19": "1.0.19",
-    "jsr:@std/internal@^1.0.12": "1.0.12",
-    "jsr:@std/path@^1.1.4": "1.1.4",
-    "npm:@agentclientprotocol/sdk@*": "0.18.0_zod@4.3.6",
-    "npm:@agentclientprotocol/sdk@0.18": "0.18.0_zod@4.3.6",
-    "npm:@lit-labs/virtualizer@^2.1.0": "2.1.1",
-    "npm:@lit/context@^1.1.0": "1.1.6",
+    "jsr:@std/internal@^1.0.12": "1.0.14",
+    "jsr:@std/internal@^1.0.14": "1.0.14",
+    "jsr:@std/path@^1.1.6": "1.1.6",
+    "npm:@agentclientprotocol/sdk@~0.18.2": "0.18.2_zod@4.4.3",
+    "npm:@lit-labs/virtualizer@^2.1.1": "2.1.1",
+    "npm:@lit/context@^1.1.6": "1.1.6",
     "npm:@rollup/plugin-alias@5.1.1": "5.1.1_rollup@4.44.0",
     "npm:@rollup/plugin-node-resolve@16.0.1": "16.0.1_rollup@4.44.0",
     "npm:@rollup/plugin-swc@0.4.0": "0.4.0_@swc+core@1.13.2_rollup@4.44.0",
@@ -15,35 +15,35 @@
     "npm:js-tiktoken@*": "1.0.21",
     "npm:js-tiktoken@^1.0.21": "1.0.21",
     "npm:lit@3.3.3": "3.3.3",
-    "npm:mdast-util-from-markdown@2": "2.0.3",
+    "npm:mdast-util-from-markdown@^2.0.3": "2.0.3",
     "npm:mdast-util-gfm-table@2": "2.0.0",
-    "npm:micromark-extension-gfm-table@2": "2.1.1",
+    "npm:micromark-extension-gfm-table@^2.1.1": "2.1.1",
     "npm:rollup@4.44.0": "4.44.0",
     "npm:terser@5.48.0": "5.48.0",
-    "npm:tslib@2": "2.8.1",
+    "npm:tslib@^2.8.1": "2.8.1",
     "npm:typebox@1.1.38": "1.1.38",
-    "npm:typebox@^1.1.32": "1.1.38"
+    "npm:typebox@^1.3.23": "1.3.23"
   },
   "jsr": {
     "@std/assert@1.0.19": {
       "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
       "dependencies": [
-        "jsr:@std/internal"
+        "jsr:@std/internal@^1.0.12"
       ]
     },
-    "@std/internal@1.0.12": {
-      "integrity": "972a634fd5bc34b242024402972cd5143eac68d8dffaca5eaa4dba30ce17b027"
+    "@std/internal@1.0.14": {
+      "integrity": "291516b3d4c35024d6ffbc0a9df5bf4c64116e05b50012cf846710152d2ffdf7"
     },
-    "@std/path@1.1.4": {
-      "integrity": "1d2d43f39efb1b42f0b1882a25486647cb851481862dc7313390b2bb044314b5",
+    "@std/path@1.1.6": {
+      "integrity": "c68485c2a4dfbb5ae3cc74fae4e8c4e5d874cf8a8ed12927917235c758b46cbe",
       "dependencies": [
-        "jsr:@std/internal"
+        "jsr:@std/internal@^1.0.14"
       ]
     }
   },
   "npm": {
-    "@agentclientprotocol/sdk@0.18.0_zod@4.3.6": {
-      "integrity": "sha512-JQGEi3EetQ38DLPpYxxnnz1fyo1/3qQEkKfUmj4JfiOJCEtjGWQ0nl54IH4LZceO7zIOrtUUxc+2cJRQbBOChA==",
+    "@agentclientprotocol/sdk@0.18.2_zod@4.4.3": {
+      "integrity": "sha512-l/o9NKvUc00GPa6RFJ4AccQq2O/PAf83xQ75mThHuL3H571iN4+PEdwnTBez67sS8Nv2aSA373xCZ5CbTXEwzA==",
       "dependencies": [
         "zod"
       ]
@@ -794,6 +794,9 @@
     "typebox@1.1.38": {
       "integrity": "sha512-pZ0aQPmMmXoUvSbeuWf/Hzsc+avNw/Zd6VeE8CFgkVGWyuHPJvqeJJDeJqLve+K70LvjYIoleGcoJHPT17cWoA=="
     },
+    "typebox@1.3.23": {
+      "integrity": "sha512-eMDZIb3EhHxm/tQ+xfbb++B+1KMpquxYoRQ0nHWukMmNxrYHsbRQwW15chb2doi0FdJ/MxDXpgZRFJUyizMkkw=="
+    },
     "unist-util-is@6.0.1": {
       "integrity": "sha512-LsiILbtBETkDz8I9p1dQ0uyRUWuaQzd/cuEeS1hoRSyW5E5XGmTzlwY1OrNzzakGowI9Dr/I8HVaw4hTtnxy8g==",
       "dependencies": [
@@ -821,8 +824,8 @@
         "unist-util-visit-parents"
       ]
     },
-    "zod@4.3.6": {
-      "integrity": "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="
+    "zod@4.4.3": {
+      "integrity": "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="
     },
     "zwitch@2.0.4": {
       "integrity": "sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A=="
@@ -831,13 +834,13 @@
   "workspace": {
     "dependencies": [
       "jsr:@std/assert@^1.0.19",
-      "jsr:@std/path@^1.1.4",
-      "npm:typebox@^1.1.32"
+      "jsr:@std/path@^1.1.6",
+      "npm:typebox@^1.3.23"
     ],
     "members": {
       "packages/plugin-acp": {
         "dependencies": [
-          "npm:@agentclientprotocol/sdk@0.18"
+          "npm:@agentclientprotocol/sdk@~0.18.2"
         ]
       },
       "packages/plugin-compact": {
@@ -847,19 +850,19 @@
       },
       "packages/plugin-history/web": {
         "dependencies": [
-          "npm:@lit/context@^1.1.0",
+          "npm:@lit/context@^1.1.6",
           "npm:lit@3.3.3"
         ]
       },
       "packages/plugin-ops/web": {
         "dependencies": [
-          "npm:@lit/context@^1.1.0",
+          "npm:@lit/context@^1.1.6",
           "npm:lit@3.3.3"
         ]
       },
       "packages/plugin-projects/web": {
         "dependencies": [
-          "npm:@lit/context@^1.1.0",
+          "npm:@lit/context@^1.1.6",
           "npm:lit@3.3.3"
         ]
       },
@@ -870,23 +873,23 @@
           "npm:@rollup/plugin-swc@0.4.0",
           "npm:@rollup/plugin-terser@0.4.4",
           "npm:rollup@4.44.0",
-          "npm:tslib@2"
+          "npm:tslib@^2.8.1"
         ]
       },
       "packages/plugin-web/web": {
         "dependencies": [
-          "npm:@lit-labs/virtualizer@^2.1.0",
-          "npm:@lit/context@^1.1.0",
+          "npm:@lit-labs/virtualizer@^2.1.1",
+          "npm:@lit/context@^1.1.6",
           "npm:lit@3.3.3",
-          "npm:mdast-util-from-markdown@2",
+          "npm:mdast-util-from-markdown@^2.0.3",
           "npm:mdast-util-gfm-table@2",
-          "npm:micromark-extension-gfm-table@2",
+          "npm:micromark-extension-gfm-table@^2.1.1",
           "npm:typebox@1.1.38"
         ]
       },
       "packages/web-sdk": {
         "dependencies": [
-          "npm:@lit/context@^1.1.0",
+          "npm:@lit/context@^1.1.6",
           "npm:lit@3.3.3"
         ]
       }

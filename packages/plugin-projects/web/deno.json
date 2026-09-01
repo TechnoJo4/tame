@@ -2,7 +2,7 @@
 	"imports": {
 		"lit": "npm:lit@3.3.3",
 		"lit/decorators.js": "npm:lit@3.3.3/decorators.js",
-		"@lit/context": "npm:@lit/context@^1.1",
+		"@lit/context": "npm:@lit/context@^1.1.6",
 		"@tame/web-sdk": "../../web-sdk/mod.ts",
 		"@tame/web-sdk/rpc-client-context": "../../web-sdk/rpc-client-context.ts"
 	},
