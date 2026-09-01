@@ -1,57 +1,45 @@
-import { html, LitElement } from "lit";
-import { property } from "lit/decorators.js";
-import { consume } from "@lit/context";
 import "@lit-labs/virtualizer";
-import type { LitVirtualizer } from "@lit-labs/virtualizer";
-import { RangeChangedEvent } from "@lit-labs/virtualizer/events.js";
-import { agentIdContext } from "@tame/web-sdk";
-import {
-	rpcClientContext,
-	type RPCClientLike,
-} from "@tame/web-sdk/rpc-client-context";
-import { settingsStoreContext } from "../lib/settings-context.ts";
-import {
-	AUTOMATED_VISIBILITY_KEY,
-	parseMessageVisibility,
-} from "../lib/message-visibility.ts";
-import type { SettingsStore } from "@tame/web-sdk";
-import type { MessageItem, ThreadItem, ToolCallItem } from "@tame/web-sdk";
+
+import type {LitVirtualizer} from "@lit-labs/virtualizer";
+import {RangeChangedEvent} from "@lit-labs/virtualizer/events.js";
+import {consume} from "@lit/context";
+import {agentIdContext} from "@tame/web-sdk";
+import type {MessageItem, SettingsStore, ThreadItem, ToolCallItem} from "@tame/web-sdk";
+import {rpcClientContext, type RPCClientLike,} from "@tame/web-sdk/rpc-client-context";
+import {html, LitElement} from "lit";
+import {property} from "lit/decorators.js";
+
+import {AUTOMATED_VISIBILITY_KEY, parseMessageVisibility,} from "../lib/message-visibility.ts";
+import {settingsStoreContext} from "../lib/settings-context.ts";
 
 const PAGE_SIZE = 50;
 
 export class TameThread extends LitElement {
-	@consume({ context: agentIdContext, subscribe: true })
-	@property({ type: String })
-	declare agentId: string | null;
+	@consume({ context: agentIdContext, subscribe: true }) @property({ type: String }) declare agentId: string|null;
 
 	@consume({ context: rpcClientContext, subscribe: true })
 	@property({ attribute: false })
-	declare client: RPCClientLike | null;
+	declare client: RPCClientLike|null;
 
 	@consume({ context: settingsStoreContext, subscribe: true })
 	@property({ attribute: false })
-	declare store: SettingsStore | null;
+	declare store: SettingsStore|null;
 
-	@property({ type: Array, state: true })
-	items: ThreadItem[] = [];
-	@property({ type: Boolean, state: true })
-	loading = true;
-	@property({ type: String, state: true })
-	error: string | null = null;
+	@property({ type: Array, state: true }) items: ThreadItem[] = [];
+	@property({ type: Boolean, state: true }) loading = true;
+	@property({ type: String, state: true }) error: string|null = null;
 
-	#virtualizer: LitVirtualizer | null = null;
+	#virtualizer: LitVirtualizer|null = null;
 	#pinned = true;
 	#layout: Record<string, unknown> = {};
 	#loadingMore = false;
 	#totalLoaded = 0;
 	#totalItems = 0;
 	#unsubs: (() => void)[] = [];
-	#lastAgentId: string | null = null;
-	#visibilityUnsub: (() => void) | null = null;
+	#lastAgentId: string|null = null;
+	#visibilityUnsub: (() => void)|null = null;
 
-	override createRenderRoot() {
-		return this;
-	}
+	override createRenderRoot() { return this; }
 
 	override connectedCallback() {
 		super.connectedCallback();
@@ -69,11 +57,8 @@ export class TameThread extends LitElement {
 
 	override willUpdate(changed: Map<string, unknown>) {
 		// agentId or client changed → reload if both are present and agentId is new
-		if (
-			(changed.has("agentId") || changed.has("client")) &&
-			this.client && this.agentId &&
-			this.agentId !== this.#lastAgentId
-		) {
+		if ((changed.has("agentId") || changed.has("client")) && this.client && this.agentId &&
+		    this.agentId !== this.#lastAgentId) {
 			this.#lastAgentId = this.agentId;
 			this.#loadInitial();
 		}
@@ -122,8 +107,7 @@ export class TameThread extends LitElement {
 		const el = this.#virtualizer;
 		if (!el) return;
 		const threshold = 48;
-		const atBottom =
-			el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
+		const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
 		if (atBottom && !this.#pinned) {
 			this.#pinned = true;
 			this.#pinToBottom();
@@ -144,9 +128,7 @@ export class TameThread extends LitElement {
 	};
 
 	#onRangeChanged = (e: RangeChangedEvent) => {
-		if (e.first <= 3 && !this.#loadingMore) {
-			this.#loadMore();
-		}
+		if (e.first <= 3 && !this.#loadingMore) { this.#loadMore(); }
 	};
 
 	#onEcho = (e: Event) => {
@@ -164,15 +146,16 @@ export class TameThread extends LitElement {
 	#subscribeVisibility() {
 		this.#visibilityUnsub?.();
 		this.#visibilityUnsub = this.store?.onChange(
-			"web",
-			AUTOMATED_VISIBILITY_KEY,
-			() => this.requestUpdate(),
-		) ?? null;
+		                            "web",
+		                            AUTOMATED_VISIBILITY_KEY,
+		                            () => this.requestUpdate(),
+		                            ) ??
+		                        null;
 	}
 
 	#visibleItems(): ThreadItem[] {
 		const visibility = parseMessageVisibility(
-			this.store?.get("web", AUTOMATED_VISIBILITY_KEY) ?? null,
+		    this.store?.get("web", AUTOMATED_VISIBILITY_KEY) ?? null,
 		);
 		if (visibility !== "hidden") return this.items;
 		return this.items.filter((item) => item.role !== "tame");
@@ -197,10 +180,10 @@ export class TameThread extends LitElement {
 
 		const on = (event: string, handler: (data: any) => void) => {
 			this.#unsubs.push(
-				this.client!.subscribe(
-					{ agent_id: this.agentId!, plugin: "web", event },
-					(msg) => handler(msg.data as Record<string, unknown>),
-				),
+			    this.client!.subscribe(
+			        { agent_id: this.agentId!, plugin: "web", event },
+			        (msg) => handler(msg.data as Record<string, unknown>),
+			        ),
 			);
 		};
 
@@ -256,9 +239,7 @@ export class TameThread extends LitElement {
 			this.#totalLoaded = this.items.length;
 			this.#totalItems = r.total as number;
 			this.#pinned = true;
-		} catch (e) {
-			this.error = e instanceof Error ? e.message : String(e);
-		} finally {
+		} catch (e) { this.error = e instanceof Error ? e.message : String(e); } finally {
 			this.loading = false;
 		}
 	}
@@ -278,38 +259,34 @@ export class TameThread extends LitElement {
 			if (older.length === 0) return;
 			this.items = [...older, ...this.items];
 			this.#totalLoaded += older.length;
-		} finally {
-			this.#loadingMore = false;
-		}
+		} finally { this.#loadingMore = false; }
 	}
 
 	#renderItem = (item: ThreadItem) => {
 		if (item.type === "tool_call") {
 			const ti = item as ToolCallItem;
 			if (ti.role !== "tame") return this.#renderToolView(ti);
-			switch (
-				parseMessageVisibility(
-					this.store?.get("web", AUTOMATED_VISIBILITY_KEY) ?? null,
-				)
-			) {
-				case "hidden":
-					return html``;
-				case "collapsable":
-					return html`
+			switch (parseMessageVisibility(
+			    this.store?.get("web", AUTOMATED_VISIBILITY_KEY) ?? null,
+			    )) {
+			case "hidden":
+				return html``;
+			case "collapsable":
+				return html`
 						<details data-role="tame" open>
 							<summary><span data-label="role">tame</span></summary>
 							${this.#renderToolView(ti)}
 						</details>
 					`;
-				case "collapsed":
-					return html`
+			case "collapsed":
+				return html`
 						<details data-role="tame">
 							<summary><span data-label="role">tame</span></summary>
 							${this.#renderToolView(ti)}
 						</details>
 					`;
-				default:
-					return html`
+			default:
+				return html`
 						<section data-role="tame">
 							<span data-label="role">tame</span>
 							${this.#renderToolView(ti)}
@@ -324,12 +301,8 @@ export class TameThread extends LitElement {
 	#keyFunction = (item: ThreadItem) => item.key;
 
 	override render() {
-		if (this.loading) {
-			return html`loading thread...`;
-		}
-		if (this.error) {
-			return html`${this.error}`;
-		}
+		if (this.loading) { return html`loading thread...`; }
+		if (this.error) { return html`${this.error}`; }
 		return html`
 			<lit-virtualizer
 				scroller

@@ -1,2 +1,2 @@
-import { JinaFetchPlugin } from "./index.ts";
+import {JinaFetchPlugin} from "./index.ts";
 export default new JinaFetchPlugin();

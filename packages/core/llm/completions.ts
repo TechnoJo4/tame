@@ -1,17 +1,6 @@
-import { InferenceError } from "./error.ts";
-import {
-	tameMsgMeta,
-	tameContentMeta,
-	type InferenceProvider,
-	type AssistantMessage,
-	type MessageRequest,
-	type Content,
-	type InputMessage,
-	type ToolUse,
-	type Usage,
-	type StopReason,
-	type TameContentMeta,
-} from "@tame/sdk";
+import {type AssistantMessage, type Content, type InferenceProvider, type InputMessage, type MessageRequest, type StopReason, tameContentMeta, type TameContentMeta, tameMsgMeta, type ToolUse, type Usage,} from "@tame/sdk";
+
+import {InferenceError} from "./error.ts";
 
 interface ThinkingBlock {
 	text: string;
@@ -46,36 +35,35 @@ function applyThinking(msg: Record<string, unknown>, blocks: ThinkingBlock[]) {
 	const byField = new Map<string, ThinkingBlock[]>();
 	for (const b of blocks) {
 		const existing = byField.get(b.reasoningField);
-		if (existing) existing.push(b);
-		else byField.set(b.reasoningField, [b]);
+		if (existing)
+			existing.push(b);
+		else
+			byField.set(b.reasoningField, [b]);
 	}
 
 	for (const [field, group] of byField) {
 		switch (field) {
-			case "reasoning_details": {
-				const arr: Record<string, unknown>[] = [];
-				for (const b of group) {
-					const detail: Record<string, unknown> = {
-						...b.providerData,
-						type: b.reasoningDetailType ?? "reasoning.text",
-					};
-					if (b.text) {
-						const textField =
-							b.reasoningDetailType === "reasoning.summary"
-								? "summary"
-								: "text";
-						detail[textField] = b.text;
-					}
-					if (b.index !== undefined) detail["index"] = b.index;
-					if (b.signature) detail["signature"] = b.signature;
-					arr.push(detail);
+		case "reasoning_details": {
+			const arr: Record<string, unknown>[] = [];
+			for (const b of group) {
+				const detail: Record<string, unknown> = {
+					...b.providerData,
+					type: b.reasoningDetailType ?? "reasoning.text",
+				};
+				if (b.text) {
+					const textField = b.reasoningDetailType === "reasoning.summary" ? "summary" : "text";
+					detail[textField] = b.text;
 				}
-				msg["reasoning_details"] = arr;
-				break;
+				if (b.index !== undefined) detail["index"] = b.index;
+				if (b.signature) detail["signature"] = b.signature;
+				arr.push(detail);
 			}
-			default:
-				msg[field] = group.map((b) => b.text).join("\n");
-				break;
+			msg["reasoning_details"] = arr;
+			break;
+		}
+		default:
+			msg[field] = group.map((b) => b.text).join("\n");
+			break;
 		}
 	}
 }
@@ -91,59 +79,56 @@ export class CompletionsProvider implements InferenceProvider {
 			"Content-Type": "application/json",
 			...headers,
 		};
-		if (key) {
-			this.#headers["Authorization"] ??= `Bearer ${key}`;
-		}
+		if (key) { this.#headers["Authorization"] ??= `Bearer ${key}`; }
 		if (defaultModel) this.defaultModel = defaultModel;
 	}
 
-	#convertContent(content: Content[]): { textParts: Record<string, unknown>[]; toolCalls: Record<string, unknown>[] } {
+	#convertContent(content: Content[]):
+	    { textParts: Record<string, unknown>[]; toolCalls: Record<string, unknown>[] } {
 		const textParts: Record<string, unknown>[] = [];
 		const toolCalls: Record<string, unknown>[] = [];
 		for (const c of content) {
 			const extra = c[tameContentMeta]?.providerData ?? {};
 			switch (c.type) {
-				case "text":
-					textParts.push({ type: "text", text: c.text, ...extra });
-					break;
-				case "thinking":
-				case "redacted_thinking":
-					// handled at message level via applyThinking
-					break;
-				case "tool_use":
-					toolCalls.push({
-						id: c.id,
-						type: "function",
-						function: {
-							name: c.name,
-							arguments: JSON.stringify(c.input),
-						},
-						...extra,
-					});
-					break;
+			case "text":
+				textParts.push({ type: "text", text: c.text, ...extra });
+				break;
+			case "thinking":
+			case "redacted_thinking":
+				// handled at message level via applyThinking
+				break;
+			case "tool_use":
+				toolCalls.push({
+					id: c.id,
+					type: "function",
+					function: {
+						name: c.name,
+						arguments: JSON.stringify(c.input),
+					},
+					...extra,
+				});
+				break;
 			}
 		}
 		return { textParts, toolCalls };
 	}
 
-	#convertTools(tools: MessageRequest["tools"]): Record<string, unknown>[] | undefined {
+	#convertTools(tools: MessageRequest["tools"]): Record<string, unknown>[]|undefined {
 		if (!tools || tools.length === 0) return undefined;
 		return tools.map((t) => ({
-			type: "function" as const,
-			function: {
-				name: t.name,
-				description: t.description,
-				parameters: t.input_schema,
-			},
-		}));
+			                 type: "function" as const,
+			                 function: {
+				                 name: t.name,
+				                 description: t.description,
+				                 parameters: t.input_schema,
+			                 },
+		                 }));
 	}
 
 	#convertMessages(messages: InputMessage[], system?: string): Record<string, unknown>[] {
 		const res: Record<string, unknown>[] = [];
 
-		if (system) {
-			res.push({ role: "system", content: system });
-		}
+		if (system) { res.push({ role: "system", content: system }); }
 
 		for (const m of messages) {
 			const extra = m[tameMsgMeta]?.providerData ?? {};
@@ -151,15 +136,12 @@ export class CompletionsProvider implements InferenceProvider {
 			const { textParts, toolCalls } = this.#convertContent(m.content);
 
 			if (m.role === "user") {
-				const content: unknown =
-					textParts.length === 1 && toolCalls.length === 0
-						? (textParts[0] as { text: string }).text
-						: textParts;
+				const content: unknown = textParts.length === 1 && toolCalls.length === 0
+				                             ? (textParts[0] as { text: string }).text
+				                             : textParts;
 				res.push({ role: "user", content, ...extra });
 			} else {
-				const textContent = textParts
-					.map((p) => (p as { text: string }).text)
-					.join("\n");
+				const textContent = textParts.map((p) => (p as { text: string }).text).join("\n");
 				const msg: Record<string, unknown> = {
 					role: "assistant",
 					...extra,
@@ -171,12 +153,11 @@ export class CompletionsProvider implements InferenceProvider {
 
 				// tool results
 				const callsWithResults = m.content.filter(
-					(c) => c.type === "tool_use" && c.result,
+				    (c) => c.type === "tool_use" && c.result,
 				);
 				for (const c of callsWithResults) {
 					const call = c as ToolUse;
-					const resultExtra =
-						call.result![tameContentMeta]?.providerData ?? {};
+					const resultExtra = call.result![tameContentMeta]?.providerData ?? {};
 					res.push({
 						role: "tool",
 						tool_call_id: call.id,
@@ -192,16 +173,16 @@ export class CompletionsProvider implements InferenceProvider {
 
 	#mapStopReason(reason: string): StopReason {
 		switch (reason) {
-			case "stop":
-				return "end_turn";
-			case "length":
-				return "max_tokens";
-			case "tool_calls":
-				return "tool_use";
-			case "content_filter":
-				return "refusal";
-			default:
-				return "end_turn";
+		case "stop":
+			return "end_turn";
+		case "length":
+			return "max_tokens";
+		case "tool_calls":
+			return "tool_use";
+		case "content_filter":
+			return "refusal";
+		default:
+			return "end_turn";
 		}
 	}
 
@@ -209,7 +190,7 @@ export class CompletionsProvider implements InferenceProvider {
 		const choice = (data["choices"] as Record<string, unknown>[])?.[0] ?? {};
 		const message = (choice["message"] ?? {}) as Record<string, unknown>;
 		const usage = (data["usage"] ?? {}) as Record<string, unknown>;
-		const usageDetails = usage["prompt_tokens_details"] as Record<string, unknown> | undefined;
+		const usageDetails = usage["prompt_tokens_details"] as Record<string, unknown>| undefined;
 
 		const content: Content[] = [];
 
@@ -258,19 +239,13 @@ export class CompletionsProvider implements InferenceProvider {
 				const meta: TameContentMeta = {
 					reasoningField: "reasoning_details",
 					reasoningDetailType: detailType,
-					providerData: Object.keys(providerData).length > 0
-						? providerData
-						: undefined,
+					providerData: Object.keys(providerData).length > 0 ? providerData : undefined,
 				};
-				if (rd["index"] !== undefined)
-					meta.reasoningIndex = rd["index"] as number;
+				if (rd["index"] !== undefined) meta.reasoningIndex = rd["index"] as number;
 
-				const thinkingText =
-					detailType === "reasoning.text"
-						? (rd["text"] as string)
-						: detailType === "reasoning.summary"
-						? (rd["summary"] as string)
-						: undefined;
+				const thinkingText = detailType === "reasoning.text"      ? (rd["text"] as string)
+				                     : detailType === "reasoning.summary" ? (rd["summary"] as string)
+				                                                          : undefined;
 				if (thinkingText) {
 					content.unshift({
 						type: "thinking",
@@ -292,13 +267,12 @@ export class CompletionsProvider implements InferenceProvider {
 		if (toolCalls) {
 			for (const tc of toolCalls) {
 				let input: Record<string, unknown> = {};
-				const fn = tc["function"] as Record<string, unknown> | undefined;
+				const fn = tc["function"] as Record<string, unknown>| undefined;
 				try {
 					input = JSON.parse(
-						(fn?.["arguments"] as string) ?? "{}",
+					    (fn?.["arguments"] as string) ?? "{}",
 					);
-				} catch {
-					/* keep empty on parse failure */
+				} catch { /* keep empty on parse failure */
 				}
 
 				// capture unknown tool_call-level fields for round-tripping
@@ -313,9 +287,8 @@ export class CompletionsProvider implements InferenceProvider {
 					id: tc["id"] as string,
 					name: (fn?.["name"] as string) ?? "",
 					input,
-					[tameContentMeta]: Object.keys(tcProviderData).length > 0
-						? { providerData: tcProviderData }
-						: undefined,
+					[tameContentMeta]:
+					    Object.keys(tcProviderData).length > 0 ? { providerData: tcProviderData } : undefined,
 				});
 			}
 		}
@@ -323,10 +296,8 @@ export class CompletionsProvider implements InferenceProvider {
 		const tameUsage: Usage = {
 			input_tokens: (usage["prompt_tokens"] as number) ?? 0,
 			output_tokens: (usage["completion_tokens"] as number) ?? 0,
-			cache_creation_input_tokens:
-				(usageDetails?.["cache_write_tokens"] as number) ?? 0,
-			cache_read_input_tokens:
-				(usageDetails?.["cached_tokens"] as number) ?? 0,
+			cache_creation_input_tokens: (usageDetails?.["cache_write_tokens"] as number) ?? 0,
+			cache_read_input_tokens: (usageDetails?.["cached_tokens"] as number) ?? 0,
 			service_tier: (data["service_tier"] as string) ?? "",
 		};
 
@@ -342,22 +313,18 @@ export class CompletionsProvider implements InferenceProvider {
 		]);
 		const msgProviderData: Record<string, unknown> = {};
 		for (const k of Object.keys(message)) {
-			if (!handledMessageFields.has(k)) {
-				msgProviderData[k] = message[k];
-			}
+			if (!handledMessageFields.has(k)) { msgProviderData[k] = message[k]; }
 		}
 
 		return {
 			role: "assistant",
 			content,
 			stop_reason: this.#mapStopReason(
-				(choice["finish_reason"] as string) ?? "stop",
-			),
+			    (choice["finish_reason"] as string) ?? "stop",
+			    ),
 			model: (data["model"] as string) ?? "",
 			usage: tameUsage,
-			[tameMsgMeta]: Object.keys(msgProviderData).length > 0
-				? { providerData: msgProviderData }
-				: undefined,
+			[tameMsgMeta]: Object.keys(msgProviderData).length > 0 ? { providerData: msgProviderData } : undefined,
 		};
 	}
 
@@ -368,9 +335,7 @@ export class CompletionsProvider implements InferenceProvider {
 			messages: this.#convertMessages(req.messages, req.system),
 		};
 
-		if (req.tools) {
-			body["tools"] = this.#convertTools(req.tools);
-		}
+		if (req.tools) { body["tools"] = this.#convertTools(req.tools); }
 
 		const res = await fetch(this.#url, {
 			method: "POST",
@@ -380,9 +345,7 @@ export class CompletionsProvider implements InferenceProvider {
 		});
 
 		const data = await res.json();
-		if (res.ok) {
-			return this.#parseResponse(data);
-		}
+		if (res.ok) { return this.#parseResponse(data); }
 		throw new InferenceError(res, data);
 	}
 }

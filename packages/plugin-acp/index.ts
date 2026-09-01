@@ -1,21 +1,9 @@
 import * as acp from "@agentclientprotocol/sdk";
-import { type Static, Type } from "typebox";
-
-import type {
-	AgentStopReason,
-	IAgent,
-	IHarness,
-	InputContent,
-	InputMessage,
-	Plugin,
-	ToolUse,
-} from "@tame/sdk";
-import { tool } from "@tame/sdk";
-import {
-	getAgentHistory,
-	type HistoryPlugin,
-} from "@tame/plugin-history/index";
-import type { CommandsPlugin } from "@tame/plugin-commands/index";
+import type {CommandsPlugin} from "@tame/plugin-commands/index";
+import {getAgentHistory, type HistoryPlugin,} from "@tame/plugin-history/index";
+import type {AgentStopReason, IAgent, IHarness, InputContent, InputMessage, Plugin, ToolUse,} from "@tame/sdk";
+import {tool} from "@tame/sdk";
+import {type Static, Type} from "typebox";
 
 const tcpListen = Type.Object({
 	transport: Type.Literal("tcp"),
@@ -30,13 +18,12 @@ const unixListen = Type.Object({
 
 export const configSchema = Type.Object({
 	listen: Type.Union([tcpListen, unixListen]),
-	tools: Type.Boolean({ default: false }),
+	tools: Type.Boolean({default: false}),
 });
 
 export type Config = Static<typeof configSchema>;
 
-const acpToolSystem =
-	`\n\nYou are connected to a user through ACP (Agent Client Protocol).
+const acpToolSystem = `\n\nYou are connected to a user through ACP (Agent Client Protocol).
 
 The ACP user's environment has a separate file system, and may run a different operating system.
 Tools which act through ACP may behave differently from your other tools.`;
@@ -62,9 +49,9 @@ export class ACPAdapter implements acp.Agent {
 	#clientCaps: acp.ClientCapabilities = {};
 
 	constructor(
-		harness: IHarness,
-		connection: acp.AgentSideConnection,
-		config: Config,
+	    harness: IHarness,
+	    connection: acp.AgentSideConnection,
+	    config: Config,
 	) {
 		this.#harness = harness;
 		this.#connection = connection;
@@ -74,11 +61,9 @@ export class ACPAdapter implements acp.Agent {
 	}
 
 	async initialize(
-		params: acp.InitializeRequest,
-	): Promise<acp.InitializeResponse> {
-		if (params.clientCapabilities) {
-			this.#clientCaps = params.clientCapabilities;
-		}
+	    params: acp.InitializeRequest,
+	    ): Promise<acp.InitializeResponse> {
+		if (params.clientCapabilities) { this.#clientCaps = params.clientCapabilities; }
 
 		return {
 			protocolVersion: acp.PROTOCOL_VERSION,
@@ -92,26 +77,22 @@ export class ACPAdapter implements acp.Agent {
 	}
 
 	async newSession(
-		_params: acp.NewSessionRequest,
-	): Promise<acp.NewSessionResponse> {
+	    _params: acp.NewSessionRequest,
+	    ): Promise<acp.NewSessionResponse> {
 		const agent = this.#harness.newAgent();
 		this.#setupAgent(agent);
 		return { sessionId: agent.id };
 	}
 
 	async loadSession(
-		params: acp.LoadSessionRequest,
-	): Promise<acp.LoadSessionResponse> {
+	    params: acp.LoadSessionRequest,
+	    ): Promise<acp.LoadSessionResponse> {
 		let agent = this.#sessions.get(params.sessionId);
-		if (!agent) {
-			agent = this.#harness.getAgent(params.sessionId);
-		}
-		if (!agent) {
-			agent = await this.#history!.loadAgent(params.sessionId);
-		}
+		if (!agent) { agent = this.#harness.getAgent(params.sessionId); }
+		if (!agent) { agent = await this.#history!.loadAgent(params.sessionId); }
 		if (!agent) {
 			throw new Error(
-				`could not find or load agent with id '${params.sessionId}'`,
+			    `could not find or load agent with id '${params.sessionId}'`,
 			);
 		}
 		this.#setupAgent(agent);
@@ -119,16 +100,14 @@ export class ACPAdapter implements acp.Agent {
 		const hist = getAgentHistory(agent);
 		if (hist.title) this.#sendTitle(agent.id, hist.title);
 
-		for (const m of agent.context) {
-			this.#sendMessage(agent.id, m, true);
-		}
+		for (const m of agent.context) { this.#sendMessage(agent.id, m, true); }
 
 		return {};
 	}
 
 	async listSessions(
-		_params: acp.ListSessionsRequest,
-	): Promise<acp.ListSessionsResponse> {
+	    _params: acp.ListSessionsRequest,
+	    ): Promise<acp.ListSessionsResponse> {
 		const sessions: acp.SessionInfo[] = [];
 		for (const sess of await this.#history!.list()) {
 			const agent = this.#sessions.get(sess.id);
@@ -151,8 +130,8 @@ export class ACPAdapter implements acp.Agent {
 	}
 
 	async authenticate(
-		_params: acp.AuthenticateRequest,
-	): Promise<acp.AuthenticateResponse | void> {
+	    _params: acp.AuthenticateRequest,
+	    ): Promise<acp.AuthenticateResponse|void> {
 		return {};
 	}
 
@@ -251,22 +230,22 @@ export class ACPAdapter implements acp.Agent {
 							description: "Absolute path to the file to read",
 						}),
 						offset: Type.Optional(
-							Type.Number({
-								description: "Line number to start reading from (1-based)",
-							}),
-						),
+						    Type.Number({
+							    description: "Line number to start reading from (1-based)",
+						    }),
+						    ),
 						limit: Type.Optional(
-							Type.Number({ description: "Maximum number of lines to read" }),
-						),
+						    Type.Number({ description: "Maximum number of lines to read" }),
+						    ),
 					}),
 					exec: async (args) => {
-						const res = await this.#connection.readTextFile({
-							sessionId: agent.id,
-							path: args.path,
-							line: args.offset,
-							limit: args.limit,
-						});
-						return res.content;
+					    const res = await this.#connection.readTextFile({
+						    sessionId: agent.id,
+						    path: args.path,
+						    line: args.offset,
+						    limit: args.limit,
+					    });
+					    return res.content;
 					},
 					view: {
 						acp: (args) => ({
@@ -290,11 +269,11 @@ export class ACPAdapter implements acp.Agent {
 						}),
 					}),
 					exec: async (args) => {
-						await this.#connection.writeTextFile({
-							sessionId: agent.id,
-							...args,
-						});
-						return "Success.";
+					    await this.#connection.writeTextFile({
+						    sessionId: agent.id,
+						    ...args,
+					    });
+					    return "Success.";
 					},
 					view: {
 						acp: (args) => ({
@@ -312,9 +291,9 @@ export class ACPAdapter implements acp.Agent {
 				update: {
 					sessionUpdate: "available_commands_update",
 					availableCommands: [...this.#commands.list()].map((c) => ({
-						name: c.name,
-						description: c.description,
-					})),
+						                                                  name: c.name,
+						                                                  description: c.description,
+					                                                  })),
 				},
 			});
 		}
@@ -324,11 +303,9 @@ export class ACPAdapter implements acp.Agent {
 			return e;
 		});
 		agent.after("toolResult", async (e) => {
-			const call = agent.context.flatMap((m) => m.content)
-				.find((c) => c.type === "tool_use" && c.id === e.toolUse);
-			const view = call
-				? agent.viewToolCall("acp", call as ToolUse)
-				: undefined;
+			const call =
+			    agent.context.flatMap((m) => m.content).find((c) => c.type === "tool_use" && c.id === e.toolUse);
+			const view = call ? agent.viewToolCall("acp", call as ToolUse) : undefined;
 			this.#connection.sessionUpdate({
 				sessionId: agent.id,
 				update: {
@@ -353,54 +330,50 @@ export class ACPAdapter implements acp.Agent {
 	}
 
 	#sendMessage(
-		sessionId: string,
-		msg: InputMessage,
-		noToolResult: boolean = false,
+	    sessionId: string,
+	    msg: InputMessage,
+	    noToolResult: boolean = false,
 	) {
 		for (const block of msg.content) {
 			switch (block.type) {
-				case "thinking":
-					this.#connection.sessionUpdate({
-						sessionId,
-						update: {
-							sessionUpdate: "agent_thought_chunk",
-							content: {
-								type: "text",
-								text: block.thinking,
-							},
+			case "thinking":
+				this.#connection.sessionUpdate({
+					sessionId,
+					update: {
+						sessionUpdate: "agent_thought_chunk",
+						content: {
+							type: "text",
+							text: block.thinking,
 						},
-					});
-					break;
-				case "text":
-					this.#connection.sessionUpdate({
-						sessionId,
-						update: {
-							sessionUpdate: msg.role === "assistant"
-								? "agent_message_chunk"
-								: "user_message_chunk",
-							content: block,
-						},
-					});
-					break;
-				case "tool_use": {
-					if (noToolResult && block.result) break;
-					const agent = this.#sessions.get(sessionId)!;
-					const view = agent.viewToolCall("acp", block);
-					this.#connection.sessionUpdate({
-						sessionId,
-						update: {
-							sessionUpdate: "tool_call",
-							toolCallId: block.id,
-							title: block.name,
-							status: block.result
-								? block.result.is_error ? "failed" : "completed"
-								: "in_progress",
-							rawInput: block.input,
-							...(typeof view === "object" ? view : {}),
-						},
-					});
-					break;
-				}
+					},
+				});
+				break;
+			case "text":
+				this.#connection.sessionUpdate({
+					sessionId,
+					update: {
+						sessionUpdate: msg.role === "assistant" ? "agent_message_chunk" : "user_message_chunk",
+						content: block,
+					},
+				});
+				break;
+			case "tool_use": {
+				if (noToolResult && block.result) break;
+				const agent = this.#sessions.get(sessionId)!;
+				const view = agent.viewToolCall("acp", block);
+				this.#connection.sessionUpdate({
+					sessionId,
+					update: {
+						sessionUpdate: "tool_call",
+						toolCallId: block.id,
+						title: block.name,
+						status: block.result ? block.result.is_error ? "failed" : "completed" : "in_progress",
+						rawInput: block.input,
+						...(typeof view === "object" ? view : {}),
+					},
+				});
+				break;
+			}
 			}
 		}
 	}
@@ -409,12 +382,12 @@ export class ACPAdapter implements acp.Agent {
 		let text = "";
 		for (const block of blocks) {
 			switch (block.type) {
-				case "text":
-					text += block.text;
-					break;
-				case "resource_link":
-					text += `[${block.name}](${block.uri})`;
-					break;
+			case "text":
+				text += block.text;
+				break;
+			case "resource_link":
+				text += `[${block.name}](${block.uri})`;
+				break;
 			}
 		}
 		return [{ type: "text", text }];
@@ -426,12 +399,10 @@ export class ACPPlugin implements Plugin {
 
 	#config: Config;
 
-	constructor(config: Config) {
-		this.#config = config;
-	}
+	constructor(config: Config) { this.#config = config; }
 
 	async init(harness: IHarness) {
-		let listener: Deno.TcpListener | Deno.UnixListener;
+		let listener: Deno.TcpListener|Deno.UnixListener;
 		if (this.#config.listen.transport === "unix") {
 			try {
 				await Deno.remove(this.#config.listen.path);
@@ -447,8 +418,8 @@ export class ACPPlugin implements Plugin {
 			if ("setKeepAlive" in conn) conn.setKeepAlive(true);
 			const stream = acp.ndJsonStream(conn.writable, conn.readable);
 			new acp.AgentSideConnection(
-				(conn) => new ACPAdapter(harness, conn, this.#config),
-				stream,
+			    (conn) => new ACPAdapter(harness, conn, this.#config),
+			    stream,
 			);
 		}
 	}

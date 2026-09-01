@@ -1,22 +1,23 @@
-import { LitElement, html } from "lit";
-import { property } from "lit/decorators.js";
-import { consume } from "@lit/context";
-import { agentIdContext } from "@tame/web-sdk";
-import { rpcClientContext, type RPCClientLike } from "@tame/web-sdk/rpc-client-context";
-import type { SessionInfo } from "./types.ts";
+import {consume} from "@lit/context";
+import {agentIdContext} from "@tame/web-sdk";
+import {rpcClientContext, type RPCClientLike} from "@tame/web-sdk/rpc-client-context";
+import {html, LitElement} from "lit";
+import {property} from "lit/decorators.js";
+
+import type {SessionInfo} from "./types.ts";
 
 export class TameHistory extends LitElement {
 	@consume({ context: rpcClientContext, subscribe: true })
-	@property({ attribute: false }) declare client: RPCClientLike | null;
+	@property({ attribute: false })
+	declare client: RPCClientLike|null;
 
-	@consume({ context: agentIdContext, subscribe: true })
-	@property({ type: String }) declare agentId: string | null;
+	@consume({ context: agentIdContext, subscribe: true }) @property({ type: String }) declare agentId: string|null;
 
 	@property({ type: Array, state: true }) sessions: SessionInfo[] = [];
 	@property({ type: Boolean, state: true }) loading = true;
 
-	#unsub: (() => void) | null = null;
-	#lastClient: RPCClientLike | null = null;
+	#unsub: (() => void)|null = null;
+	#lastClient: RPCClientLike|null = null;
 
 	override createRenderRoot() { return this; }
 
@@ -68,10 +69,8 @@ export class TameHistory extends LitElement {
 		if (!this.client) return;
 		this.#unsub?.();
 		this.#unsub = this.client.subscribe(
-			{ plugin: "history", event: "sessionsChanged" },
-			(msg: any) => {
-				this.sessions = this.#sort((msg.data as any)?.sessions ?? []);
-			},
+		    { plugin: "history", event: "sessionsChanged" },
+		    (msg: any) => { this.sessions = this.#sort((msg.data as any)?.sessions ?? []); },
 		);
 	}
 
@@ -81,9 +80,7 @@ export class TameHistory extends LitElement {
 		try {
 			const result = await client.call("history", "list", {});
 			this.sessions = this.#sort((result as any)?.sessions ?? []);
-		} catch (e) {
-			console.error("tame-history: failed to list sessions", e);
-		} finally {
+		} catch (e) { console.error("tame-history: failed to list sessions", e); } finally {
 			this.loading = false;
 		}
 	}
@@ -101,17 +98,13 @@ export class TameHistory extends LitElement {
 					<span>sessions</span>
 					<button @click=${this.#newChat} title="new chat">+</button>
 				</summary>
-				${this.loading
-					? html`<div data-state="loading">loading...</div>`
-					: this.#renderList()}
+				${this.loading ? html`<div data-state="loading">loading...</div>` : this.#renderList()}
 			</details>
 		`;
 	}
 
 	#renderList() {
-		if (this.sessions.length === 0) {
-			return html`<div data-state="empty">no sessions yet</div>`;
-		}
+		if (this.sessions.length === 0) { return html`<div data-state="empty">no sessions yet</div>`; }
 		return html`
 			<div data-state="list">
 				${this.sessions.map((s) => html`

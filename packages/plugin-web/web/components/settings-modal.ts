@@ -1,9 +1,11 @@
-import { LitElement, html } from "lit";
-import { property } from "lit/decorators.js";
+import {html, LitElement} from "lit";
+import {property} from "lit/decorators.js";
 
-/** Modal frame. Renders modal:settings placements, each wrapped in
+/**
+ * Modal frame. Renders modal:settings placements, each wrapped in
  *  <tame-web-settings-form> with pluginId from placement props.
- *  Visibility controlled by the open attribute. */
+ *  Visibility controlled by the open attribute.
+ */
 export class TameSettingsModal extends LitElement {
 	@property({ type: Boolean, reflect: true }) open = false;
 
@@ -20,14 +22,10 @@ export class TameSettingsModal extends LitElement {
 	}
 
 	#onKeydown = (e: KeyboardEvent) => {
-		if (e.key === "Escape" && this.open) {
-			this.#close();
-		}
+		if (e.key === "Escape" && this.open) { this.#close(); }
 	};
 
-	#close() {
-		this.open = false;
-	}
+	#close() { this.open = false; }
 
 	override render() {
 		if (!this.open) return html``;

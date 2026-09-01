@@ -1,14 +1,15 @@
-import type { Env, ExecOpts, ExecResult, FileEnv } from "./env.ts";
-import { promises as fs } from "node:fs";
-import { spawn } from "node:child_process";
-import { dirname, resolve } from "@std/path";
-import type { OpsConfig } from "./config.ts";
+import {dirname, resolve} from "@std/path";
+import {spawn} from "node:child_process";
+import {promises as fs} from "node:fs";
+
+import type {OpsConfig} from "./config.ts";
+import type {Env, ExecOpts, ExecResult, FileEnv} from "./env.ts";
 
 const home = process.env.HOME ?? "";
 
 // deno-fmt-ignore
 const stripAnsi = (s: string) => // deno-lint-ignore no-control-regex
-	s.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "").replace(/\x1b\].*?(\x07|\x1b\\)/g, "");
+    s.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "").replace(/\x1b\].*?(\x07|\x1b\\)/g, "");
 
 const killTree = (pid: number) => {
 	try {
@@ -46,39 +47,33 @@ export default class LocalEnv implements Env {
 		const fileEnv: FileEnv = {
 			path: resolved,
 			exists: async () => {
-				try {
-					await fs.stat(resolved);
-					return true;
-				} catch (e) {
-					if ((e as NodeJS.ErrnoException).code === "ENOENT") return false;
-					throw new Error(`${resolved}: access failed`);
-				}
+			    try {
+				    await fs.stat(resolved);
+				    return true;
+			    } catch (e) {
+				    if ((e as NodeJS.ErrnoException).code === "ENOENT") return false;
+				    throw new Error(`${resolved}: access failed`);
+			    }
 			},
 			read: async () => {
-				let stat;
-				try {
-					stat = await fs.stat(resolved);
-				} catch {
-					throw new Error(`${resolved}: access failed`);
-				}
-				if (stat.size > this.config.maxReadBytes) {
-					throw new Error(
-						`${resolved}: file too large (${stat.size} bytes, max ${this.config.maxReadBytes})`,
+			    let stat;
+			    try {
+				    stat = await fs.stat(resolved);
+			    } catch { throw new Error(`${resolved}: access failed`); }
+			    if (stat.size > this.config.maxReadBytes) {
+				    throw new Error(
+				        `${resolved}: file too large (${stat.size} bytes, max ${this.config.maxReadBytes})`,
 					);
-				}
-				return new Uint8Array(await fs.readFile(resolved));
+			    }
+			    return new Uint8Array(await fs.readFile(resolved));
 			},
 			write: async (content) => {
-				const dir = dirname(resolved);
-				try {
-					await fs.mkdir(dir, { recursive: true });
-				} catch {
-					throw new Error(`${dir}: failed to create directory`);
-				}
-				const data = content.type === "bytes"
-					? content.data
-					: new TextEncoder().encode(content.text);
-				await fs.writeFile(resolved, data);
+			    const dir = dirname(resolved);
+			    try {
+				    await fs.mkdir(dir, { recursive: true });
+			    } catch { throw new Error(`${dir}: failed to create directory`); }
+			    const data = content.type === "bytes" ? content.data : new TextEncoder().encode(content.text);
+			    await fs.writeFile(resolved, data);
 			},
 		};
 
@@ -88,9 +83,7 @@ export default class LocalEnv implements Env {
 		try {
 			await prev;
 			return await f(fileEnv);
-		} finally {
-			p.resolve();
-		}
+		} finally { p.resolve(); }
 	}
 
 	async exec(command: string[], opts: ExecOpts): Promise<ExecResult> {
@@ -98,16 +91,14 @@ export default class LocalEnv implements Env {
 			opts.workdir = this.resolvePath(opts.workdir);
 			try {
 				await fs.access(opts.workdir, fs.constants.R_OK);
-			} catch {
-				throw new Error(`${opts.workdir}: access failed`);
-			}
+			} catch { throw new Error(`${opts.workdir}: access failed`); }
 		}
 		const [name, ...args] = command;
 		const proc = spawn(name, args, {
 			detached: true,
 			cwd: opts.workdir,
 			stdio: ["ignore", "pipe", "pipe"],
-			env: { ...process.env, ...opts.env },
+			env: {...process.env, ...opts.env },
 		});
 
 		const stdout: string[] = [];
@@ -116,18 +107,18 @@ export default class LocalEnv implements Env {
 		proc.stdout.on("data", (data) => stdout.push(decoder.decode(data, { stream: true })));
 		proc.stderr.on("data", (data) => stderr.push(decoder.decode(data, { stream: true })));
 
-		let abortReason: "abort" | "timeout" | undefined = undefined;
-		const onAbort = (reason: "abort" | "timeout") => {
+		let abortReason: "abort"|"timeout"|undefined = undefined;
+		const onAbort = (reason: "abort"|"timeout") => {
 			if (proc.pid && proc.exitCode === null) killTree(proc.pid);
 			abortReason = reason;
 		};
 		const abortListener = () => onAbort("abort");
-		if (opts.signal?.aborted) onAbort("abort");
-		else opts.signal?.addEventListener("abort", abortListener, { once: true });
+		if (opts.signal?.aborted)
+			onAbort("abort");
+		else
+			opts.signal?.addEventListener("abort", abortListener, { once: true });
 
-		const timeoutId = opts.timeout
-			? setTimeout(() => onAbort("timeout"), opts.timeout)
-			: undefined;
+		const timeoutId = opts.timeout ? setTimeout(() => onAbort("timeout"), opts.timeout) : undefined;
 		await new Promise<void>((resolve, reject) => {
 			proc.once("close", () => resolve());
 			proc.once("error", reject);

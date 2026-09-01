@@ -1,22 +1,13 @@
 /// <reference path="./rpc.d.ts" />
-import {
-	type IAgent,
-	type IHarness,
-	type InputMessage,
-	type Plugin,
-	tameDataFolder,
-	type TameMessageMeta,
-	tameMsgMeta,
-	Thread,
-	type ToolUse,
-} from "@tame/sdk";
-import { call } from "@tame/rpc-sdk";
-import { rpcSchema } from "./rpc-schema.ts";
-import type { HistoryConfig } from "./config.ts";
-import type { RPCPlugin } from "@tame/plugin-rpc/index";
-import type { WebPlugin } from "@tame/plugin-web/index";
-import { promises as fs } from "node:fs";
-import { resolve } from "@std/path";
+import {resolve} from "@std/path";
+import type {RPCPlugin} from "@tame/plugin-rpc/index";
+import type {WebPlugin} from "@tame/plugin-web/index";
+import {call} from "@tame/rpc-sdk";
+import {type IAgent, type IHarness, type InputMessage, type Plugin, tameDataFolder, type TameMessageMeta, tameMsgMeta, Thread, type ToolUse,} from "@tame/sdk";
+import {promises as fs} from "node:fs";
+
+import type {HistoryConfig} from "./config.ts";
+import {rpcSchema} from "./rpc-schema.ts";
 
 const historyFolder = resolve(tameDataFolder, "history");
 const indexFile = resolve(historyFolder, "index.json");
@@ -39,12 +30,12 @@ export interface SessionInfo {
 	lastMessageAt?: number;
 }
 
-export type PersistedMessage = InputMessage & {
+export type PersistedMessage = InputMessage&{
 	[tameMsgMeta]: undefined;
 	_tame?: TameMessageMeta;
 };
 
-export type PersistedHistory = History & {
+export type PersistedHistory = History&{
 	context: PersistedMessage[];
 	history: PersistedMessage[];
 };
@@ -88,9 +79,9 @@ export interface HistoryHook<T> {
 export class HistoryPlugin implements Plugin {
 	id = "history" as const;
 
-	#harness: IHarness | undefined;
+	#harness: IHarness|undefined;
 	#hooks = new Map<string, HistoryHook<unknown>>();
-	#rpc: RPCPlugin | undefined;
+	#rpc: RPCPlugin|undefined;
 
 	/** Serializes all disk writes. */
 	#writeThread = new Thread();
@@ -103,9 +94,7 @@ export class HistoryPlugin implements Plugin {
 
 	enabled?: true;
 
-	constructor(config: HistoryConfig = { sidebar: true }) {
-		this.#config = config;
-	}
+	constructor(config: HistoryConfig = { sidebar: true }) { this.#config = config; }
 
 	onSessionsChanged(listener: () => void): () => void {
 		this.#sessionListeners.add(listener);
@@ -130,8 +119,8 @@ export class HistoryPlugin implements Plugin {
 			load: call({
 				...rpcSchema.load,
 				call: async ({ id }) => {
-					const agent = await this.loadAgent(id);
-					return { id: agent.id };
+			        const agent = await this.loadAgent(id);
+			        return { id: agent.id };
 				},
 			}),
 		});
@@ -140,18 +129,19 @@ export class HistoryPlugin implements Plugin {
 		const web = harness.getPlugin("web") as WebPlugin | undefined;
 		if (web) {
 			const dir = import.meta.dirname!;
-			web.register("history", [
-				{ tag: "tame-history", src: web.resolve(dir, "./web/history.ts") },
-				{
-					tag: "tame-history-session-title",
-					src: web.resolve(dir, "./web/session-title.ts"),
-				},
-			], [
-				...(this.#config.sidebar
-					? [{ location: "panel:sidebar", tag: "tame-history" }]
-					: []),
-				{ location: "topbar:center", tag: "tame-history-session-title" },
-			], web.resolve(dir, "./web/history.css"));
+			web.register("history",
+			             [
+				             { tag: "tame-history", src: web.resolve(dir, "./web/history.ts") },
+				             {
+					             tag: "tame-history-session-title",
+					             src: web.resolve(dir, "./web/session-title.ts"),
+				             },
+			             ],
+			             [
+				             ...(this.#config.sidebar ? [{ location: "panel:sidebar", tag: "tame-history" }] : []),
+				             { location: "topbar:center", tag: "tame-history-session-title" },
+			             ],
+			             web.resolve(dir, "./web/history.css"));
 		}
 
 		setInterval(() => {
@@ -162,9 +152,7 @@ export class HistoryPlugin implements Plugin {
 						const agents = [...this.#dirtyAgents];
 						this.#dirtyAgents.clear();
 						await this.#doSaveAgents(agents);
-					} catch (e) {
-						console.error("failed to save agents", e);
-					}
+					} catch (e) { console.error("failed to save agents", e); }
 					console.log("finished index write");
 				});
 				console.log("index write queued");
@@ -178,9 +166,7 @@ export class HistoryPlugin implements Plugin {
 		agent.after("userMessage", async (e) => {
 			const hist = getAgentHistory(agent);
 			if (!hist.title) {
-				const text = e.msg.content.filter((c) => c.type === "text").map((c) =>
-					c.text
-				).join("");
+				const text = e.msg.content.filter((c) => c.type === "text").map((c) => c.text).join("");
 				if (text.length > 0) {
 					const nl = text.indexOf("\n");
 					hist.title = nl !== -1 ? text.substring(0, nl) : text;
@@ -202,9 +188,7 @@ export class HistoryPlugin implements Plugin {
 			for (let i = hist.history.length - 1; i >= 0; i--) {
 				const m = hist.history[i];
 				if (m.role !== "assistant") continue;
-				const call = m.content.find((c) =>
-					c.type === "tool_use" && c.id === e.toolUse
-				) as ToolUse | undefined;
+				const call = m.content.find((c) => c.type === "tool_use" && c.id === e.toolUse) as ToolUse | undefined;
 				if (call) {
 					call.result = {
 						type: "tool_result",
@@ -220,15 +204,11 @@ export class HistoryPlugin implements Plugin {
 	}
 
 	addHook<T>(key: string, hook: HistoryHook<T>): void {
-		if (this.#hooks.has(key)) {
-			throw new Error(`duplicate history hook key '${key}'`);
-		}
+		if (this.#hooks.has(key)) { throw new Error(`duplicate history hook key '${key}'`); }
 		this.#hooks.set(key, hook);
 	}
 
-	#markDirty(agent: IAgent) {
-		this.#dirtyAgents.add(agent);
-	}
+	#markDirty(agent: IAgent) { this.#dirtyAgents.add(agent); }
 
 	async #doSaveAgents(agents: IAgent[]) {
 		const now = Date.now();
@@ -243,8 +223,8 @@ export class HistoryPlugin implements Plugin {
 				context: agent.context.map(messageToPersisted),
 				history: data.history.map(messageToPersisted),
 				extra: Object.fromEntries(
-					this.#hooks.entries().map(([k, v]) => [k, v.save(agent)]),
-				),
+				    this.#hooks.entries().map(([k, v]) => [k, v.save(agent)]),
+				    ),
 				lastMessageAt: now,
 			};
 			console.log(`saving agent ${agent.id}`);
@@ -281,10 +261,7 @@ export class HistoryPlugin implements Plugin {
 		const index: SessionInfo[] = JSON.parse(data);
 		const files = await fs.readdir(historyFolder, { withFileTypes: true });
 		for (const file of files) {
-			if (
-				file.isFile() && file.name !== "index.json" &&
-				!index.find((s) => s.id === file.name)
-			) {
+			if (file.isFile() && file.name !== "index.json" && !index.find((s) => s.id === file.name)) {
 				index.push({ id: file.name });
 			}
 		}
@@ -295,9 +272,7 @@ export class HistoryPlugin implements Plugin {
 			try {
 				const stat = await fs.stat(resolve(historyFolder, s.id));
 				s.lastMessageAt = stat.mtimeMs;
-			} catch {
-				s.lastMessageAt = 0;
-			}
+			} catch { s.lastMessageAt = 0; }
 		}));
 
 		return index;
@@ -347,7 +322,7 @@ export class HistoryPlugin implements Plugin {
 			const hook = this.#hooks.get(k);
 			if (!hook) {
 				console.warn(
-					`extra data '${k}' in history for agent but hook not found`,
+				    `extra data '${k}' in history for agent but hook not found`,
 				);
 				continue;
 			}

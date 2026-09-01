@@ -1,4 +1,4 @@
-import { html, LitElement } from "lit";
+import {html, LitElement} from "lit";
 
 const VISIBILITY_OPTIONS = [
 	{ value: "shown", label: "shown" },
@@ -7,14 +7,14 @@ const VISIBILITY_OPTIONS = [
 	{ value: "collapsed", label: "collapsed" },
 ];
 
-/** Settings form for plugin-ops tool view components. Registered at the
+/**
+ * Settings form for plugin-ops tool view components. Registered at the
  *  `modal:settings` placement so it only loads when the settings modal
  *  is opened. Each tool view gets a visibility dropdown controlling how
- *  its output / diff / status body is displayed. */
+ *  its output / diff / status body is displayed.
+ */
 export class TameOpsSettings extends LitElement {
-	override createRenderRoot() {
-		return this;
-	}
+	override createRenderRoot() { return this; }
 
 	override render() {
 		return html`

@@ -1,15 +1,15 @@
-import { LitElement, html } from "lit";
-import { property } from "lit/decorators.js";
-import { consume } from "@lit/context";
-import { agentIdContext } from "@tame/web-sdk";
-import { rpcClientContext, type RPCClientLike } from "@tame/web-sdk/rpc-client-context";
+import {consume} from "@lit/context";
+import {agentIdContext} from "@tame/web-sdk";
+import {rpcClientContext, type RPCClientLike} from "@tame/web-sdk/rpc-client-context";
+import {html, LitElement} from "lit";
+import {property} from "lit/decorators.js";
 
 export class TameComposer extends LitElement {
 	@consume({ context: rpcClientContext, subscribe: true })
-	@property({ attribute: false }) declare client: RPCClientLike | null;
+	@property({ attribute: false })
+	declare client: RPCClientLike|null;
 
-	@consume({ context: agentIdContext, subscribe: true })
-	@property({ type: String }) declare agentId: string | null;
+	@consume({ context: agentIdContext, subscribe: true }) @property({ type: String }) declare agentId: string|null;
 
 	@property({ type: Boolean }) idle = true;
 
@@ -22,9 +22,11 @@ export class TameComposer extends LitElement {
 				@keydown=${this.#onKeydown}
 				@input=${this.#onInput}
 			></textarea>
-			${this.idle ? html`
+			${
+			this.idle ? html`
 				<button data-action="send" @click=${this.#doSend} title="send (enter)">→</button>
-			` : html`
+			`
+					  : html`
 				<button data-action="abort" @click=${this.#doAbort} title="stop">■</button>
 			`}
 		`;

@@ -1,7 +1,7 @@
-import { Type, type Static } from "typebox";
-import type { Plugin, IHarness } from "@tame/sdk";
-import type { RPCPlugin } from "@tame/plugin-rpc/index";
-import { wsToStream } from "@tame/rpc-client/stream";
+import type {RPCPlugin} from "@tame/plugin-rpc/index";
+import {wsToStream} from "@tame/rpc-client/stream";
+import type {IHarness, Plugin} from "@tame/sdk";
+import {type Static, Type} from "typebox";
 
 export const configSchema = Type.Object({
 	listen: Type.Object({
@@ -17,9 +17,7 @@ export class RPCWSPlugin implements Plugin {
 
 	#config: Config;
 
-	constructor(config: Config) {
-		this.#config = config;
-	}
+	constructor(config: Config) { this.#config = config; }
 
 	init(harness: IHarness) {
 		const rpc = harness.getPlugin<RPCPlugin>("rpc");
@@ -28,14 +26,15 @@ export class RPCWSPlugin implements Plugin {
 		Deno.serve({
 			hostname: this.#config.listen.hostname,
 			port: this.#config.listen.port,
-		}, (request) => {
-			if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") {
-				return new Response("expected websocket", { status: 400 });
-			}
-			const { socket, response } = Deno.upgradeWebSocket(request);
-			const stream = wsToStream(socket);
-			rpc.connect(stream);
-			return response;
-		});
+		},
+		           (request) => {
+			           if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") {
+				           return new Response("expected websocket", { status: 400 });
+			           }
+			           const { socket, response } = Deno.upgradeWebSocket(request);
+			           const stream = wsToStream(socket);
+			           rpc.connect(stream);
+			           return response;
+		           });
 	}
 }

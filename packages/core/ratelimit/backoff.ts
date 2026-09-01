@@ -1,4 +1,4 @@
-import type { Ratelimiter } from "./ratelimit.ts";
+import type {Ratelimiter} from "./ratelimit.ts";
 
 export interface BackoffOnlyOptions {
 	errorMin: number;
@@ -20,45 +20,36 @@ export const defaultBackoffOnlyOptions: BackoffOnlyOptions = {
  * fallback when the upstream provider does its own rate-limiting.
  */
 export class BackoffOnlyRatelimiter implements Ratelimiter {
-    #options: BackoffOnlyOptions;
-    #errors: number = 0;
-    #retryAfterTime: number = 0;
+	#options: BackoffOnlyOptions;
+	#errors: number = 0;
+	#retryAfterTime: number = 0;
 
-    constructor(options: Partial<BackoffOnlyOptions> = {}) {
-        this.#options = { ...defaultBackoffOnlyOptions, ...options };
-    }
+	constructor(options: Partial<BackoffOnlyOptions> = {}) {
+		this.#options = {...defaultBackoffOnlyOptions, ...options };
+	}
 
-    error() {
-        this.#errors++;
-    }
+	error() { this.#errors++; }
 
-    success() {
-        this.#errors = 0;
-    }
+	success() { this.#errors = 0; }
 
-    retryAfter(date: string) {
-        const n = parseInt(date);
-        const retryTime = isNaN(n)
-            ? new Date(date).getTime()
-            : Date.now() + n * 1000;
-        this.#retryAfterTime = Math.max(this.#retryAfterTime, retryTime);
-    }
+	retryAfter(date: string) {
+		const n = parseInt(date);
+		const retryTime = isNaN(n) ? new Date(date).getTime() : Date.now() + n * 1000;
+		this.#retryAfterTime = Math.max(this.#retryAfterTime, retryTime);
+	}
 
-    delay(): number {
-        const retryDelay = Math.max(0, this.#retryAfterTime - Date.now());
-        if (this.#errors === 0) return retryDelay;
-        const errorDelay = Math.min(
-            this.#options.errorMax,
-            Math.pow(this.#options.errorExp, this.#errors - 1) *
-                this.#options.errorMin,
-        );
-        return Math.max(retryDelay, errorDelay);
-    }
+	delay(): number {
+		const retryDelay = Math.max(0, this.#retryAfterTime - Date.now());
+		if (this.#errors === 0) return retryDelay;
+		const errorDelay = Math.min(
+		    this.#options.errorMax,
+		    Math.pow(this.#options.errorExp, this.#errors - 1) * this.#options.errorMin,
+		);
+		return Math.max(retryDelay, errorDelay);
+	}
 
-    async wait() {
-        const d = this.delay();
-        if (d > 0) {
-            await new Promise((r) => setTimeout(r, d));
-        }
-    }
+	async wait() {
+		const d = this.delay();
+		if (d > 0) { await new Promise((r) => setTimeout(r, d)); }
+	}
 }

@@ -1,9 +1,10 @@
-import { LitElement, html } from "lit";
-import { property } from "lit/decorators.js";
-import { consume } from "@lit/context";
-import { settingsStoreContext, settingsPluginIdContext } from "../lib/settings-context.ts";
-import { SettingController } from "../lib/setting-controller.ts";
-import type { SettingsStore } from "@tame/web-sdk";
+import {consume} from "@lit/context";
+import type {SettingsStore} from "@tame/web-sdk";
+import {html, LitElement} from "lit";
+import {property} from "lit/decorators.js";
+
+import {SettingController} from "../lib/setting-controller.ts";
+import {settingsPluginIdContext, settingsStoreContext} from "../lib/settings-context.ts";
 
 export interface SelectOption {
 	value: string;
@@ -12,27 +13,26 @@ export interface SelectOption {
 
 /** Dropdown with options. Consumes store + pluginId from context. */
 export class TameSettingSelect extends LitElement {
-	@consume({ context: settingsStoreContext })
-	@property({ attribute: false })
-	store: SettingsStore | undefined;
+	@consume({ context: settingsStoreContext }) @property({ attribute: false }) store: SettingsStore|undefined;
 
-	@consume({ context: settingsPluginIdContext })
-	@property({ type: String })
-	declare pluginId: string;
+	@consume({ context: settingsPluginIdContext }) @property({ type: String }) declare pluginId: string;
 
 	@property({ type: String }) key = "";
 	@property({ type: String }) default = "";
 	@property({ type: String }) label = "";
 	@property({ type: Array }) options: SelectOption[] = [];
 
-	#setting: SettingController | null = null;
+	#setting: SettingController|null = null;
 
 	override createRenderRoot() { return this; }
 
 	override willUpdate(_changed: Map<string, unknown>) {
 		if (!this.#setting && this.store && this.pluginId && this.key) {
 			this.#setting = new SettingController(
-				this, this.pluginId, this.key, this.default,
+			    this,
+			    this.pluginId,
+			    this.key,
+			    this.default,
 			);
 		}
 	}

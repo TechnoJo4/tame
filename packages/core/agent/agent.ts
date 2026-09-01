@@ -1,29 +1,16 @@
-import { Compile, type Validator } from "typebox/compile";
-import type { TSchema } from "typebox";
-import {
-	Emitter,
-	handlerWrapperSkipErrors,
-	ValidationError,
-	assertSchema,
-	type InferenceProvider,
-	type InputMessage,
-	type ToolUse,
-	type AnyTool,
-	type Tool,
-	type IAgent,
-	type AgentEvents,
-	type UserMessageEvent,
-	type AssistantMessageEvent,
-	type ToolResultEvent,
-	type CompletionEvent,
-	type IdleEvent,
-	type AgentStopReason,
-	type Key,
-	tameContentMeta,
-} from "@tame/sdk";
+import {type AgentEvents, type AgentStopReason, type AnyTool, assertSchema, type AssistantMessageEvent, type CompletionEvent, Emitter, handlerWrapperSkipErrors, type IAgent, type IdleEvent, type InferenceProvider, type InputMessage, type Key, tameContentMeta, type Tool, type ToolResultEvent, type ToolUse, type UserMessageEvent, ValidationError,} from "@tame/sdk";
+import type {TSchema} from "typebox";
+import {Compile, type Validator} from "typebox/compile";
 
-export type { AgentStopReason };
-export type { UserMessageEvent, AssistantMessageEvent, ToolResultEvent, CompletionEvent, IdleEvent, AgentEvents };
+export type {
+	AgentEvents,
+	AgentStopReason,
+	AssistantMessageEvent,
+	CompletionEvent,
+	IdleEvent,
+	ToolResultEvent,
+	UserMessageEvent
+};
 
 export class Agent extends Emitter<AgentEvents> implements IAgent {
 	#id: string;
@@ -44,9 +31,9 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 		this.wrapHandler = handlerWrapperSkipErrors;
 		this.llm = llm;
 		this.system = system;
-		this.#id = id ?? Array.from(crypto.getRandomValues(new Uint8Array(16)))
-			.map((b) => b.toString(16).padStart(2, "0"))
-			.join("");
+		this.#id =
+		    id ??
+		    Array.from(crypto.getRandomValues(new Uint8Array(16))).map((b) => b.toString(16).padStart(2, "0")).join("");
 
 		this.after("userMessage", async (e: UserMessageEvent) => {
 			this.context.push(e.msg);
@@ -72,27 +59,22 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 							});
 					}
 				});
-			}
-			else
+			} else
 				this.fire("idle", { stopReason: e.msg.stop_reason });
 			return e;
 		});
 
 		this.after("toolResult", async (e: ToolResultEvent) => {
-			const call = this.context[e.messageIdx].content.find(c => c.type === "tool_use" && c.id === e.toolUse)! as ToolUse;
-			call.result = {
-				type: "tool_result",
-				is_error: e.error,
-				content: e.result
-			};
+			const call =
+			    this.context[e.messageIdx].content.find(c => c.type === "tool_use" && c.id === e.toolUse)! as ToolUse;
+			call.result = { type: "tool_result", is_error: e.error, content: e.result };
 			if (e.meta !== undefined) {
 				call[tameContentMeta] ??= {};
 				call[tameContentMeta].toolMeta = e.meta;
 			}
 
 			this.#pendingToolCalls.delete(e.toolUse);
-			if (this.#pendingToolCalls.size === 0 && !this.#abortedToolCalls.has(e.toolUse))
-				this.queueCompletion();
+			if (this.#pendingToolCalls.size === 0 && !this.#abortedToolCalls.has(e.toolUse)) this.queueCompletion();
 
 			return e;
 		});
@@ -116,9 +98,7 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 		});
 	}
 
-	get id() {
-		return this.#id;
-	}
+	get id() { return this.#id; }
 
 	override abort(): void {
 		super.abort();
@@ -126,14 +106,9 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 		for (const msg of this.context) // TODO: unslop
 			for (const c of msg.content)
 				if (c.type === "tool_use" && !c.result)
-					c.result = {
-						type: "tool_result",
-						is_error: true,
-						content: "aborted by user"
-					};
+					c.result = { type: "tool_result", is_error: true, content: "aborted by user" };
 
-		for (const t of this.#pendingToolCalls)
-			this.#abortedToolCalls.add(t);
+		for (const t of this.#pendingToolCalls) this.#abortedToolCalls.add(t);
 
 		this.#pendingToolCalls.clear();
 		this.#completionQueued = false;
@@ -151,24 +126,18 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 						system: this.system,
 						session_id: this.id,
 						messages: structuredClone(this.context),
-						tools: this.tools.values().map(t => ({
-							name: t.name,
-							description: t.desc,
-							input_schema: t.args
-						})).toArray()
+						tools: this.tools.values()
+						           .map(t => ({ name: t.name, description: t.desc, input_schema: t.args }))
+						           .toArray()
 					}
 				});
 			});
 		}
 	}
 
-	setPluginData<T>(key: Key<T>, data: T): void {
-		this.pluginData.set(key, data);
-	}
+	setPluginData<T>(key: Key<T>, data: T): void { this.pluginData.set(key, data); }
 
-	getPluginData<T>(key: Key<T>): T | undefined {
-		return this.pluginData.get(key) as T | undefined;
-	}
+	getPluginData<T>(key: Key<T>): T|undefined { return this.pluginData.get(key) as T | undefined; }
 
 	addTool(tool: AnyTool) {
 		this.tools.set(tool.name, tool);
@@ -181,9 +150,7 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 			assertSchema(call.input, tool.args, "", this.#validators.get(tool)!);
 			return tool.view?.[view]?.(call.input, call.result, call[tameContentMeta]?.toolMeta);
 		} catch (e) {
-			if (!(e instanceof ValidationError)) {
-				console.warn("error while viewing tool call:", call, e);
-			}
+			if (!(e instanceof ValidationError)) { console.warn("error while viewing tool call:", call, e); }
 			return undefined;
 		}
 	}
@@ -191,7 +158,8 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 	async #execTool(tool: AnyTool, call: ToolUse, messageIdx: number) {
 		this.#pendingToolCalls.add(call.id);
 		try {
-			const args = assertSchema(call.input, tool.args, `invalid args to "${call.name}":`, this.#validators.get(tool)!);
+			const args =
+			    assertSchema(call.input, tool.args, `invalid args to "${call.name}":`, this.#validators.get(tool)!);
 
 			let res = await (tool as Tool<TSchema>).exec(args, this);
 			let meta;
@@ -200,20 +168,11 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 				res = res.content;
 			}
 
-			this.fire("toolResult", {
-				toolUse: call.id,
-				error: false,
-				result: res as string,
-				meta,
-				messageIdx
-			});
+			this.fire("toolResult", { toolUse: call.id, error: false, result: res as string, meta, messageIdx });
 		} catch (e) {
-			this.fire("toolResult", {
-				toolUse: call.id,
-				error: true,
-				result: e instanceof Error ? e.message : e as string,
-				messageIdx
-			});
+			this.fire(
+			    "toolResult",
+			    { toolUse: call.id, error: true, result: e instanceof Error ? e.message : e as string, messageIdx });
 		}
 	}
 }

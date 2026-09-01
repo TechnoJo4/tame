@@ -1,6 +1,7 @@
-import { readTameConfig } from "@tame/sdk";
-import { configSchema, ACPPlugin } from "./index.ts";
+import {readTameConfig} from "@tame/sdk";
 
-export { configSchema } from "./index.ts";
+import {ACPPlugin, configSchema} from "./index.ts";
+
+export {configSchema} from "./index.ts";
 
 export default new ACPPlugin(readTameConfig("acp.json", configSchema));

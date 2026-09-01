@@ -1,10 +1,12 @@
-import { RPCClient } from "@tame/rpc-client";
-import { wsToStream } from "@tame/rpc-client/stream";
-import type { RPCClientLike } from "@tame/web-sdk/rpc-client-context";
+import {RPCClient} from "@tame/rpc-client";
+import {wsToStream} from "@tame/rpc-client/stream";
+import type {RPCClientLike} from "@tame/web-sdk/rpc-client-context";
 
-/** Connect to the tame WebSocket backend and return an RPC client.
- *  Handles the WebSocket lifecycle — returns null on failure. */
-export async function connectRPC(): Promise<RPCClient | null> {
+/**
+ * Connect to the tame WebSocket backend and return an RPC client.
+ *  Handles the WebSocket lifecycle — returns null on failure.
+ */
+export async function connectRPC(): Promise<RPCClient|null> {
 	try {
 		const secure = location.protocol.startsWith("https");
 		const wsProtocol = secure ? "wss" : "ws";
@@ -15,11 +17,11 @@ export async function connectRPC(): Promise<RPCClient | null> {
 		});
 		const stream = wsToStream(ws);
 		return new RPCClient(stream);
-	} catch {
-		return null;
-	}
+	} catch { return null; }
 }
 
-/** Re-export for convenience — plugin components can cast to this if they
- *  need the full RPCClient type, but should prefer RPCClientLike. */
-export type { RPCClientLike };
+/**
+ * Re-export for convenience — plugin components can cast to this if they
+ *  need the full RPCClient type, but should prefer RPCClientLike.
+ */
+export type {RPCClientLike};

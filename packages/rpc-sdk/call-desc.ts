@@ -1,5 +1,5 @@
-import type { TSchema, Static } from "typebox";
-import { Type } from "typebox";
+import type {Static, TSchema} from "typebox";
+import {Type} from "typebox";
 
 export interface CallDescription<I extends TSchema, O extends TSchema> {
 	input: I;
@@ -9,9 +9,11 @@ export interface CallDescription<I extends TSchema, O extends TSchema> {
 
 export const call = <I extends TSchema, O extends TSchema>(c: CallDescription<I, O>): CallDescription<I, O> => c;
 
-/** Capture input/output typebox schemas for codegen. Use {@link call} for
- *  full call descriptions that include the implementation. */
-export const rpcMethod = <I extends TSchema, O extends TSchema>(s: { input: I; output: O }) => s;
+/**
+ * Capture input/output typebox schemas for codegen. Use {@link call} for
+ *  full call descriptions that include the implementation.
+ */
+export const rpcMethod = <I extends TSchema, O extends TSchema>(s: {input: I; output: O}) => s;
 
 export const baseRouteSchemas = {
 	newAgent: {
@@ -19,27 +21,25 @@ export const baseRouteSchemas = {
 			id: Type.Optional(Type.String()),
 			system: Type.Optional(Type.String()),
 		}),
-		output: Type.Object({
-			id: Type.String()
-		})
+		output: Type.Object({id: Type.String()})
 	},
 	abort: {
 		input: Type.Object({
-			id: Type.String({ description: "The agent ID to abort." }),
+			id: Type.String({description: "The agent ID to abort."}),
 		}),
-		output: Type.Object({}, { additionalProperties: false }),
+		output: Type.Object({}, {additionalProperties: false}),
 	},
 	queueCompletion: {
 		input: Type.Object({
-			id: Type.String({ description: "The agent ID to queue a completion for." }),
+			id: Type.String({description: "The agent ID to queue a completion for."}),
 		}),
-		output: Type.Object({}, { additionalProperties: false }),
+		output: Type.Object({}, {additionalProperties: false}),
 	},
 	viewToolCall: {
 		input: Type.Object({
-			agent_id: Type.String({ description: "The agent ID." }),
-			tool_use_id: Type.String({ description: "The tool_use block ID to resolve a view for." }),
-			view: Type.String({ description: "The view name." }),
+			agent_id: Type.String({description: "The agent ID."}),
+			tool_use_id: Type.String({description: "The tool_use block ID to resolve a view for."}),
+			view: Type.String({description: "The view name."}),
 		}),
 		output: Type.Any(),
 	},
@@ -53,12 +53,12 @@ export const baseRouteSchemas = {
 		}),
 	},
 	getAgentContext: {
-		input: Type.Object({ id: Type.String() }),
+		input: Type.Object({id: Type.String()}),
 		output: Type.Object({
 			id: Type.String(),
 			system: Type.String(),
 			title: Type.Optional(Type.String()),
-			context: Type.Array(Type.Object({}, { additionalProperties: true })),
+			context: Type.Array(Type.Object({}, {additionalProperties: true})),
 		}),
 	},
 };

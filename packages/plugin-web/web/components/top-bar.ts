@@ -1,18 +1,14 @@
-import { LitElement, html } from "lit";
-import { property } from "lit/decorators.js";
+import {html, LitElement} from "lit";
+import {property} from "lit/decorators.js";
 
 export class TameTopBar extends LitElement {
 	@property({ type: Boolean }) sidebarCollapsed = false;
 
 	override createRenderRoot() { return this; }
 
-	#toggleSidebar() {
-		this.dispatchEvent(new CustomEvent("web:toggle-sidebar", { bubbles: true, composed: true }));
-	}
+	#toggleSidebar() { this.dispatchEvent(new CustomEvent("web:toggle-sidebar", { bubbles: true, composed: true })); }
 
-	#openSettings() {
-		this.dispatchEvent(new CustomEvent("web:toggle-settings", { bubbles: true, composed: true }));
-	}
+	#openSettings() { this.dispatchEvent(new CustomEvent("web:toggle-settings", { bubbles: true, composed: true })); }
 
 	override render() {
 		return html`

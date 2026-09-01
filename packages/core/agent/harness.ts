@@ -1,6 +1,8 @@
-import { Agent } from "./agent.ts";
-import type { Plugin, AnyTool, IHarness, NewAgentOptions } from "@tame/sdk";
-import { config, system as configSystem } from "../config/index.ts";
+import type {AnyTool, IHarness, NewAgentOptions, Plugin} from "@tame/sdk";
+
+import {config, system as configSystem} from "../config/index.ts";
+
+import {Agent} from "./agent.ts";
 
 export class Harness implements IHarness {
 	#tools: AnyTool[] = [];
@@ -8,30 +10,25 @@ export class Harness implements IHarness {
 	#agents = new Map<string, WeakRef<Agent>>();
 
 	/** @deprecated Use getPlugin instead */
-	getPluginByType<T extends Plugin>(t: abstract new (...args: any) => T): T | undefined {
-		return this.#plugins.values().find(p => p instanceof t) as T | undefined
-	}
+	getPluginByType<T extends Plugin>(t: abstract new(...args: any) => T): T
+	    |undefined{ return this.#plugins.values().find(p => p instanceof t) as T | undefined }
 
-	getPlugin<T extends Plugin>(id: T["id"]): T | undefined {
-		return this.#plugins.get(id) as T | undefined
-	}
+	getPlugin<T extends Plugin>(id: T["id"]): T|undefined{ return this.#plugins.get(id) as T | undefined }
 
 	addTools(...tool: AnyTool[]) {
 		this.#tools.push(...tool);
 	}
 
 	addPlugins(...plugins: Plugin[]) {
-		for (const p of plugins)
-			this.#plugins.set(p.id, p);
-		for (const p of plugins)
-			p.init?.(this);
+		for (const p of plugins) this.#plugins.set(p.id, p);
+		for (const p of plugins) p.init?.(this);
 	}
 
 	newAgent(opts: NewAgentOptions = {}): Agent {
-		const agent = new Agent(opts.llm ?? config.providers[config.defaultProvider], opts.system ?? configSystem, opts.id);
+		const agent =
+		    new Agent(opts.llm ?? config.providers[config.defaultProvider], opts.system ?? configSystem, opts.id);
 
-		for (const t of this.#tools)
-			agent.addTool(t);
+		for (const t of this.#tools) agent.addTool(t);
 
 		for (const k of (opts.plugins ?? this.#plugins.keys())) {
 			const p = this.#plugins.get(k);
@@ -43,9 +40,7 @@ export class Harness implements IHarness {
 		return agent;
 	}
 
-	getAgent(id: string): Agent | undefined {
-		return this.#agents.get(id)?.deref();
-	}
+	getAgent(id: string): Agent|undefined { return this.#agents.get(id)?.deref(); }
 
 	listAgents(): { id: string; title?: string }[] {
 		const result: { id: string; title?: string }[] = [];
@@ -56,9 +51,5 @@ export class Harness implements IHarness {
 		return result;
 	}
 
-	cleanup() {
-		this.#agents.entries()
-			.filter(([_,v]) => !v.deref())
-			.forEach(([k,_]) => this.#agents.delete(k));
-	}
+	cleanup() { this.#agents.entries().filter(([_, v]) => !v.deref()).forEach(([k, _]) => this.#agents.delete(k)); }
 }

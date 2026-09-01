@@ -1,9 +1,9 @@
-import type { IAgent, Plugin } from "@tame/sdk";
+import type {IAgent, Plugin} from "@tame/sdk";
 
 export interface Command {
 	name: string;
 	description: string;
-	run(agent: IAgent, param?: string): Promise<string | void>;
+	run(agent: IAgent, param?: string): Promise<string|void>;
 }
 
 export class CommandsPlugin implements Plugin {
@@ -14,23 +14,19 @@ export class CommandsPlugin implements Plugin {
 	#registry = new Map<string, Command>();
 
 	add(command: Command) {
-		if (this.#registry.has(command.name)) {
-			throw new Error(
-				`attempt to register conflicting command '${command.name}'`,
-			);
-		}
+		if (this.#registry.has(command.name))
+			throw new Error(`attempt to register conflicting command '${command.name}'`);
+
 		this.#registry.set(command.name, command);
 	}
 
-	list(): IterableIterator<Command> {
-		return this.#registry.values();
-	}
+	list(): IterableIterator<Command> { return this.#registry.values(); }
 
-	async dispatch(agent: IAgent, text: string): Promise<string | void> {
+	async dispatch(agent: IAgent, text: string): Promise<string|void> {
 		const i = text.indexOf(" ");
 		const name = text.substring(
-			text.at(0) === "/" ? 1 : 0,
-			i !== -1 ? i : undefined,
+		    text.at(0) === "/" ? 1 : 0,
+		    i !== -1 ? i : undefined,
 		);
 		const cmd = this.#registry.get(name);
 		if (!cmd) throw new Error(`no command '${name}'`);

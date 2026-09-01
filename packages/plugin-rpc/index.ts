@@ -1,34 +1,8 @@
-import { Compile, type Validator } from "typebox/compile";
-import { assertSchema, type IAgent, type IHarness, type Plugin, type ToolUse } from "@tame/sdk";
-import {
-	rpcMsgSchema,
-	call,
-	baseRouteSchemas,
-	type EventMessage,
-	type SubscriptionMessage,
-	type CallMessage,
-	type RPCMessage,
-	type Stream,
-	type CallDescription,
-} from "@tame/rpc-sdk";
+import {baseRouteSchemas, call, type CallDescription, type CallMessage, type EventMessage, type RPCMessage, rpcMsgSchema, type Stream, type SubscriptionMessage,} from "@tame/rpc-sdk";
+import {assertSchema, type IAgent, type IHarness, type Plugin, type ToolUse} from "@tame/sdk";
+import {Compile, type Validator} from "typebox/compile";
 
-export {
-	eventSchema,
-	subscriptionSchema,
-	callSchema,
-	callResultSchema,
-	rpcMsgSchema,
-	messagesSchema,
-	type EventMessage,
-	type SubscriptionMessage,
-	type CallMessage,
-	type CallResultMessage,
-	type RPCMessage,
-	type Stream,
-	type CallDescription,
-	call,
-	baseRouteSchemas,
-} from "@tame/rpc-sdk";
+export {baseRouteSchemas, call, type CallDescription, type CallMessage, type CallResultMessage, callResultSchema, callSchema, type EventMessage, eventSchema, messagesSchema, type RPCMessage, rpcMsgSchema, type Stream, type SubscriptionMessage, subscriptionSchema,} from "@tame/rpc-sdk";
 
 interface Subscription {
 	all_agents: boolean;
@@ -44,10 +18,7 @@ interface Connection {
 	stream: Stream;
 	writer: WritableStreamDefaultWriter<RPCMessage>;
 	reader: ReadableStreamDefaultReader<RPCMessage>;
-	subscriptions: {
-		base: Subscriptions;
-		plugins: Record<string, Subscriptions>;
-	};
+	subscriptions: { base: Subscriptions; plugins: Record<string, Subscriptions>; };
 }
 
 const emptySubscription = (): Subscription => ({ all_agents: false, agents: new Set() });
@@ -61,7 +32,11 @@ export class RPCPlugin implements Plugin {
 	#connections = new Set<Connection>();
 	#baseRoutes = new Map<string, CallDescription<any, any>>();
 	#rpc = new Map<string, Map<string, CallDescription<any, any>>>();
-	#validators = new Map<CallDescription<any, any>, { input: Validator<any>; output: Validator<any> }>();
+	#validators = new Map < CallDescription<any, any>, {
+		input: Validator<any>;
+		output: Validator<any>
+	}
+	>();
 	#harness?: IHarness;
 
 	init(harness: IHarness) {
@@ -70,100 +45,95 @@ export class RPCPlugin implements Plugin {
 			newAgent: call({
 				...baseRouteSchemas.newAgent,
 				call: async ({ id, system }) => {
-					const agent = harness.newAgent({ system, id });
-					return { id: agent.id };
+			        const agent = harness.newAgent({ system, id });
+			        return { id: agent.id };
 				}
 			}),
 			abort: call({
 				...baseRouteSchemas.abort,
 				call: async ({ id }) => {
-					const agent = harness.getAgent(id);
-					if (!agent) throw new Error(`agent ${id} not found`);
-					agent.abort();
-					return {};
+			        const agent = harness.getAgent(id);
+			        if (!agent) throw new Error(`agent ${id} not found`);
+			        agent.abort();
+			        return {};
 				}
 			}),
 			queueCompletion: call({
 				...baseRouteSchemas.queueCompletion,
 				call: async ({ id }) => {
-					const agent = harness.getAgent(id);
-					if (!agent) throw new Error(`agent ${id} not found`);
-					agent.queueCompletion();
-					return {};
+			        const agent = harness.getAgent(id);
+			        if (!agent) throw new Error(`agent ${id} not found`);
+			        agent.queueCompletion();
+			        return {};
 				}
 			}),
 			viewToolCall: call({
 				...baseRouteSchemas.viewToolCall,
 				call: async ({ agent_id, tool_use_id, view }) => {
-					const agent = harness.getAgent(agent_id);
-					if (!agent) throw new Error(`agent ${agent_id} not found`);
+			        const agent = harness.getAgent(agent_id);
+			        if (!agent) throw new Error(`agent ${agent_id} not found`);
 
-					const callMsgIdx = agent.context.findIndex(m => m.content.find(c => c.type === "tool_use" && c.id === tool_use_id));
+			        const callMsgIdx = agent.context.findIndex(
+			            m => m.content.find(c => c.type === "tool_use" && c.id === tool_use_id));
 
-					const call = agent.context[callMsgIdx].content.find(c => c.type === "tool_use" && c.id === tool_use_id);
-					if (!call) throw new Error(`tool call ${tool_use_id} not found in agent ${agent_id}`);
+			        const call =
+			            agent.context[callMsgIdx].content.find(c => c.type === "tool_use" && c.id === tool_use_id);
+			        if (!call) throw new Error(`tool call ${tool_use_id} not found in agent ${agent_id}`);
 
-					return agent.viewToolCall(view, call as ToolUse);
+			        return agent.viewToolCall(view, call as ToolUse);
 				}
 			}),
 			listAgents: call({
 				...baseRouteSchemas.listAgents,
 				call: async () => {
-					const agents = harness.listAgents();
-					return { agents };
+			        const agents = harness.listAgents();
+			        return { agents };
 				}
 			}),
 			getAgentContext: call({
 				...baseRouteSchemas.getAgentContext,
 				call: async ({ id }) => {
-					const agent = harness.getAgent(id);
-					if (!agent) throw new Error(`agent ${id} not found`);
-					return {
-						id: agent.id,
-						system: agent.system,
-						title: agent.title,
-						context: agent.context,
-					};
+			        const agent = harness.getAgent(id);
+			        if (!agent) throw new Error(`agent ${id} not found`);
+			        return {
+				        id: agent.id,
+				        system: agent.system,
+				        title: agent.title,
+				        context: agent.context,
+			        };
 				}
 			}),
 		});
 	}
 
 	/** Listen to an emitter to automatically send events to subscribers. */
-	hookEmitter<T>(emitter: { listen(f: (type: keyof T, data: T[typeof type]) => void): void }, translate: (event: keyof T, data: T[typeof event]) => EventMessage) {
+	hookEmitter<T>(emitter: { listen(f: (type: keyof T, data: T[typeof type]) => void): void },
+	               translate: (event: keyof T, data: T[typeof event]) => EventMessage) {
 		emitter.listen((event, data) => this.emit(translate(event, data)));
 	}
 
 	newAgent(agent: IAgent) {
 		const agent_id = agent.id;
-		this.hookEmitter(agent, (event, data) => ({
-			type: "event", agent_id, event, data
-		}));
+		this.hookEmitter(agent, (event, data) => ({ type: "event", agent_id, event, data }));
 	}
 
 	/** Send an event to subscriber connections. */
 	emit(msg: EventMessage) {
 		for (const conn of this.#connections) {
-			if (this.#matches(msg, conn.subscriptions)) {
-				this.#write(conn, msg);
-			}
+			if (this.#matches(msg, conn.subscriptions)) { this.#write(conn, msg); }
 		}
 	}
 
 	/** Register RPC routes for a plugin. */
 	register(plugin: string, rpc: Record<string, CallDescription<any, any>>) {
-		if (!this.#rpc.has(plugin))
-			this.#rpc.set(plugin, new Map());
+		if (!this.#rpc.has(plugin)) this.#rpc.set(plugin, new Map());
 		this.#registerOn(this.#rpc.get(plugin)!, rpc);
 	}
 
 	#registerOn(map: Map<string, CallDescription<any, any>>, rpc: Record<string, CallDescription<any, any>>) {
 		for (const [name, desc] of Object.entries(rpc)) {
 			map.set(name, desc);
-			this.#validators.set(desc, {
-				input: Compile(desc.input),
-				output: Compile(desc.output)
-			});
+			this.#validators.set(desc, { input: Compile(desc.input), output: Compile(desc.output) });
 		}
 	}
 
@@ -184,31 +154,27 @@ export class RPCPlugin implements Plugin {
 				const msg = assertSchema(value, rpcMsgSchema, "invalid RPC message:", rpcMsgValidator)
 				try {
 					this.#handle(conn, msg);
-				} catch (e) {
-					console.error("failed to handle RPC message", msg, e);
-				}
+				} catch (e) { console.error("failed to handle RPC message", msg, e); }
 			}
-		} catch (e) {
-			console.warn("dropping RPC connection", e);
-		} finally {
+		} catch (e) { console.warn("dropping RPC connection", e); } finally {
 			this.#drop(conn);
 		}
 	}
 
 	#handle(conn: Connection, msg: RPCMessage) {
 		switch (msg.type) {
-			case "subscribe":
-				this.#subscribe(conn, msg);
-				break;
-			case "unsubscribe":
-				this.#unsubscribe(conn, msg);
-				break;
-			case "call":
-				this.#handleCall(conn, msg);
-				break;
-			case "event":
-				this.#handleEvent(msg);
-				break;
+		case "subscribe":
+			this.#subscribe(conn, msg);
+			break;
+		case "unsubscribe":
+			this.#unsubscribe(conn, msg);
+			break;
+		case "call":
+			this.#handleCall(conn, msg);
+			break;
+		case "event":
+			this.#handleEvent(msg);
+			break;
 		}
 	}
 
@@ -223,9 +189,7 @@ export class RPCPlugin implements Plugin {
 	}
 
 	#unsubscribe(conn: Connection, msg: SubscriptionMessage) {
-		const subs = msg.plugin === undefined
-			? conn.subscriptions.base
-			: conn.subscriptions.plugins[msg.plugin];
+		const subs = msg.plugin === undefined ? conn.subscriptions.base : conn.subscriptions.plugins[msg.plugin];
 		if (subs) this.#unsubscribeTarget(msg, subs);
 	}
 
@@ -282,30 +246,38 @@ export class RPCPlugin implements Plugin {
 			return;
 		}
 
-		method.call(args).then(result => {
-			try {
-				const validated = assertSchema(result, method.output, `invalid result from ${source} ${call}:`, validators.output) as object;
-				this.#write(conn, { type: "result", id: msg.id, result: validated });
-			} catch (e) {
-				this.#write(conn, { type: "result", id: msg.id, error: e instanceof Error ? e.message : String(e) });
-			}
-		}).catch(e => {
-			this.#write(conn, { type: "result", id: msg.id, error: e instanceof Error ? e.message : String(e) });
-		});
+		method.call(args)
+		    .then(result => {
+			    try {
+				    const validated = assertSchema(result, method.output, `invalid result from ${source} ${call}:`,
+						                           validators.output) as object;
+				    this.#write(conn, { type: "result", id: msg.id, result: validated });
+			    } catch (e) {
+				    this.#write(conn,
+				                { type: "result", id: msg.id, error: e instanceof Error ? e.message : String(e) });
+			    }
+		    })
+		    .catch(e => {
+			    this.#write(conn, { type: "result", id: msg.id, error: e instanceof Error ? e.message : String(e) });
+		    });
 	}
 
 	async #write(conn: Connection, msg: RPCMessage) {
 		try {
 			await conn.writer.write(msg);
-		} catch {
-			this.#drop(conn);
-		}
+		} catch { this.#drop(conn); }
 	}
 
 	#drop(conn: Connection) {
 		this.#connections.delete(conn);
-		try { conn.writer.releaseLock(); } catch { /* already released */ }
-		try { conn.reader.cancel(); } catch { /* ignore */ }
+		try {
+			conn.writer.releaseLock();
+		} catch { /* already released */
+		}
+		try {
+			conn.reader.cancel();
+		} catch { /* ignore */
+		}
 	}
 
 	#matches(msg: EventMessage, subs: Connection["subscriptions"]): boolean {
@@ -316,7 +288,7 @@ export class RPCPlugin implements Plugin {
 		return eventSub ? this.#subMatchesAgent(eventSub, msg.agent_id) : false;
 	}
 
-	#subMatchesAgent(sub: Subscription, agent_id: string | undefined): boolean {
+	#subMatchesAgent(sub: Subscription, agent_id: string|undefined): boolean {
 		return sub.all_agents || (agent_id !== undefined && sub.agents.has(agent_id));
 	}
 

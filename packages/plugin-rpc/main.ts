@@ -1,3 +1,3 @@
-import { RPCPlugin } from "./index.ts";
+import {RPCPlugin} from "./index.ts";
 
 export default new RPCPlugin();

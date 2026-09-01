@@ -2,9 +2,7 @@ export class Thread {
 	#promise?: Promise<AbortController>;
 	#controller?: AbortController;
 
-	get signal() {
-		return this.#controller?.signal;
-	}
+	get signal() { return this.#controller?.signal; }
 
 	abort() {
 		this.#promise = undefined;
@@ -17,13 +15,14 @@ export class Thread {
 			const c = this.#controller = new AbortController();
 			this.#promise = Promise.resolve(c);
 		}
-		this.#promise = this.#promise.then(c => {
-			if (!c.signal.aborted)
-				return f().then(() => c).catch(() => c);
-			return c;
-		}, e => {
-			console.error("thread died:", e);
-			return this.#controller = new AbortController();
-		});
+		this.#promise = this.#promise.then(
+		    c => {
+			    if (!c.signal.aborted) return f().then(() => c).catch(() => c);
+			    return c;
+		    },
+		    e => {
+			    console.error("thread died:", e);
+			    return this.#controller = new AbortController();
+		    });
 	}
 }

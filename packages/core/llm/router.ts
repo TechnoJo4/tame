@@ -1,17 +1,12 @@
-import type { RatelimitedProvider } from "./ratelimited.ts";
-import type {
-	AssistantMessage,
-	InferenceProvider,
-	MessageRequest,
-} from "@tame/sdk";
+import type {AssistantMessage, InferenceProvider, MessageRequest,} from "@tame/sdk";
+
+import type {RatelimitedProvider} from "./ratelimited.ts";
 
 export class PriorityProvider implements InferenceProvider {
-	underlying: (InferenceProvider | RatelimitedProvider)[];
+	underlying: (InferenceProvider|RatelimitedProvider)[];
 	maxDelay: number;
 
-	get defaultModel(): string | undefined {
-		return this.underlying[0]?.defaultModel;
-	}
+	get defaultModel(): string|undefined { return this.underlying[0]?.defaultModel; }
 
 	constructor(underlying: InferenceProvider[], maxDelay: number = 100) {
 		this.underlying = underlying;

@@ -96,11 +96,6 @@ the acp plugin additionally pulls `@agentclientprotocol/sdk` from npm at runtime
 
 things to pay attention to during review.
 
-### things that don't matter
-
-- tests
-- `deno fmt`
-
 ### isolation
 
 the rule is simple: plugins can only import types from each other.
@@ -122,3 +117,6 @@ what this means:
 
 - private class fields use `#` prefix
 
+### things that don't matter
+
+- tests

@@ -1,30 +1,27 @@
-import type { Static, TSchema } from "typebox";
-import Compile, { type Validator } from "typebox/compile";
+import type {Static, TSchema} from "typebox";
+import Compile, {type Validator} from "typebox/compile";
 
 export class ValidationError extends Error {
-	constructor(message?: string, options?: ErrorOptions) {
-		super(message, options);
-	}
+	constructor(message?: string, options?: ErrorOptions) { super(message, options); }
 }
 
-export const assertSchema = <T extends TSchema>(data: unknown, schema: T, baseError: string, val_?: Validator<any>): Static<T> => {
-	const val = (val_ ?? Compile(schema)) as Validator<any, T>;
-	data = structuredClone(data);
-	data = val.Default(data);
-	if (!val.Check(data)) {
-		const errors = val.Errors(data);
-		const s = [baseError];
-		for (const err of errors) {
-			const path = err.instancePath.replace(/^\//, "").replace(/\//g, ".") || "root";
-			if (err.keyword === "required") {
-				for (const p of err.params.requiredProperties) {
-					s.push(`- ${path}.${p}: required`);
-				}
-			} else {
-				s.push(`- ${path}: ${err.message}`);
-			}
-		}
-		throw new ValidationError(s.join("\n"));
-	}
-	return data;
-};
+export const assertSchema =
+    <T extends TSchema>(data: unknown, schema: T, baseError: string, val_?: Validator<any>): Static<T> => {
+	    const val = (val_ ?? Compile(schema)) as Validator<any, T>;
+	    data = structuredClone(data);
+	    data = val.Default(data);
+	    if (!val.Check(data)) {
+		    const errors = val.Errors(data);
+		    const s = [baseError];
+		    for (const err of errors) {
+			    const path = err.instancePath.replace(/^\//, "").replace(/\//g, ".") || "root";
+			    if (err.keyword === "required") {
+				    for (const p of err.params.requiredProperties) { s.push(`- ${path}.${p}: required`); }
+			    } else {
+				    s.push(`- ${path}: ${err.message}`);
+			    }
+		    }
+		    throw new ValidationError(s.join("\n"));
+	    }
+	    return data;
+    };

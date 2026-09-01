@@ -1,13 +1,11 @@
-import type { SettingsStore } from "@tame/web-sdk";
+import type {SettingsStore} from "@tame/web-sdk";
 
 const PREFIX = "tame:settings:";
 const EVENT = "tame:settings-changed";
 
-function encodeKey(pluginId: string, key: string): string {
-	return `${PREFIX}${pluginId}.${key}`;
-}
+function encodeKey(pluginId: string, key: string): string { return `${PREFIX}${pluginId}.${key}`; }
 
-function decodeKey(full: string): { pluginId: string; key: string } | null {
+function decodeKey(full: string): { pluginId: string; key: string }|null {
 	if (!full.startsWith(PREFIX)) return null;
 	const rest = full.slice(PREFIX.length);
 	const dot = rest.indexOf(".");
@@ -16,9 +14,7 @@ function decodeKey(full: string): { pluginId: string; key: string } | null {
 }
 
 export class LocalSettingsStore implements SettingsStore {
-	#listeners: Array<
-		{ pluginId: string; key: string; callback: (value: string | null) => void }
-	> = [];
+	#listeners: Array<{ pluginId: string; key: string; callback: (value: string|null) => void }> = [];
 
 	constructor() {
 		// cross-tab sync: browser storage event → re-dispatch as CustomEvent
@@ -32,20 +28,18 @@ export class LocalSettingsStore implements SettingsStore {
 				value: e.newValue !== null ? JSON.parse(e.newValue) : null,
 			};
 			document.dispatchEvent(
-				new CustomEvent(EVENT, { detail }),
+			    new CustomEvent(EVENT, { detail }),
 			);
 		});
 	}
 
-	get(pluginId: string, key: string): string | null {
+	get(pluginId: string, key: string): string|null {
 		const raw = localStorage.getItem(encodeKey(pluginId, key));
 		if (raw === null) return null;
 		try {
 			const val = JSON.parse(raw);
 			return typeof val === "string" ? val : null;
-		} catch {
-			return null;
-		}
+		} catch { return null; }
 	}
 
 	set(pluginId: string, key: string, value: string): void {
@@ -53,22 +47,22 @@ export class LocalSettingsStore implements SettingsStore {
 		localStorage.setItem(encodeKey(pluginId, key), encoded);
 		const detail = { pluginId, key, value };
 		document.dispatchEvent(
-			new CustomEvent(EVENT, { detail }),
+		    new CustomEvent(EVENT, { detail }),
 		);
 	}
 
 	onChange(
-		pluginId: string,
-		key: string,
-		callback: (value: string | null) => void,
-	): () => void {
+	    pluginId: string,
+	    key: string,
+	    callback: (value: string|null) => void,
+	    ): () => void {
 		const handler = (e: Event) => {
 			const detail = (e as CustomEvent).detail as {
-				pluginId: string; key: string; value: string | null;
+				pluginId: string;
+				key: string;
+				value: string|null;
 			};
-			if (detail.pluginId === pluginId && detail.key === key) {
-				callback(detail.value);
-			}
+			if (detail.pluginId === pluginId && detail.key === key) { callback(detail.value); }
 		};
 		document.addEventListener(EVENT, handler);
 		return () => document.removeEventListener(EVENT, handler);

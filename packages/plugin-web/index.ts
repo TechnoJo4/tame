@@ -1,23 +1,15 @@
-import {
-	type IAgent,
-	type IHarness,
-	type Plugin,
-	tameMsgMeta,
-} from "@tame/sdk";
-import { Type } from "typebox";
-import { call } from "@tame/rpc-sdk";
-import { resolve } from "@std/path";
-import { serve } from "./serve.ts";
-import type { RPCPlugin } from "@tame/plugin-rpc/index";
-import type { ComponentDef, Placement } from "@tame/web-sdk/placement";
-import { basePlugins, terserPlugin } from "./build-config.ts";
-import {
-	assistantBlocksToItems,
-	contextToItems,
-	paginateItems,
-} from "./items.ts";
+import {resolve} from "@std/path";
+import type {RPCPlugin} from "@tame/plugin-rpc/index";
+import {call} from "@tame/rpc-sdk";
+import {type IAgent, type IHarness, type Plugin, tameMsgMeta,} from "@tame/sdk";
+import type {ComponentDef, Placement} from "@tame/web-sdk/placement";
+import {Type} from "typebox";
 
-export type { ComponentDef, Placement } from "@tame/web-sdk/placement";
+import {basePlugins, terserPlugin} from "./build-config.ts";
+import {assistantBlocksToItems, contextToItems, paginateItems,} from "./items.ts";
+import {serve} from "./serve.ts";
+
+export type {ComponentDef, Placement} from "@tame/web-sdk/placement";
 
 export interface WebConfig {
 	listen: { hostname: string; port: number };
@@ -53,8 +45,8 @@ export class WebPlugin implements Plugin {
 	#components = new Map<string, RegistryEntry>();
 	#stylesheets = new Map<string, string>(); // pluginId → url
 	#placements: Placement[] = [];
-	#harness: IHarness | undefined;
-	#rpc: RPCPlugin | undefined;
+	#harness: IHarness|undefined;
+	#rpc: RPCPlugin|undefined;
 	#config: WebConfig;
 	#buildDir: string;
 	#rootDir: string;
@@ -66,17 +58,15 @@ export class WebPlugin implements Plugin {
 	}
 
 	/** Resolve a component path relative to the calling plugin's directory. */
-	resolve(dirname: string, relative: string): string {
-		return resolve(dirname, relative);
-	}
+	resolve(dirname: string, relative: string): string { return resolve(dirname, relative); }
 
 	/** Register components and placements for a plugin. Called during init(). */
 	async register(
-		pluginId: string,
-		components: ComponentDef[],
-		placements: Placement[],
-		css?: string,
-	): Promise<void> {
+	    pluginId: string,
+	    components: ComponentDef[],
+	    placements: Placement[],
+	    css?: string,
+	    ): Promise<void> {
 		const tsFiles: { src: string; tag: string }[] = [];
 
 		for (const c of components) {
@@ -89,24 +79,24 @@ export class WebPlugin implements Plugin {
 			}
 		}
 
-		if (tsFiles.length > 0) {
-			await this.#transpile(pluginId, tsFiles);
-		}
+		if (tsFiles.length > 0) { await this.#transpile(pluginId, tsFiles); }
 
 		// copy CSS file to build output so it can be served
 		if (css) {
 			const outDir = `${this.#buildDir}/plugins/${pluginId}`;
 			try {
 				Deno.mkdirSync(outDir, { recursive: true });
-			} catch { /* exists */ }
+			} catch { /* exists */
+			}
 			const basename = css.split("/").pop()!;
 			const outPath = `${outDir}/${basename}`;
 			try {
 				Deno.copyFileSync(css, outPath);
-			} catch { /* not found */ }
+			} catch { /* not found */
+			}
 			this.#stylesheets.set(
-				pluginId,
-				`/static/plugins/${pluginId}/${basename}`,
+			    pluginId,
+			    `/static/plugins/${pluginId}/${basename}`,
 			);
 		}
 
@@ -114,13 +104,14 @@ export class WebPlugin implements Plugin {
 	}
 
 	async #transpile(
-		pluginId: string,
-		files: { src: string; tag: string }[],
-	): Promise<void> {
+	    pluginId: string,
+	    files: { src: string; tag: string }[],
+	    ): Promise<void> {
 		const outDir = `${this.#buildDir}/plugins/${pluginId}`;
 		try {
 			Deno.mkdirSync(outDir, { recursive: true });
-		} catch { /* exists */ }
+		} catch { /* exists */
+		}
 
 		const { rollup } = await import("rollup");
 
@@ -141,9 +132,7 @@ export class WebPlugin implements Plugin {
 				await build.close();
 				const url = `/static/plugins/${pluginId}/${basename}`;
 				this.#components.set(tag, { src: `${outDir}/${basename}`, url });
-			} catch (e) {
-				console.warn(`plugin-web: rollup failed for ${tag} (${src}):`, e);
-			}
+			} catch (e) { console.warn(`plugin-web: rollup failed for ${tag} (${src}):`, e); }
 		}
 	}
 
@@ -164,9 +153,7 @@ export class WebPlugin implements Plugin {
 				Deno.statSync(litJs);
 				Deno.statSync(litContextJs);
 				Deno.statSync(webSdkJs);
-			} catch {
-				await this.#buildVendorBundles(rollup, staticDir);
-			}
+			} catch { await this.#buildVendorBundles(rollup, staticDir); }
 
 			const build = await rollup({
 				input: shellTs,
@@ -193,46 +180,45 @@ export class WebPlugin implements Plugin {
 			await build.close();
 		} catch (e) {
 			console.warn(
-				"plugin-web: shell rebuild failed, using existing shell.js:",
-				e,
+			    "plugin-web: shell rebuild failed, using existing shell.js:",
+			    e,
 			);
 		}
 	}
 
 	async #buildVendorBundles(rollup: any, staticDir: string): Promise<void> {
 		// write entry files, bundle, then clean up. mirrors build.js.
-		const entry = (name: string, content: string) => {
-			Deno.writeTextFileSync(`${this.#buildDir}/${name}.entry.ts`, content);
-		};
+		const entry = (name: string,
+		               content: string) => { Deno.writeTextFileSync(`${this.#buildDir}/${name}.entry.ts`, content); };
 		entry(
-			"lit",
-			`export * from "lit";\nexport * from "lit/decorators.js";\nexport * from "lit/directive.js";\nexport * from "lit/async-directive.js";\n`,
+		    "lit",
+		    `export * from "lit";\nexport * from "lit/decorators.js";\nexport * from "lit/directive.js";\nexport * from "lit/async-directive.js";\n`,
 		);
 		entry(
-			"typebox",
-			`export * from "typebox";\nexport { default } from "typebox";\n` +
-				`export { Compile, Code, Validator } from "typebox/compile";\n` +
-				`export { default as compileDefault } from "typebox/compile";\n`,
+		    "typebox",
+		    `export * from "typebox";\nexport { default } from "typebox";\n` +
+		        `export { Compile, Code, Validator } from "typebox/compile";\n` +
+		        `export { default as compileDefault } from "typebox/compile";\n`,
 		);
 		entry(
-			"tame-rpc-client",
-			`export { RPCClient } from "@tame/rpc-client";\n` +
-				`export { wsToStream } from "@tame/rpc-client/stream";\n`,
+		    "tame-rpc-client",
+		    `export { RPCClient } from "@tame/rpc-client";\n` +
+		        `export { wsToStream } from "@tame/rpc-client/stream";\n`,
 		);
 		entry(
-			"lit-context",
-			`export { createContext, ContextProvider, ContextConsumer, ContextEvent, provide, consume } from "@lit/context";\n`,
+		    "lit-context",
+		    `export { createContext, ContextProvider, ContextConsumer, ContextEvent, provide, consume } from "@lit/context";\n`,
 		);
 		entry(
-			"web-sdk",
-			`export { agentIdContext, rpcClientContext, registryContext, settingsStoreContext, settingsPluginIdContext } from "@tame/web-sdk";\nexport { setting, settingBool, settingWhen } from "@tame/web-sdk/setting-directives";\n`,
+		    "web-sdk",
+		    `export { agentIdContext, rpcClientContext, registryContext, settingsStoreContext, settingsPluginIdContext } from "@tame/web-sdk";\nexport { setting, settingBool, settingWhen } from "@tame/web-sdk/setting-directives";\n`,
 		);
 
 		const bundle = async (
-			name: string,
-			externals: string[] = [],
-			noMinify = false,
-		) => {
+		    name: string,
+		    externals: string[] = [],
+		    noMinify = false,
+		    ) => {
 			const b = await rollup({
 				input: `${this.#buildDir}/${name}.entry.ts`,
 				external: externals,
@@ -254,27 +240,18 @@ export class WebPlugin implements Plugin {
 		await bundle("web-sdk", ["lit", "@lit/context"]);
 
 		// cleanup entry files
-		for (
-			const name of [
-				"lit",
-				"typebox",
-				"tame-rpc-client",
-				"lit-context",
-				"web-sdk",
-			]
-		) {
+		for (const name of ["lit", "typebox", "tame-rpc-client", "lit-context", "web-sdk", ]) {
 			try {
 				Deno.removeSync(`${this.#buildDir}/${name}.entry.ts`);
-			} catch { /* */ }
+			} catch { /* */
+			}
 		}
 	}
 
 	async init(harness: IHarness) {
 		this.#harness = harness;
 
-		if (this.#config.buildShell) {
-			await this.#buildShell();
-		}
+		if (this.#config.buildShell) { await this.#buildShell(); }
 
 		const rpc = harness.getPlugin<RPCPlugin>("rpc");
 		if (!rpc) throw new Error("plugin-web requires the rpc plugin");
@@ -285,28 +262,24 @@ export class WebPlugin implements Plugin {
 				input: Type.Object({}),
 				output: Type.Object({
 					components: Type.Record(
-						Type.String(),
-						Type.Object({ src: Type.String() }),
-					),
+					    Type.String(),
+					    Type.Object({ src: Type.String() }),
+					    ),
 					placements: Type.Array(Type.Object({
 						location: Type.String(),
 						tag: Type.String(),
 						props: Type.Optional(
-							Type.Object({}, { additionalProperties: true }),
-						),
+						    Type.Object({}, { additionalProperties: true }),
+						    ),
 					})),
 					stylesheets: Type.Record(Type.String(), Type.String()),
 				}),
-				call: async (): Promise<Registry> => {
-					const components: Record<string, { src: string }> = {};
-					for (const [tag, entry] of this.#components) {
-						components[tag] = { src: entry.url };
-					}
-					const stylesheets: Record<string, string> = {};
-					for (const [pluginId, url] of this.#stylesheets) {
-						stylesheets[pluginId] = url;
-					}
-					return { components, placements: this.#placements, stylesheets };
+				call: async(): Promise<Registry> => {
+			        const components: Record<string, { src: string }> = {};
+			        for (const [tag, entry] of this.#components) { components[tag] = { src: entry.url }; }
+			        const stylesheets: Record<string, string> = {};
+			        for (const [pluginId, url] of this.#stylesheets) { stylesheets[pluginId] = url; }
+			        return { components, placements: this.#placements, stylesheets };
 				},
 			}),
 
@@ -321,34 +294,33 @@ export class WebPlugin implements Plugin {
 					total: Type.Number(),
 				}),
 				call: async ({ id, offset, limit }) => {
-					const agent = harness.getAgent(id);
-					if (!agent) throw new Error(`agent ${id} not found`);
-					const all = contextToItems(agent);
-					return {
-						items: paginateItems(all, offset, limit) as unknown as Record<
-							string,
-							unknown
-						>[],
-						total: all.length,
-					};
+			        const agent = harness.getAgent(id);
+			        if (!agent) throw new Error(`agent ${id} not found`);
+			        const all = contextToItems(agent);
+			        return {
+				        items: paginateItems(all, offset, limit) as unknown as Record<string, unknown>[],
+				        total: all.length,
+			        };
 				},
 			}),
 		});
 
 		// register web's own settings component at the settings modal placement
 		const dir = import.meta.dirname!;
-		await this.register("web", [
-			{
-				tag: "tame-web-settings",
-				src: this.resolve(dir, "./web/components/web-settings.ts"),
-			},
-		], [
-			{
-				location: "modal:settings",
-				tag: "tame-web-settings",
-				props: { pluginId: "web" },
-			},
-		]);
+		await this.register("web",
+		                    [
+			                    {
+				                    tag: "tame-web-settings",
+				                    src: this.resolve(dir, "./web/components/web-settings.ts"),
+			                    },
+		                    ],
+		                    [
+			                    {
+				                    location: "modal:settings",
+				                    tag: "tame-web-settings",
+				                    props: { pluginId: "web" },
+			                    },
+		                    ]);
 
 		serve(this.#config, this.#components, this.#stylesheets, rpc);
 	}
@@ -368,9 +340,8 @@ export class WebPlugin implements Plugin {
 		};
 
 		agent.after("userMessage", async (e) => {
-			const content = e.msg.content
-				.filter((c) => c.type === "text")
-				.map((c) => ({ type: "text" as const, text: c.text }));
+			const content =
+			    e.msg.content.filter((c) => c.type === "text").map((c) => ({ type: "text" as const, text: c.text }));
 			if (content.length === 0) return e;
 			emit("userMessage", {
 				item: {
@@ -385,9 +356,9 @@ export class WebPlugin implements Plugin {
 
 		agent.after("assistantMessage", async (e) => {
 			const items = assistantBlocksToItems(
-				e.msg.content,
-				agent,
-				e.msg[tameMsgMeta]?.automated === true,
+			    e.msg.content,
+			    agent,
+			    e.msg[tameMsgMeta]?.automated === true,
 			);
 			if (items.length === 0) return e;
 			emit("assistantMessage", { items });

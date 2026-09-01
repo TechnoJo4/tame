@@ -1,20 +1,17 @@
-import { Type, type Static } from "typebox";
-import { type Plugin, type IAgent, type IHarness, type AssistantMessage, type Usage } from "@tame/sdk";
-import { call, rpcMethod } from "@tame/rpc-sdk";
-import type { RPCPlugin } from "@tame/plugin-rpc/index";
-import { getAgentHistory, type HistoryPlugin } from "@tame/plugin-history/index";
+import {getAgentHistory, type HistoryPlugin} from "@tame/plugin-history/index";
+import type {RPCPlugin} from "@tame/plugin-rpc/index";
+import {call, rpcMethod} from "@tame/rpc-sdk";
+import {type AssistantMessage, type IAgent, type IHarness, type Plugin, type Usage} from "@tame/sdk";
+import {type Static, Type} from "typebox";
 
 // ---- types ----
 
 export interface TokenStatsSnapshot {
 	/** Raw usage from the last assistant message, null if no completions yet. */
-	context: Usage | null;
+	context: Usage|null;
 	/** Running session aggregate. */
 	session: {
-		turnCount: number;
-		inputTokens: number;
-		outputTokens: number;
-		cacheCreationInputTokens: number;
+		turnCount: number; inputTokens: number; outputTokens: number; cacheCreationInputTokens: number;
 		cacheReadInputTokens: number;
 	};
 }
@@ -38,7 +35,7 @@ export type TokenStatsConfig = Static<typeof configSchema>;
 
 export const rpcSchema = {
 	getTokenStats: rpcMethod({
-		input: Type.Object({ sessionId: Type.String() }),
+		input: Type.Object({sessionId: Type.String()}),
 		output: Type.Object({
 			context: Type.Union([
 				Type.Null(),
@@ -82,8 +79,8 @@ function getData(agent: IAgent): TokenStatsSaved {
 export class TokenStatsPlugin implements Plugin {
 	id = "token-stats" as const;
 
-	#rpc: RPCPlugin | undefined;
-	#history: HistoryPlugin | undefined;
+	#rpc: RPCPlugin|undefined;
+	#history: HistoryPlugin|undefined;
 
 	constructor(_config: TokenStatsConfig) {}
 
@@ -93,19 +90,17 @@ export class TokenStatsPlugin implements Plugin {
 
 		this.#history?.addHook<TokenStatsSaved>(historyHookKey, {
 			save: (agent) => getData(agent),
-			load: (agent, data) => {
-				agent.pluginData.set(dataKey, data);
-			},
+			load: (agent, data) => { agent.pluginData.set(dataKey, data); },
 		});
 
 		this.#rpc?.register("token-stats", {
 			getTokenStats: call({
 				...rpcSchema.getTokenStats,
 				call: async ({ sessionId }) => {
-					const agent = harness.getAgent(sessionId);
-					if (!agent) throw new Error(`session ${sessionId} not found`);
+			        const agent = harness.getAgent(sessionId);
+			        if (!agent) throw new Error(`session ${sessionId} not found`);
 
-					return this.#computeStats(agent);
+			        return this.#computeStats(agent);
 				},
 			}),
 		});
@@ -130,13 +125,11 @@ export class TokenStatsPlugin implements Plugin {
 
 		const data = getData(agent);
 
-		const lastAssistant = agent.context.findLast((m) => "usage" in m) as
-			| AssistantMessage
-			| undefined;
+		const lastAssistant = agent.context.findLast((m) => "usage" in m) as | AssistantMessage | undefined;
 
 		return {
 			context: lastAssistant?.usage ?? null,
-			session: { ...data },
+			session: {...data },
 		};
 	}
 

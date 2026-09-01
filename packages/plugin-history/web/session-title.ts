@@ -1,21 +1,22 @@
-import { LitElement, html } from "lit";
-import { property } from "lit/decorators.js";
-import { consume } from "@lit/context";
-import { agentIdContext } from "@tame/web-sdk";
-import { rpcClientContext, type RPCClientLike } from "@tame/web-sdk/rpc-client-context";
-import type { SessionInfo } from "./types.ts";
+import {consume} from "@lit/context";
+import {agentIdContext} from "@tame/web-sdk";
+import {rpcClientContext, type RPCClientLike} from "@tame/web-sdk/rpc-client-context";
+import {html, LitElement} from "lit";
+import {property} from "lit/decorators.js";
+
+import type {SessionInfo} from "./types.ts";
 
 export class TameHistorySessionTitle extends LitElement {
 	@consume({ context: rpcClientContext, subscribe: true })
-	@property({ attribute: false }) declare client: RPCClientLike | null;
+	@property({ attribute: false })
+	declare client: RPCClientLike|null;
 
-	@consume({ context: agentIdContext, subscribe: true })
-	@property({ type: String }) declare agentId: string | null;
+	@consume({ context: agentIdContext, subscribe: true }) @property({ type: String }) declare agentId: string|null;
 
 	@property({ type: Array, state: true }) sessions: SessionInfo[] = [];
 
-	#unsub: (() => void) | null = null;
-	#lastClient: RPCClientLike | null = null;
+	#unsub: (() => void)|null = null;
+	#lastClient: RPCClientLike|null = null;
 
 	override createRenderRoot() { return this; }
 
@@ -45,10 +46,8 @@ export class TameHistorySessionTitle extends LitElement {
 		if (!this.client) return;
 		this.#unsub?.();
 		this.#unsub = this.client.subscribe(
-			{ plugin: "history", event: "sessionsChanged" },
-			(msg: any) => {
-				this.sessions = (msg.data as any)?.sessions ?? [];
-			},
+		    { plugin: "history", event: "sessionsChanged" },
+		    (msg: any) => { this.sessions = (msg.data as any)?.sessions ?? []; },
 		);
 	}
 
@@ -59,8 +58,6 @@ export class TameHistorySessionTitle extends LitElement {
 		this.sessions = (result as any)?.sessions ?? [];
 	}
 
-	override render() {
-		return html`<span>${this.title}</span>`;
-	}
+	override render() { return html`<span>${this.title}</span>`; }
 }
 customElements.define("tame-history-session-title", TameHistorySessionTitle);

@@ -1,7 +1,7 @@
-import { Tiktoken } from "js-tiktoken/lite";
-import { type Static, Type } from "typebox";
-import type { IAgent, IHarness, InputMessage, InputContent, AssistantMessage } from "@tame/sdk";
-import { type Plugin, StringEnum, tameMsgMeta, tameContentMeta } from "@tame/sdk";
+import type {AssistantMessage, IAgent, IHarness, InputContent, InputMessage} from "@tame/sdk";
+import {type Plugin, StringEnum, tameContentMeta, tameMsgMeta} from "@tame/sdk";
+import {Tiktoken} from "js-tiktoken/lite";
+import {type Static, Type} from "typebox";
 
 const target = Type.Union([
 	Type.Object({ type: Type.Literal("tokens"), tokens: Type.Number() }),
@@ -19,7 +19,7 @@ export const configSchema = Type.Object({
 	estimation: Type.Union([
 		Type.Object({
 			type: Type.Literal("tiktoken"),
-			encoding: StringEnum([ "gpt2", "r50k_base", "p50k_base", "p50k_edit", "cl100k_base", "o200k_base" ] as const)
+			encoding: StringEnum(["gpt2", "r50k_base", "p50k_base", "p50k_edit", "cl100k_base", "o200k_base"] as const)
 		}),
 	]),
 	keepTail: target,
@@ -43,9 +43,7 @@ export class CompactPlugin implements Plugin {
 	#config: CompactConfig;
 	#enc!: Tiktoken;
 
-	constructor(config: CompactConfig) {
-		this.#config = config;
-	}
+	constructor(config: CompactConfig) { this.#config = config; }
 
 	async init() {
 		const rank = await import(`npm:js-tiktoken/ranks/${this.#config.estimation.encoding}`);
@@ -56,17 +54,16 @@ export class CompactPlugin implements Plugin {
 		let n = 4;
 		for (const block of m.content) {
 			switch (block.type) {
-				case "text":
-					n += this.#enc.encode(block.text).length;
-					break;
-				case "thinking":
-					n += this.#enc.encode(block.thinking).length;
-					break;
-				case "tool_use":
-					n += this.#enc.encode(JSON.stringify(block.input)).length;
-					if (block.result)
-						n += this.#enc.encode(block.result.content).length;
-					break;
+			case "text":
+				n += this.#enc.encode(block.text).length;
+				break;
+			case "thinking":
+				n += this.#enc.encode(block.thinking).length;
+				break;
+			case "tool_use":
+				n += this.#enc.encode(JSON.stringify(block.input)).length;
+				if (block.result) n += this.#enc.encode(block.result.content).length;
+				break;
 			}
 		}
 		return n;
@@ -81,11 +78,11 @@ export class CompactPlugin implements Plugin {
 			if (lastUsageIdx < lastCompactBoundary) return e;
 			const lastUsage = agent.context[lastUsageIdx] as AssistantMessage;
 
-			let tokenCount = lastUsage.usage.input_tokens + lastUsage.usage.cache_read_input_tokens + lastUsage.usage.cache_creation_input_tokens;
+			let tokenCount = lastUsage.usage.input_tokens + lastUsage.usage.cache_read_input_tokens +
+			                 lastUsage.usage.cache_creation_input_tokens;
 			if (tokenCount < this.#config.maxTokens) {
 				const messagesWithoutUsage = agent.context.slice(lastUsageIdx + 1);
-				for (const m of messagesWithoutUsage)
-					tokenCount += this.estimateMessageTokens(m);
+				for (const m of messagesWithoutUsage) tokenCount += this.estimateMessageTokens(m);
 			}
 
 			if (tokenCount > this.#config.maxTokens) {
@@ -98,13 +95,7 @@ export class CompactPlugin implements Plugin {
 			const compactBoundary = agent.pluginData.get(lastCompactKey);
 			if (typeof compactBoundary === "number")
 				messages[compactBoundary] = this.setCaching(messages[compactBoundary]);
-			return {
-				...e,
-				req: {
-					...e.req,
-					messages
-				}
-			};
+			return {...e, req: {...e.req, messages } };
 		});
 	}
 
@@ -128,37 +119,32 @@ export class CompactPlugin implements Plugin {
 		const ids = new Set<string>();
 		for (const m of msgs) {
 			for (const c of m.content) {
-				if (c.type === "tool_use" && c.result?.is_error)
-					ids.add(c.id);
+				if (c.type === "tool_use" && c.result?.is_error) ids.add(c.id);
 			}
 		}
 		return ids;
 	}
 
-	pruneContent(
-		c: InputContent,
-		failedIds: Set<string>,
-		prune: Static<typeof pruneSchema>
-	): InputContent | null {
+	pruneContent(c: InputContent, failedIds: Set<string>, prune: Static<typeof pruneSchema>): InputContent|null {
 		switch (c.type) {
-			case "thinking":
-				if (prune.thinking) return null;
-				break;
-			case "tool_use": {
-				if (prune.failedToolCalls && failedIds.has(c.id)) return null;
-				if (c.result && prune.maxToolResultLength > 0 && c.result.content.length > prune.maxToolResultLength) {
-					const head = c.result.content.slice(0, prune.maxToolResultLength);
-					const omitted = c.result.content.length - prune.maxToolResultLength;
-					return {
-						...c,
-						result: {
-							...c.result,
-							content: `${head}\n\n[... ${omitted} more characters truncated by compaction]`,
-						},
-					};
-				}
-				break;
+		case "thinking":
+			if (prune.thinking) return null;
+			break;
+		case "tool_use": {
+			if (prune.failedToolCalls && failedIds.has(c.id)) return null;
+			if (c.result && prune.maxToolResultLength > 0 && c.result.content.length > prune.maxToolResultLength) {
+				const head = c.result.content.slice(0, prune.maxToolResultLength);
+				const omitted = c.result.content.length - prune.maxToolResultLength;
+				return {
+					...c,
+					result: {
+						...c.result,
+						content: `${head}\n\n[... ${omitted} more characters truncated by compaction]`,
+					},
+				};
 			}
+			break;
+		}
 		}
 		return c;
 	}
@@ -170,15 +156,15 @@ export class CompactPlugin implements Plugin {
 		const tail = agent.context.slice(-keepCount);
 
 		switch (this.#config.interval!.every.type) {
-			case "messages":
-				if (toPrune.length < this.#config.interval!.every.messages) return;
-				break;
-			case "tokens": {
-				let midTokens = 0;
-				for (const m of toPrune) midTokens += this.estimateMessageTokens(m);
-				if (midTokens < this.#config.interval!.every.tokens) return;
-				break;
-			}
+		case "messages":
+			if (toPrune.length < this.#config.interval!.every.messages) return;
+			break;
+		case "tokens": {
+			let midTokens = 0;
+			for (const m of toPrune) midTokens += this.estimateMessageTokens(m);
+			if (midTokens < this.#config.interval!.every.tokens) return;
+			break;
+		}
 		}
 
 		console.log(`interval prune on ${agent.id}`);
@@ -198,7 +184,7 @@ export class CompactPlugin implements Plugin {
 			}
 
 			if (newContent.length === 0) continue;
-			pruned.push({ ...m, content: newContent });
+			pruned.push({...m, content: newContent });
 		}
 
 		agent.pluginData.set(lastCompactKey, head.length + pruned.length - 1);
@@ -229,8 +215,7 @@ export class CompactPlugin implements Plugin {
 	summarizeContext(ctx: InputMessage[], agent: IAgent) {
 		let summary = "Your context window has been compacted.\n\n<history>\nKey conversation turns:";
 
-		for (const c of userMessageHistory.get(agent)!)
-			summary += `\n[user] ${c}`;
+		for (const c of userMessageHistory.get(agent)!) summary += `\n[user] ${c}`;
 
 		let calls_text = "";
 		for (const m of ctx) {
@@ -238,8 +223,7 @@ export class CompactPlugin implements Plugin {
 				for (const c of m.content) {
 					if (c.type === "text") {
 						summary += `\n[${m.role}] ${c.text}`;
-						if (m.role === "user")
-							userMessageHistory.get(agent)!.push(c.text);
+						if (m.role === "user") userMessageHistory.get(agent)!.push(c.text);
 					} else if (c.type === "tool_use" && c.result && !c.result.is_error) {
 						const view = agent.viewToolCall("compact", c);
 						if (view) calls_text += `\n- ${view}`;
@@ -248,8 +232,7 @@ export class CompactPlugin implements Plugin {
 			}
 		}
 
-		if (calls_text !== "")
-			summary += "\n\nTool calls:" + calls_text;
+		if (calls_text !== "") summary += "\n\nTool calls:" + calls_text;
 
 		return summary + "\n</history>";
 	}
@@ -258,17 +241,17 @@ export class CompactPlugin implements Plugin {
 		return {
 			...m,
 			content: m.content.map((c, i) => {
-				if (i !== m.content.length - 1) return c;
-				return {
-					...c,
-					[tameContentMeta]: {
-						...c[tameContentMeta],
-						providerData: {
-							...c[tameContentMeta]?.providerData,
-							cache_control: { type: "ephemeral", ttl: "5m" },
-						},
-					},
-				};
+			    if (i !== m.content.length - 1) return c;
+			    return {
+				    ...c,
+				    [tameContentMeta]: {
+					    ...c[tameContentMeta],
+					    providerData: {
+						    ...c[tameContentMeta]?.providerData,
+						    cache_control: { type: "ephemeral", ttl: "5m" },
+					    },
+				    },
+			    };
 			}),
 		};
 	}

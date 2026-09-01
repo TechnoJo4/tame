@@ -1,7 +1,9 @@
-import type { TSchema } from "typebox";
-import type { tameMsgMeta, tameContentMeta } from "../util/symbols.ts";
+import type {TSchema} from "typebox";
 
-// Total input tokens in a request is the summation of input_tokens, cache_creation_input_tokens, and cache_read_input_tokens.
+import type {tameContentMeta, tameMsgMeta} from "../util/symbols.ts";
+
+// Total input tokens in a request is the summation of input_tokens, cache_creation_input_tokens, and
+// cache_read_input_tokens.
 export interface Usage {
 	cache_creation_input_tokens: number;
 	cache_read_input_tokens: number;
@@ -13,12 +15,16 @@ export interface Usage {
 export interface TameContentMeta {
 	/** Opaque provider-specific data to splat back onto wire messages. */
 	providerData?: object;
-	/** For thinking/redacted_thinking blocks: which provider field this
+	/**
+	 * For thinking/redacted_thinking blocks: which provider field this
 	 *  reasoning came from (e.g. "reasoning_content", "reasoning",
-	 *  "reasoning_details"). */
+	 *  "reasoning_details").
+	 */
 	reasoningField?: string;
-	/** For reasoning_details blocks: the detail type
-	 *  ("reasoning.text", "reasoning.encrypted", etc.). */
+	/**
+	 * For reasoning_details blocks: the detail type
+	 *  ("reasoning.text", "reasoning.encrypted", etc.).
+	 */
 	reasoningDetailType?: string;
 	/** For reasoning_details blocks: the index in the details array. */
 	reasoningIndex?: number;
@@ -59,16 +65,10 @@ export interface ToolUse {
 	[tameContentMeta]?: TameContentMeta;
 }
 
-export type Content = Text | Thinking | RedactedThinking | ToolUse;
+export type Content = Text|Thinking|RedactedThinking|ToolUse;
 export type InputContent = Content;
 
-export type StopReason =
-	| "end_turn"
-	| "max_tokens"
-	| "stop_sequence"
-	| "tool_use"
-	| "pause_turn"
-	| "refusal";
+export type StopReason =|"end_turn"|"max_tokens"|"stop_sequence"|"tool_use"|"pause_turn"|"refusal";
 
 export interface TameMessageMeta {
 	/** Whether this message was automatically inserted.  */
@@ -96,10 +96,10 @@ export interface AssistantMessage {
 	[tameMsgMeta]?: TameMessageMeta;
 }
 
-export type Message = UserMessage | AssistantMessage;
+export type Message = UserMessage|AssistantMessage;
 
 export interface InputMessage {
-	role: "user" | "assistant";
+	role: "user"|"assistant";
 	content: InputContent[];
 	[tameMsgMeta]?: TameMessageMeta;
 }
@@ -120,6 +120,6 @@ export interface MessageRequest {
 }
 
 export interface InferenceProvider {
-	defaultModel: string | undefined;
+	defaultModel: string|undefined;
 	complete(req: MessageRequest, signal?: AbortSignal): Promise<AssistantMessage>;
 }

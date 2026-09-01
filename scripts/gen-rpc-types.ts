@@ -1,5 +1,5 @@
-import { resolve, toFileUrl } from "@std/path";
-import { readdir } from "node:fs/promises";
+import {resolve, toFileUrl} from "@std/path";
+import {readdir} from "node:fs/promises";
 
 const dir = import.meta.dirname;
 if (!dir) throw new Error("couldn't get import.meta.dirname");

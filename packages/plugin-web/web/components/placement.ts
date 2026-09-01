@@ -1,12 +1,13 @@
-import { LitElement, html } from "lit";
-import { until } from "lit/directives/until.js";
-import { property } from "lit/decorators.js";
-import { consume } from "@lit/context";
-import { registryContext, type Registry } from "@tame/web-sdk";
+import {consume} from "@lit/context";
+import {type Registry, registryContext} from "@tame/web-sdk";
+import {html, LitElement} from "lit";
+import {property} from "lit/decorators.js";
+import {until} from "lit/directives/until.js";
 
 class TamePlacement extends LitElement {
 	@consume({ context: registryContext, subscribe: true })
-	@property({ attribute: false }) declare registry: Registry | null;
+	@property({ attribute: false })
+	declare registry: Registry|null;
 
 	@property({ type: String }) location = "";
 
@@ -21,8 +22,9 @@ class TamePlacement extends LitElement {
 
 	override render() {
 		const placements = this.registry?.placements?.filter(
-			(p) => p.location === this.location,
-		) ?? [];
+		                       (p) => p.location === this.location,
+		                       ) ??
+		                   [];
 		return placements.map((p) => {
 			const src = this.registry?.getComponentSrc(p.tag);
 			if (!src) return html``;
@@ -54,7 +56,7 @@ class TamePlacement extends LitElement {
 		});
 	}
 
-	#make(p: { tag: string; props?: Record<string, unknown> }) {
+	#make(p: { tag: string; props?: Record<string, unknown>}) {
 		const el = document.createElement(p.tag) as HTMLElement;
 		if (p.props) Object.assign(el, p.props);
 		return el;
@@ -63,12 +65,10 @@ class TamePlacement extends LitElement {
 	#ensureLoaded(tag: string, src: string): Promise<void> {
 		const existing = this.#loading.get(tag);
 		if (existing) return existing;
-		const p = import(src)
-			.then(() => { this.#loaded.add(tag); })
-			.catch((e) => {
-				console.error(`failed to load ${tag}:`, e);
-				this.#loaded.add(tag); // mark loaded so we stop retrying
-			});
+		const p = import(src).then(() => { this.#loaded.add(tag); }).catch((e) => {
+			console.error(`failed to load ${tag}:`, e);
+			this.#loaded.add(tag); // mark loaded so we stop retrying
+		});
 		this.#loading.set(tag, p);
 		return p;
 	}

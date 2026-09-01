@@ -1,16 +1,17 @@
-import { LitElement, html } from "lit";
-import { property } from "lit/decorators.js";
-import { ContextProvider } from "@lit/context";
-import { agentIdContext, registryContext, type Registry } from "@tame/web-sdk";
-import { rpcClientContext, type RPCClientLike } from "@tame/web-sdk/rpc-client-context";
-import { settingsStoreContext } from "../lib/settings-context.ts";
-import { LocalSettingsStore } from "../lib/settings-store.ts";
-import { connectRPC } from "../lib/rpc-transport.ts";
-import { send, abort, queueCompletion } from "../lib/actions.ts";
+import {ContextProvider} from "@lit/context";
+import {agentIdContext, type Registry, registryContext} from "@tame/web-sdk";
+import {rpcClientContext, type RPCClientLike} from "@tame/web-sdk/rpc-client-context";
+import {html, LitElement} from "lit";
+import {property} from "lit/decorators.js";
+
+import {abort, queueCompletion, send} from "../lib/actions.ts";
+import {connectRPC} from "../lib/rpc-transport.ts";
+import {settingsStoreContext} from "../lib/settings-context.ts";
+import {LocalSettingsStore} from "../lib/settings-store.ts";
 
 export class TameShell extends LitElement {
 	@property({ type: Boolean, state: true }) loading = true;
-	@property({ type: String, state: true }) error: string | null = null;
+	@property({ type: String, state: true }) error: string|null = null;
 	@property({ type: Boolean, state: true }) idle = true;
 	@property({ type: Boolean, state: true }) sidebarCollapsed = false;
 	@property({ type: Boolean, state: true }) settingsOpen = false;
@@ -21,9 +22,9 @@ export class TameShell extends LitElement {
 	#rpcProvider: ContextProvider<typeof rpcClientContext>;
 	#registryProvider: ContextProvider<typeof registryContext>;
 
-	#client: RPCClientLike | null = null;
-	#agentId: string | null = null;
-	#registry: Registry | null = null;
+	#client: RPCClientLike|null = null;
+	#agentId: string|null = null;
+	#registry: Registry|null = null;
 	#unsubs: (() => void)[] = [];
 
 	constructor() {
@@ -55,17 +56,11 @@ export class TameShell extends LitElement {
 
 	override connectedCallback() {
 		super.connectedCallback();
-		this.addEventListener("web:toggle-sidebar", () => {
-			this.sidebarCollapsed = !this.sidebarCollapsed;
-		});
-		this.addEventListener("web:toggle-settings", () => {
-			this.settingsOpen = !this.settingsOpen;
-		});
+		this.addEventListener("web:toggle-sidebar", () => { this.sidebarCollapsed = !this.sidebarCollapsed; });
+		this.addEventListener("web:toggle-settings", () => { this.settingsOpen = !this.settingsOpen; });
 		this.addEventListener("web:switch-agent", (e) => {
 			const id = (e as CustomEvent).detail?.id;
-			if (typeof id === "string" && id !== this.#agentId) {
-				this.#setAgent(id);
-			}
+			if (typeof id === "string" && id !== this.#agentId) { this.#setAgent(id); }
 		});
 		this.addEventListener("web:send", (e) => {
 			const text = (e as CustomEvent).detail?.text;
@@ -93,9 +88,7 @@ export class TameShell extends LitElement {
 			}
 		});
 		this.addEventListener("web:abort", () => {
-			if (this.#client && this.#agentId) {
-				abort(this.#client, this.#agentId);
-			}
+			if (this.#client && this.#agentId) { abort(this.#client, this.#agentId); }
 		});
 		this.#connect();
 	}
@@ -124,7 +117,7 @@ export class TameShell extends LitElement {
 				getComponentSrc: (tag: string) => reg.components?.[tag]?.src,
 			};
 			this.#registryProvider.setValue(this.#registry);
-			this.#injectStylesheets(reg.stylesheets as Record<string, string> | undefined);
+			this.#injectStylesheets(reg.stylesheets as Record<string, string>| undefined);
 		} catch (e) {
 			this.error = `failed to load registry: ${e instanceof Error ? e.message : String(e)}`;
 			this.loading = false;
@@ -164,10 +157,10 @@ export class TameShell extends LitElement {
 
 		const on = (event: string, handler: (data: object) => void) => {
 			this.#unsubs.push(
-				this.#client!.subscribe(
-					{ agent_id: agentId, plugin: "web", event },
-					(msg) => handler(msg.data as Record<string, unknown>),
-				),
+			    this.#client!.subscribe(
+			        { agent_id: agentId, plugin: "web", event },
+			        (msg) => handler(msg.data as Record<string, unknown>),
+			        ),
 			);
 		};
 
@@ -182,7 +175,7 @@ export class TameShell extends LitElement {
 		this.#unsubs = [];
 	}
 
-	#injectStylesheets(stylesheets: Record<string, string> | undefined) {
+	#injectStylesheets(stylesheets: Record<string, string>|undefined) {
 		if (!stylesheets) return;
 		for (const url of Object.values(stylesheets)) {
 			if (document.querySelector(`link[href="${url}"]`)) continue;
@@ -194,12 +187,8 @@ export class TameShell extends LitElement {
 	}
 
 	override render() {
-		if (this.loading) {
-			return html`loading...`;
-		}
-		if (this.error) {
-			return html`${this.error}`;
-		}
+		if (this.loading) { return html`loading...`; }
+		if (this.error) { return html`${this.error}`; }
 		return html`
 			<tame-web-sidebar .collapsed=${this.sidebarCollapsed}></tame-web-sidebar>
 			<main>

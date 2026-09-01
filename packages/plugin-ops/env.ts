@@ -1,6 +1,11 @@
-export type Content =
-	| { type: "text"; text: string }
-	| { type: "bytes"; data: Uint8Array };
+export type Content =|{
+	type: "text";
+	text: string
+}
+|{
+	type: "bytes";
+	data: Uint8Array
+};
 
 export interface ExecOpts {
 	workdir?: string;
@@ -12,7 +17,7 @@ export interface ExecOpts {
 export interface ExecResult {
 	stdout: string;
 	stderr: string;
-	exit: "timeout" | "abort" | number;
+	exit: "timeout"|"abort"|number;
 }
 
 export interface FileEnv {

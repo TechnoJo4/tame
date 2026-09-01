@@ -1,5 +1,5 @@
-import { resolve, toFileUrl } from "@std/path";
-import { readdir } from "node:fs/promises";
+import {resolve, toFileUrl} from "@std/path";
+import {readdir} from "node:fs/promises";
 
 const dir = import.meta.dirname;
 if (!dir) throw new Error("couldn't get import.meta.dirname");
@@ -26,7 +26,8 @@ for (const name of pluginNames) {
 	try {
 		mod = await import(toFileUrl(mainPath).toString());
 	} catch (e) {
-		console.warn(`gen-plugin-schemas: skipping ${name}: could not import main.ts (${e instanceof Error ? e.message : e})`);
+		console.warn(
+		    `gen-plugin-schemas: skipping ${name}: could not import main.ts (${e instanceof Error ? e.message : e})`);
 		continue;
 	}
 

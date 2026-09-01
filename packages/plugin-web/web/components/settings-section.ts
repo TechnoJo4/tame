@@ -1,12 +1,11 @@
-import { LitElement, html } from "lit";
-import { provide } from "@lit/context";
-import { property } from "lit/decorators.js";
-import { settingsPluginIdContext } from "../lib/settings-context.ts";
+import {provide} from "@lit/context";
+import {html, LitElement} from "lit";
+import {property} from "lit/decorators.js";
+
+import {settingsPluginIdContext} from "../lib/settings-context.ts";
 
 export class TameSettingsSection extends LitElement {
-	@provide({ context: settingsPluginIdContext })
-	@property({ type: String, attribute: "plugin-id" })
-	pluginId = "";
+	@provide({ context: settingsPluginIdContext }) @property({ type: String, attribute: "plugin-id" }) pluginId = "";
 
 	@property({ type: String }) heading = "";
 

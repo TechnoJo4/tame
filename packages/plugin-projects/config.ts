@@ -1,4 +1,4 @@
-import { type Static, Type } from "typebox";
+import {type Static, Type} from "typebox";
 
 const projectSchema = Type.Object({
 	name: Type.String({ minLength: 1 }),

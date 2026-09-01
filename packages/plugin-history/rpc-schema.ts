@@ -1,5 +1,5 @@
-import { Type } from "typebox";
-import { rpcMethod } from "@tame/rpc-sdk";
+import {rpcMethod} from "@tame/rpc-sdk";
+import {Type} from "typebox";
 
 export const rpcSchema = {
 	list: rpcMethod({
@@ -13,7 +13,7 @@ export const rpcSchema = {
 		}),
 	}),
 	load: rpcMethod({
-		input: Type.Object({ id: Type.String() }),
+		input: Type.Object({id: Type.String()}),
 		output: Type.Object({
 			id: Type.String(),
 		}),

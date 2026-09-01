@@ -1,10 +1,7 @@
-import { assertEquals } from "@std/assert";
-import { type IAgent, type InputMessage, tameMsgMeta } from "@tame/sdk";
-import {
-	assistantBlocksToItems,
-	contextToItems,
-	messageRole,
-} from "./items.ts";
+import {assertEquals} from "@std/assert";
+import {type IAgent, type InputMessage, tameMsgMeta} from "@tame/sdk";
+
+import {assistantBlocksToItems, contextToItems, messageRole,} from "./items.ts";
 
 const agent = (context: InputMessage[]): IAgent => ({
 	context,
@@ -53,9 +50,9 @@ Deno.test("automated context messages become tame web messages", () => {
 Deno.test("live automated messages become tame without metadata serialization", () => {
 	const context: InputMessage[] = [];
 	const items = assistantBlocksToItems(
-		[{ type: "text", text: "summary" }],
-		agent(context),
-		true,
+	    [{ type: "text", text: "summary" }],
+	    agent(context),
+	    true,
 	);
 
 	assertEquals(items[0], {
@@ -65,12 +62,12 @@ Deno.test("live automated messages become tame without metadata serialization", 
 		key: "msg-live-t",
 	});
 	assertEquals(
-		messageRole({
-			role: "user",
-			content: [],
-			[tameMsgMeta]: { automated: true },
-		}),
-		"tame",
+	    messageRole({
+		    role: "user",
+		    content: [],
+		    [tameMsgMeta]: { automated: true },
+	    }),
+	    "tame",
 	);
 });
 

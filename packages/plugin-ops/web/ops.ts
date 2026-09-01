@@ -1,56 +1,57 @@
-import { html, LitElement, type TemplateResult } from "lit";
-import { property } from "lit/decorators.js";
-import { consume } from "@lit/context";
-import { settingsStoreContext } from "@tame/web-sdk/settings-context";
-import type { SettingsStore } from "@tame/web-sdk";
+import {consume} from "@lit/context";
+import type {SettingsStore} from "@tame/web-sdk";
+import {settingsStoreContext} from "@tame/web-sdk/settings-context";
+import {html, LitElement, type TemplateResult} from "lit";
+import {property} from "lit/decorators.js";
 
 // ---- shared helpers ----
 
-const truncate = (s: string, n: number): string =>
-	s.length <= n ? s : s.slice(0, n) + "…";
+const truncate = (s: string, n: number): string => s.length <= n ? s : s.slice(0, n) + "…";
 
-type Visibility = "shown" | "hidden" | "collapsable" | "collapsed";
+type Visibility = "shown"|"hidden"|"collapsable"|"collapsed";
 
 const DEFAULT_VISIBILITY: Visibility = "collapsable";
 
-function parseVisibility(raw: string | null): Visibility {
+function parseVisibility(raw: string|null): Visibility {
 	switch (raw) {
-		case "shown":
-		case "hidden":
-		case "collapsable":
-		case "collapsed":
-			return raw;
-		default:
-			return DEFAULT_VISIBILITY;
+	case "shown":
+	case "hidden":
+	case "collapsable":
+	case "collapsed":
+		return raw;
+	default:
+		return DEFAULT_VISIBILITY;
 	}
 }
 
-/** Wrap a label + body pair according to the visibility setting.
+/**
+ * Wrap a label + body pair according to the visibility setting.
  *  - hidden: label only, no body
  *  - shown: label + body, flat
- *  - collapsable / collapsed: <details> with label in <summary> */
+ *  - collapsable / collapsed: <details> with label in <summary>
+ */
 function withVisibility(
-	label: TemplateResult,
-	body: TemplateResult,
-	v: Visibility,
-): TemplateResult {
+    label: TemplateResult,
+    body: TemplateResult,
+    v: Visibility,
+    ): TemplateResult {
 	switch (v) {
-		case "hidden":
-			return html`
+	case "hidden":
+		return html`
 				<span data-label>${label}</span>
 			`;
-		case "shown":
-			return html`
+	case "shown":
+		return html`
 				<span data-label>${label}</span>${body}
 			`;
-		case "collapsable":
-			return html`
+	case "collapsable":
+		return html`
 				<details open>
 					<summary><span data-label>${label}</span></summary>${body}
 				</details>
 			`;
-		case "collapsed":
-			return html`
+	case "collapsed":
+		return html`
 				<details>
 					<summary><span data-label>${label}</span></summary>${body}
 				</details>
@@ -58,14 +59,14 @@ function withVisibility(
 	}
 }
 
-/** Base class for ops tool views. Subscribes to a single settings key
- *  on the "ops" plugin's SettingsStore and re-renders on change. */
+/**
+ * Base class for ops tool views. Subscribes to a single settings key
+ *  on the "ops" plugin's SettingsStore and re-renders on change.
+ */
 abstract class OpsView extends LitElement {
-	@consume({ context: settingsStoreContext })
-	@property({ attribute: false })
-	store: SettingsStore | undefined;
+	@consume({ context: settingsStoreContext }) @property({ attribute: false }) store: SettingsStore|undefined;
 
-	#unsub: (() => void) | null = null;
+	#unsub: (() => void)|null = null;
 
 	abstract get visibilityKey(): string;
 
@@ -88,15 +89,13 @@ abstract class OpsView extends LitElement {
 		if (!this.store || !this.visibilityKey) return;
 		this.#unsub?.();
 		this.#unsub = this.store.onChange(
-			"ops",
-			this.visibilityKey,
-			() => this.requestUpdate(),
+		    "ops",
+		    this.visibilityKey,
+		    () => this.requestUpdate(),
 		);
 	}
 
-	#getVisibility(): Visibility {
-		return parseVisibility(this.store?.get("ops", this.visibilityKey) ?? null);
-	}
+	#getVisibility(): Visibility { return parseVisibility(this.store?.get("ops", this.visibilityKey) ?? null); }
 
 	protected wrap(label: TemplateResult, body: TemplateResult): TemplateResult {
 		return withVisibility(label, body, this.#getVisibility());
@@ -117,31 +116,24 @@ export class TameOpsRead extends OpsView {
 	declare path: string;
 	declare offset?: number;
 	declare limit?: number;
-	declare result: string | null;
+	declare result: string|null;
 	declare isError: boolean;
 
-	override createRenderRoot() {
-		return this;
-	}
+	override createRenderRoot() { return this; }
 
-	get visibilityKey() {
-		return "readVisibility";
-	}
+	get visibilityKey() { return "readVisibility"; }
 
 	override render() {
 		const range = this.offset || this.limit
-			? ` [${this.offset ? `L${this.offset}` : ""}${
-				this.limit ? `+${this.limit}` : ""
-			}]`
-			: "";
+		                  ? ` [${this.offset ? `L${this.offset}` : ""}${this.limit ? `+${this.limit}` : ""}]`
+						  : "";
 		const label = html`
 			read ${this.path}${range}
 		`;
-		const body = this.result !== null && this.result !== undefined
-			? html`
+		const body = this.result !== null && this.result !== undefined ? html`
 				<pre ?data-error="${this.isError}">${this.result}</pre>
 			`
-			: html`
+				                                                       : html`
 
 			`;
 		return this.wrap(label, body);
@@ -161,33 +153,29 @@ export class TameOpsWrite extends OpsView {
 
 	declare path: string;
 	declare content: string;
-	declare result: string | null;
+	declare result: string|null;
 	declare isError: boolean;
 
-	override createRenderRoot() {
-		return this;
-	}
+	override createRenderRoot() { return this; }
 
-	get visibilityKey() {
-		return "writeVisibility";
-	}
+	get visibilityKey() { return "writeVisibility"; }
 
 	override render() {
 		const label = html`
 			write ${this.path}
 		`;
 		const body = html`
-			${this.content
-				? html`
+			${
+			this.content ? html`
 					<pre>${truncate(this.content, 1000)}</pre>
 				`
-				: html`
+				         : html`
 
-				`} ${this.result !== null && this.result !== undefined
-				? html`
+				`} ${
+			this.result !== null && this.result !== undefined ? html`
 					<span data-status ?data-error="${this.isError}">${this.result}</span>
 				`
-				: html`
+							                                  : html`
 
 				`}
 		`;
@@ -210,36 +198,32 @@ export class TameOpsEdit extends OpsView {
 	declare path: string;
 	declare oldString: string;
 	declare newString: string;
-	declare result: string | null;
+	declare result: string|null;
 	declare isError: boolean;
 
-	override createRenderRoot() {
-		return this;
-	}
+	override createRenderRoot() { return this; }
 
-	get visibilityKey() {
-		return "editVisibility";
-	}
+	get visibilityKey() { return "editVisibility"; }
 
 	override render() {
 		const label = html`
 			edit ${this.path}
 		`;
 		const body = html`
-			${this.oldString
-				? html`
+			${
+			this.oldString ? html`
 					<div>
 						<del>− ${truncate(this.oldString, 200)}</del>
 						<ins>+ ${truncate(this.newString, 200)}</ins>
 					</div>
 				`
-				: html`
+					       : html`
 
-				`} ${this.result !== null && this.result !== undefined
-				? html`
+				`} ${
+			this.result !== null && this.result !== undefined ? html`
 					<span data-status ?data-error="${this.isError}">${this.result}</span>
 				`
-				: html`
+								                              : html`
 
 				`}
 		`;
@@ -260,28 +244,21 @@ export class TameOpsExec extends OpsView {
 
 	declare command: string;
 	declare workdir?: string;
-	declare result: string | null;
+	declare result: string|null;
 	declare isError: boolean;
 
-	override createRenderRoot() {
-		return this;
-	}
+	override createRenderRoot() { return this; }
 
-	get visibilityKey() {
-		return "execVisibility";
-	}
+	get visibilityKey() { return "execVisibility"; }
 
 	override render() {
 		const label = html`
-			exec <code>${this.command ?? "?"}</code>${this.workdir
-				? ` in ${this.workdir}`
-				: ""}
+			exec <code>${this.command ?? "?"}</code>${this.workdir ? ` in ${this.workdir}` : ""}
 		`;
-		const body = this.result !== null && this.result !== undefined
-			? html`
+		const body = this.result !== null && this.result !== undefined ? html`
 				<pre ?data-error="${this.isError}">${this.result}</pre>
 			`
-			: html`
+				                                                       : html`
 
 			`;
 		return this.wrap(label, body);

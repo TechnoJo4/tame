@@ -1,11 +1,4 @@
-import type {
-	RPCMessage,
-	EventMessage,
-	CallMessage,
-	CallResultMessage,
-	SubscriptionMessage,
-	Stream,
-} from "@tame/rpc-sdk";
+import type {CallMessage, CallResultMessage, EventMessage, RPCMessage, Stream, SubscriptionMessage,} from "@tame/rpc-sdk";
 
 /**
  * Registry that plugins augment via codegen to add typed RPC methods.
@@ -15,26 +8,11 @@ import type {
  */
 export interface RPCRegistry {
 	"@tame": {
-		newAgent: {
-			input: { id?: string; system?: string };
-			output: { id: string };
-		};
-		abort: {
-			input: { id: string };
-			output: Record<string, never>;
-		};
-		queueCompletion: {
-			input: { id: string };
-			output: Record<string, never>;
-		};
-		viewToolCall: {
-			input: { agent_id: string; tool_use_id: string; view: string };
-			output: unknown;
-		};
-		listAgents: {
-			input: {};
-			output: { agents: { id: string; title?: string }[] };
-		};
+		newAgent: { input: { id?: string; system?: string }; output: { id: string }; };
+		abort: { input: { id: string }; output: Record<string, never>; };
+		queueCompletion: { input: { id: string }; output: Record<string, never>; };
+		viewToolCall: { input: { agent_id: string; tool_use_id: string; view: string }; output: unknown; };
+		listAgents: { input: {}; output: { agents: { id: string; title?: string }[] }; };
 		getAgentContext: {
 			input: { id: string };
 			output: { id: string; system: string; title?: string; context: Record<string, unknown>[] };
@@ -56,7 +34,11 @@ const nextId = (() => {
 
 export class RPCClient {
 	#writer: WritableStreamDefaultWriter<RPCMessage>;
-	#pending = new Map<string, { resolve: (v: Record<string, unknown>) => void; reject: (e: Error) => void }>();
+	#pending = new Map < string, {
+		resolve: (v: Record<string, unknown>) => void;
+		reject: (e: Error) => void
+	}
+	>();
 	#subscriptions: SubscriptionEntry[] = [];
 	#closed = false;
 
@@ -65,14 +47,14 @@ export class RPCClient {
 		this.#readLoop(stream.readable);
 	}
 
-	/** Call an RPC method. Returns a promise that resolves with the result.
+	/**
+	 * Call an RPC method. Returns a promise that resolves with the result.
 	 *  Without codegen, use string literals and `unknown` types.
-	 *  With codegen, the RPCRegistry overload provides typed args/return. */
-	call<P extends keyof RPCRegistry, M extends string & keyof RPCRegistry[P]>(
-		plugin: P,
-		method: M,
-		args: RPCRegistry[P][M] extends { input: infer I } ? I : never,
-	): Promise<RPCRegistry[P][M] extends { output: infer O } ? O : never>;
+	 *  With codegen, the RPCRegistry overload provides typed args/return.
+	 */
+	call<P extends keyof RPCRegistry, M extends string&keyof RPCRegistry[P]>(
+	    plugin: P, method: M, args: RPCRegistry[P][M] extends { input: infer I }? I: never,
+	    ): Promise<RPCRegistry[P][M] extends { output: infer O }? O : never>;
 	call(plugin: string, method: string, args: Record<string, unknown>): Promise<Record<string, unknown>>;
 	call(plugin: string, method: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
 		const id = nextId();
@@ -93,9 +75,7 @@ export class RPCClient {
 	}
 
 	/** Abort an agent. */
-	abort(id: string): Promise<void> {
-		return this.call("@tame", "abort", { id }) as unknown as Promise<void>;
-	}
+	abort(id: string): Promise<void> { return this.call("@tame", "abort", { id }) as unknown as Promise<void>; }
 
 	/** Queue a completion on an agent. */
 	queueCompletion(id: string): Promise<void> {
@@ -110,20 +90,22 @@ export class RPCClient {
 	// ---- events ----
 
 	/** Send an event to the server. */
-	emit(agent_id: string | undefined, event: string, data: Record<string, unknown>, plugin?: string): void {
+	emit(agent_id: string|undefined, event: string, data: Record<string, unknown>, plugin?: string): void {
 		const msg: EventMessage = { type: "event", agent_id, event, data, plugin };
 		this.#send(msg).catch(() => {});
 	}
 
 	// ---- subscriptions ----
 
-	/** Subscribe to events matching the filter. Returns an unsubscribe function.
-	 *  The server does coarse filtering; the client routes to matching callbacks. */
+	/**
+	 * Subscribe to events matching the filter. Returns an unsubscribe function.
+	 *  The server does coarse filtering; the client routes to matching callbacks.
+	 */
 	subscribe(
-		filter: { agent_id?: string; plugin?: string; event?: string },
-		callback: SubscriptionCallback,
-	): () => void {
-		const entry: SubscriptionEntry = { filter: { ...filter }, callback };
+	    filter: { agent_id?: string; plugin?: string; event?: string },
+	    callback: SubscriptionCallback,
+	    ): () => void {
+		const entry: SubscriptionEntry = { filter: {...filter }, callback };
 		this.#subscriptions.push(entry);
 
 		const msg: SubscriptionMessage = { type: "subscribe", ...filter };
@@ -140,10 +122,11 @@ export class RPCClient {
 
 	close() {
 		this.#closed = true;
-		try { this.#writer.close(); } catch { /* already closed */ }
-		for (const { reject } of this.#pending.values()) {
-			reject(new Error("RPC client closed"));
+		try {
+			this.#writer.close();
+		} catch { /* already closed */
 		}
+		for (const { reject } of this.#pending.values()) { reject(new Error("RPC client closed")); }
 		this.#pending.clear();
 		this.#subscriptions = [];
 	}
@@ -165,12 +148,12 @@ export class RPCClient {
 
 	#dispatch(msg: RPCMessage) {
 		switch (msg.type) {
-			case "result":
-				this.#handleResult(msg);
-				break;
-			case "event":
-				this.#handleEvent(msg);
-				break;
+		case "result":
+			this.#handleResult(msg);
+			break;
+		case "event":
+			this.#handleEvent(msg);
+			break;
 			// client doesn't handle incoming calls or subscriptions
 		}
 	}
@@ -190,7 +173,10 @@ export class RPCClient {
 	#handleEvent(msg: EventMessage) {
 		for (const sub of this.#subscriptions) {
 			if (this.#matchesFilter(msg, sub.filter)) {
-				try { sub.callback(msg); } catch { /* don't let one callback break others */ }
+				try {
+					sub.callback(msg);
+				} catch { /* don't let one callback break others */
+				}
 			}
 		}
 	}
@@ -202,7 +188,5 @@ export class RPCClient {
 		return true;
 	}
 
-	async #send(msg: RPCMessage): Promise<void> {
-		await this.#writer.write(msg);
-	}
+	async #send(msg: RPCMessage): Promise<void> { await this.#writer.write(msg); }
 }

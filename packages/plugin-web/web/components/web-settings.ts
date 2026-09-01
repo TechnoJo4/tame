@@ -1,8 +1,9 @@
-import { html, LitElement } from "lit";
-import { property } from "lit/decorators.js";
-import { consume } from "@lit/context";
-import { settingsStoreContext } from "../lib/settings-context.ts";
-import type { SettingsStore } from "@tame/web-sdk";
+import {consume} from "@lit/context";
+import type {SettingsStore} from "@tame/web-sdk";
+import {html, LitElement} from "lit";
+import {property} from "lit/decorators.js";
+
+import {settingsStoreContext} from "../lib/settings-context.ts";
 
 const FORMAT_OPTIONS = [
 	{ value: "markdown", label: "markdown" },
@@ -17,13 +18,9 @@ const VISIBILITY_OPTIONS = [
 ];
 
 export class TameWebSettings extends LitElement {
-	@consume({ context: settingsStoreContext })
-	@property({ attribute: false })
-	store!: SettingsStore;
+	@consume({ context: settingsStoreContext }) @property({ attribute: false }) store!: SettingsStore;
 
-	override createRenderRoot() {
-		return this;
-	}
+	override createRenderRoot() { return this; }
 
 	override render() {
 		return html`

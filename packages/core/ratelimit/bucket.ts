@@ -1,4 +1,4 @@
-import type { Ratelimiter } from "./ratelimit.ts";
+import type {Ratelimiter} from "./ratelimit.ts";
 
 export interface TokenBucketOptions {
 	/** Requests per second */
@@ -16,47 +16,38 @@ export const defaultTokenBucketOptions: TokenBucketOptions = {
 };
 
 export class TokenBucketRatelimiter implements Ratelimiter {
-    #increment: number;
-    #errIncrement: number;
-    #maxDiff: number;
-    #next: number;
+	#increment: number;
+	#errIncrement: number;
+	#maxDiff: number;
+	#next: number;
 
-    constructor(options: Partial<TokenBucketOptions> = {}) {
-        const opts = { ...defaultTokenBucketOptions, ...options };
-        this.#increment = 1/opts.rps;
-        this.#errIncrement = this.#increment * (opts.errorMultiplier - 1);
-        this.#maxDiff = this.#increment * opts.maxBurst;
-        this.#next = this.#min();
-    }
+	constructor(options: Partial<TokenBucketOptions> = {}) {
+		const opts = {...defaultTokenBucketOptions, ...options };
+		this.#increment = 1 / opts.rps;
+		this.#errIncrement = this.#increment * (opts.errorMultiplier - 1);
+		this.#maxDiff = this.#increment * opts.maxBurst;
+		this.#next = this.#min();
+	}
 
-    #min() {
-        return Date.now() - this.#maxDiff;
-    }
+	#min() { return Date.now() - this.#maxDiff; }
 
-    error() {
-        this.#next = Math.max(this.#min(), this.#next) + this.#errIncrement;
-    }
+	error() { this.#next = Math.max(this.#min(), this.#next) + this.#errIncrement; }
 
-    success() {
-        // nothing; incremented in wait()
-    }
+	success() {
+		// nothing; incremented in wait()
+	}
 
-    retryAfter(date: string) {
-        const n = parseInt(date);
-        const retryTime = isNaN(n)
-            ? new Date(date).getTime()
-            : Date.now() + n * 1000;
-        this.#next = Math.max(this.#next, retryTime);
-    }
+	retryAfter(date: string) {
+		const n = parseInt(date);
+		const retryTime = isNaN(n) ? new Date(date).getTime() : Date.now() + n * 1000;
+		this.#next = Math.max(this.#next, retryTime);
+	}
 
-    delay(): number {
-		return Math.max(0, this.#next - Date.now());
-    }
+	delay(): number { return Math.max(0, this.#next - Date.now()); }
 
-    async wait() {
-        this.#next = Math.max(this.#min(), this.#next) + this.#increment;
-        const wait = this.delay();
-        if (wait > 0)
-            await new Promise((r) => setTimeout(r, wait));
-    }
+	async wait() {
+		this.#next = Math.max(this.#min(), this.#next) + this.#increment;
+		const wait = this.delay();
+		if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+	}
 }

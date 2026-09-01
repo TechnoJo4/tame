@@ -1,19 +1,12 @@
-import {
-	type IAgent,
-	type IHarness,
-	type Plugin,
-	type ToolExecResult,
-	key,
-	tool,
-	Type,
-} from "@tame/sdk";
-import type { WebPlugin } from "@tame/plugin-web/index";
-import type { CommandsPlugin } from "@tame/plugin-commands/index";
-import type { Env } from "./env.ts";
-import type { OpsConfig } from "./config.ts";
+import type {CommandsPlugin} from "@tame/plugin-commands/index";
+import type {WebPlugin} from "@tame/plugin-web/index";
+import {type IAgent, type IHarness, key, type Plugin, tool, type ToolExecResult, Type,} from "@tame/sdk";
+
+import type {OpsConfig} from "./config.ts";
+import type {Env} from "./env.ts";
 import LocalEnv from "./local.ts";
 
-export type { Env } from "./env.ts";
+export type {Env} from "./env.ts";
 
 interface ViewMeta {
 	path: string;
@@ -43,18 +36,16 @@ const getExecName = (args: string[]): string => {
 	return s === -1 ? a[0] : a[0].slice(0, s);
 };
 
-const formatExecResult = (
-	res: { stdout: string; stderr: string; exit: "timeout" | "abort" | number },
-): string =>
-	[
-		res.exit !== 0
-			? typeof res.exit === "string"
-				? `killed by ${res.exit}.`
-				: `exited with code ${res.exit}.`
-			: "",
-		res.stdout ? `stdout:\n${res.stdout}` : "",
-		res.stderr ? `stderr:\n${res.stderr}` : "",
-	].filter((s) => s !== "").join("\n\n") || "ok";
+const formatExecResult =
+    (
+        res: { stdout: string; stderr: string; exit: "timeout" | "abort" | number },
+        ): string => [res.exit !== 0
+                          ? typeof res.exit === "string" ? `killed by ${res.exit}.` : `exited with code ${res.exit}.`
+		                  : "",
+		              res.stdout ? `stdout:\n${res.stdout}` : "",
+			          res.stderr ? `stderr:\n${res.stderr}` : "",
+].filter((s) => s !== "").join("\n\n") ||
+				     "ok";
 
 export class OpsPlugin implements Plugin {
 	id = "ops" as const;
@@ -75,25 +66,25 @@ export class OpsPlugin implements Plugin {
 		const env: Record<string, string> = {};
 		for (const [key, source] of Object.entries(this.config.env.dynamic)) {
 			switch (source) {
-				case "model":
-					env[key] = agent.llm.defaultModel ?? "unknown";
-					break;
-				case "id":
-					env[key] = agent.id;
-					break;
-				case "system":
-					env[key] = agent.system.split("\n")[0] ?? agent.system;
-					break;
+			case "model":
+				env[key] = agent.llm.defaultModel ?? "unknown";
+				break;
+			case "id":
+				env[key] = agent.id;
+				break;
+			case "system":
+				env[key] = agent.system.split("\n")[0] ?? agent.system;
+				break;
 			}
 		}
 		return env;
 	}
 
 	async edit(
-		agent: IAgent,
-		path: string,
-		fn: (content: string) => string,
-	): Promise<ToolExecResult<ViewMeta>> {
+	    agent: IAgent,
+	    path: string,
+	    fn: (content: string) => string,
+	    ): Promise<ToolExecResult<ViewMeta>> {
 		const env = this.getEnv(agent);
 		const resolved = this.#resolvePath(agent, path);
 		return await env.lock(resolved, async (f) => {
@@ -106,35 +97,23 @@ export class OpsPlugin implements Plugin {
 		});
 	}
 
-	setEnv(agent: IAgent, env: Env) {
-		agent.setPluginData(envKey, {
-			env,
-			workdir: env.defaultWorkdir
-		});
-	}
+	setEnv(agent: IAgent, env: Env) { agent.setPluginData(envKey, { env, workdir: env.defaultWorkdir }); }
 
 	#getAgentData(agent: IAgent): AgentData {
 		const data = agent.getPluginData(envKey);
 		if (data !== undefined) return data;
 
 		const env = this.#envs.get(this.config.defaultEnv);
-		if (env === undefined)
-			throw new Error(`default environment ${this.config.defaultEnv} does not exist`);
+		if (env === undefined) throw new Error(`default environment ${this.config.defaultEnv} does not exist`);
 		this.setEnv(agent, env);
 		return agent.getPluginData(envKey)!;
 	}
 
-	getEnv(agent: IAgent): Env {
-		return this.#getAgentData(agent).env;
-	}
+	getEnv(agent: IAgent): Env { return this.#getAgentData(agent).env; }
 
-	getWorkdir(agent: IAgent): string {
-		return this.#getAgentData(agent).workdir;
-	}
+	getWorkdir(agent: IAgent): string { return this.#getAgentData(agent).workdir; }
 
-	setWorkdir(agent: IAgent, workdir: string) {
-		this.#getAgentData(agent).workdir = workdir;
-	}
+	setWorkdir(agent: IAgent, workdir: string) { this.#getAgentData(agent).workdir = workdir; }
 
 	#resolvePath(agent: IAgent, path: string): string {
 		const env = this.getEnv(agent);
@@ -142,14 +121,12 @@ export class OpsPlugin implements Plugin {
 	}
 
 	async #runExec(
-		agent: IAgent,
-		command: string[],
-		opts: { workdir?: string; timeout: number },
-	): Promise<ToolExecResult<ExecViewMeta>> {
+	    agent: IAgent,
+	    command: string[],
+	    opts: { workdir?: string; timeout: number },
+	    ): Promise<ToolExecResult<ExecViewMeta>> {
 		const env = this.getEnv(agent);
-		const workdir = opts.workdir
-			? this.#resolvePath(agent, opts.workdir)
-			: this.getWorkdir(agent);
+		const workdir = opts.workdir ? this.#resolvePath(agent, opts.workdir) : this.getWorkdir(agent);
 
 		const res = await env.exec(command, {
 			workdir,
@@ -426,13 +403,11 @@ export class OpsPlugin implements Plugin {
 			name: "cd",
 			description: "Change the current ops working directory: /cd [path]",
 			run: async (agent, param) => {
-				const env = this.getEnv(agent);
-				param = param?.trim();
-				const workdir = param
-					? this.#resolvePath(agent, param)
-					: env.defaultWorkdir;
-				this.setWorkdir(agent, workdir);
-				return env.contractPath(workdir);
+			    const env = this.getEnv(agent);
+			    param = param?.trim();
+			    const workdir = param ? this.#resolvePath(agent, param) : env.defaultWorkdir;
+			    this.setWorkdir(agent, workdir);
+			    return env.contractPath(workdir);
 			},
 		});
 
@@ -440,22 +415,23 @@ export class OpsPlugin implements Plugin {
 		const web = harness.getPlugin("web") as WebPlugin | undefined;
 		if (web) {
 			const dir = import.meta.dirname!;
-			web.register("ops", [
-				{ tag: "tame-ops-read", src: web.resolve(dir, "./web/ops.ts") },
-				{ tag: "tame-ops-write", src: web.resolve(dir, "./web/ops.ts") },
-				{ tag: "tame-ops-edit", src: web.resolve(dir, "./web/ops.ts") },
-				{ tag: "tame-ops-exec", src: web.resolve(dir, "./web/ops.ts") },
-				{
-					tag: "tame-ops-settings",
-					src: web.resolve(dir, "./web/ops-settings.ts"),
-				},
-			], [
-				{ location: "modal:settings", tag: "tame-ops-settings" },
-			], web.resolve(dir, "./web/ops.css"));
+			web.register("ops",
+			             [
+				             { tag: "tame-ops-read", src: web.resolve(dir, "./web/ops.ts") },
+				             { tag: "tame-ops-write", src: web.resolve(dir, "./web/ops.ts") },
+				             { tag: "tame-ops-edit", src: web.resolve(dir, "./web/ops.ts") },
+				             { tag: "tame-ops-exec", src: web.resolve(dir, "./web/ops.ts") },
+				             {
+					             tag: "tame-ops-settings",
+					             src: web.resolve(dir, "./web/ops-settings.ts"),
+				             },
+			             ],
+			             [
+				             { location: "modal:settings", tag: "tame-ops-settings" },
+			             ],
+			             web.resolve(dir, "./web/ops.css"));
 		}
 	}
 
-	newAgent(agent: IAgent) {
-		this.#getAgentData(agent);
-	}
+	newAgent(agent: IAgent) { this.#getAgentData(agent); }
 }

@@ -1,5 +1,4 @@
-import type { IAgent } from "./interfaces.ts";
-import type { IHarness } from "./interfaces.ts";
+import type {IAgent, IHarness} from "./interfaces.ts";
 
 export interface Plugin {
 	id: string;

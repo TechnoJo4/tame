@@ -1,7 +1,8 @@
-import { readTameConfig } from "@tame/sdk";
-import { configSchema, type WebConfig, WebPlugin } from "./index.ts";
+import {readTameConfig} from "@tame/sdk";
 
-export { configSchema } from "./index.ts";
+import {configSchema, type WebConfig, WebPlugin} from "./index.ts";
+
+export {configSchema} from "./index.ts";
 
 const raw = readTameConfig("web.json", configSchema);
 const dir = import.meta.dirname!;

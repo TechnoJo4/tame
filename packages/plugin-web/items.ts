@@ -1,10 +1,5 @@
-import { type IAgent, type InputMessage, tameMsgMeta } from "@tame/sdk";
-import type {
-	MessageItem,
-	TextOrThinking,
-	ThreadItem,
-	ToolCallItem,
-} from "@tame/web-sdk";
+import {type IAgent, type InputMessage, tameMsgMeta} from "@tame/sdk";
+import type {MessageItem, TextOrThinking, ThreadItem, ToolCallItem,} from "@tame/web-sdk";
 
 export function messageRole(msg: InputMessage): MessageItem["role"] {
 	return msg[tameMsgMeta]?.automated ? "tame" : msg.role;
@@ -16,9 +11,11 @@ function messageKey(messageIdx: number, segmentIdx: number): string {
 
 // ---- context → items conversion ----
 
-/** Convert an agent's full context to ThreadItem[] with pre-resolved web views.
+/**
+ * Convert an agent's full context to ThreadItem[] with pre-resolved web views.
  *  Uses the agent's viewToolCall to resolve view metadata for each tool_use block.
- *  Keys are stable: tool calls use their id, messages use "msg-{contextIdx}". */
+ *  Keys are stable: tool calls use their id, messages use "msg-{contextIdx}".
+ */
 export function contextToItems(agent: IAgent): ThreadItem[] {
 	const items: ThreadItem[] = [];
 	let msgIdx = 0;
@@ -58,7 +55,8 @@ export function contextToItems(agent: IAgent): ThreadItem[] {
 					const view = agent.viewToolCall("web", block) as {
 						tag: string;
 						props: Record<string, unknown>;
-					} | undefined;
+					}
+					|undefined;
 					const toolItem: ToolCallItem = {
 						type: "tool_call",
 						role: role === "tame" ? "tame" : undefined,
@@ -96,13 +94,15 @@ export function contextToItems(agent: IAgent): ThreadItem[] {
 	return items;
 }
 
-/** Convert a single assistant message's content blocks to items with pre-resolved views.
- *  Used for live assistantMessage events. */
+/**
+ * Convert a single assistant message's content blocks to items with pre-resolved views.
+ *  Used for live assistantMessage events.
+ */
 export function assistantBlocksToItems(
-	blocks: InputMessage["content"],
-	agent: IAgent,
-	automated = false,
-): ThreadItem[] {
+    blocks: InputMessage["content"],
+    agent: IAgent,
+    automated = false,
+    ): ThreadItem[] {
 	const items: ThreadItem[] = [];
 	const textBlocks: TextOrThinking[] = [];
 	const role: MessageItem["role"] = automated ? "tame" : "assistant";
@@ -122,7 +122,8 @@ export function assistantBlocksToItems(
 			const view = agent.viewToolCall("web", block) as {
 				tag: string;
 				props: Record<string, unknown>;
-			} | undefined;
+			}
+			|undefined;
 			const toolItem: ToolCallItem = {
 				type: "tool_call",
 				role: role === "tame" ? "tame" : undefined,
@@ -145,9 +146,7 @@ export function assistantBlocksToItems(
 			type: "message",
 			role,
 			content: [...textBlocks],
-			key: `msg-live-${
-				items.length > 0 ? (items[0] as ToolCallItem).id ?? "t" : "t"
-			}`,
+			key: `msg-live-${items.length > 0 ? (items[0] as ToolCallItem).id ?? "t" : "t"}`,
 		});
 	}
 
@@ -156,10 +155,10 @@ export function assistantBlocksToItems(
 
 /** Paginate items with 0 = most recent. Returns chronological order (oldest first). */
 export function paginateItems(
-	items: ThreadItem[],
-	offset: number,
-	limit: number,
-): ThreadItem[] {
+    items: ThreadItem[],
+    offset: number,
+    limit: number,
+    ): ThreadItem[] {
 	const start = Math.max(0, items.length - offset - limit);
 	const end = items.length - offset;
 	return items.slice(start, end);

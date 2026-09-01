@@ -1,20 +1,17 @@
-import { resolve, toFileUrl } from "@std/path";
-import { config } from "./config/index.ts";
-import { Harness } from "./agent/harness.ts";
-import type { Plugin } from "@tame/sdk";
+import {resolve, toFileUrl} from "@std/path";
+import type {Plugin} from "@tame/sdk";
+
+import {Harness} from "./agent/harness.ts";
+import {config} from "./config/index.ts";
 
 const harness = new Harness();
 
 async function loadPlugin(name: string): Promise<{ default: unknown }> {
 	// direct filesystem path
-	if (name.startsWith("./") || name.startsWith("/")) {
-		return await import(toFileUrl(resolve(name)).toString());
-	}
+	if (name.startsWith("./") || name.startsWith("/")) { return await import(toFileUrl(resolve(name)).toString()); }
 
 	// bare specifier (workspace package or npm/jsr) — try as-is first
-	if (name.includes("/")) {
-		return await import(name);
-	}
+	if (name.includes("/")) { return await import(name); }
 
 	// search pluginSources directories
 	for (const source of config.pluginSources) {

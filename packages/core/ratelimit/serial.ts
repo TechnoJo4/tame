@@ -1,4 +1,4 @@
-import type { Ratelimiter } from "./ratelimit.ts";
+import type {Ratelimiter} from "./ratelimit.ts";
 
 export interface SerialRatelimitOptions {
 	minDelay: number;
@@ -22,9 +22,7 @@ export class SerialRatelimiter implements Ratelimiter {
 	#shouldQueue: boolean = false;
 	#queue: (() => void)[] = [];
 
-	constructor(options: Partial<SerialRatelimitOptions> = {}) {
-		this.#options = { ...defaultOptions, ...options };
-	}
+	constructor(options: Partial<SerialRatelimitOptions> = {}) { this.#options = {...defaultOptions, ...options }; }
 
 	/** Schedule next request */
 	#schedule(wait: number) {
@@ -40,7 +38,8 @@ export class SerialRatelimiter implements Ratelimiter {
 
 	error() {
 		this.#errors++;
-		this.#schedule(Math.min(this.#options.errorMax, Math.pow(this.#options.errorExp, this.#errors - 1) * this.#options.errorMin));
+		this.#schedule(Math.min(this.#options.errorMax,
+		                        Math.pow(this.#options.errorExp, this.#errors - 1) * this.#options.errorMin));
 	}
 
 	success() {
@@ -51,13 +50,11 @@ export class SerialRatelimiter implements Ratelimiter {
 	retryAfter(date: string) {
 		const n = parseInt(date);
 		this.#schedule(
-			isNaN(n) ? new Date(date).getTime() - Date.now() : n * 1000,
+		    isNaN(n) ? new Date(date).getTime() - Date.now() : n * 1000,
 		);
 	}
 
-	delay(): number {
-		return Math.max(0, this.#nextReq - Date.now());
-	}
+	delay(): number { return Math.max(0, this.#nextReq - Date.now()); }
 
 	async wait() {
 		if (this.#shouldQueue) {
@@ -67,11 +64,10 @@ export class SerialRatelimiter implements Ratelimiter {
 		} else {
 			this.#shouldQueue = true;
 			if (this.#nextReq > Date.now()) {
-				await new Promise((r) =>
-					setTimeout(r, this.#nextReq - Date.now()),
+				await new Promise(
+				    (r) => setTimeout(r, this.#nextReq - Date.now()),
 				);
 			}
 		}
 	}
 }
-

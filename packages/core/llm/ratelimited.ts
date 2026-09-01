@@ -1,14 +1,14 @@
-import type { Ratelimiter } from "../ratelimit/ratelimit.ts";
-import { InferenceError } from "./error.ts";
-import type { AssistantMessage, InferenceProvider, MessageRequest } from "@tame/sdk";
+import type {AssistantMessage, InferenceProvider, MessageRequest} from "@tame/sdk";
+
+import type {Ratelimiter} from "../ratelimit/ratelimit.ts";
+
+import {InferenceError} from "./error.ts";
 
 export class RatelimitedProvider {
 	underlying: InferenceProvider;
 	limiter: Ratelimiter;
 
-	get defaultModel(): string | undefined {
-		return this.underlying.defaultModel;
-	}
+	get defaultModel(): string|undefined { return this.underlying.defaultModel; }
 
 	constructor(underlying: InferenceProvider, limiter: Ratelimiter) {
 		this.underlying = underlying;
@@ -34,7 +34,5 @@ export class RatelimitedProvider {
 		}
 	}
 
-	delay(): Promise<number> {
-		return Promise.resolve(this.limiter.delay());
-	}
+	delay(): Promise<number> { return Promise.resolve(this.limiter.delay()); }
 }

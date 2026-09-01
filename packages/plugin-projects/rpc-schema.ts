@@ -1,10 +1,10 @@
-import { Type } from "typebox";
-import { rpcMethod } from "@tame/rpc-sdk";
+import {rpcMethod} from "@tame/rpc-sdk";
+import {Type} from "typebox";
 
 export const rpcSchema = {
 	newAgent: rpcMethod({
-		input: Type.Object({ project: Type.String() }),
-		output: Type.Object({ id: Type.String() }),
+		input: Type.Object({project: Type.String()}),
+		output: Type.Object({id: Type.String()}),
 	}),
 	listSessions: rpcMethod({
 		input: Type.Object({}),
@@ -18,7 +18,7 @@ export const rpcSchema = {
 		}),
 	}),
 	loadSession: rpcMethod({
-		input: Type.Object({ id: Type.String() }),
-		output: Type.Object({ id: Type.String() }),
+		input: Type.Object({id: Type.String()}),
+		output: Type.Object({id: Type.String()}),
 	}),
 };

@@ -3,17 +3,17 @@
 // Rollup plugins' types claim they're non-callable (namespace exports);
 // at runtime they're callable default exports. We use .default and cast.
 
-import swc from "@rollup/plugin-swc";
-import resolve from "@rollup/plugin-node-resolve";
 import alias from "@rollup/plugin-alias";
+import resolve from "@rollup/plugin-node-resolve";
+import swc from "@rollup/plugin-swc";
 import terser from "@rollup/plugin-terser";
 
 // ---- raw config values ----
 
 export const swcOptions = {
 	jsc: {
-		parser: { syntax: "typescript" as const, decorators: true },
-		transform: { decoratorVersion: "2021-12" as const },
+		parser: {syntax: "typescript" as const, decorators: true},
+		transform: {decoratorVersion: "2021-12" as const},
 		target: "es2022" as const,
 		// loose: class field assignment uses = instead of [[Define]].
 		// [[Define]] semantics create own data properties that shadow
@@ -36,7 +36,7 @@ const _alias = alias as RollupPlugin;
 const _resolve = resolve as RollupPlugin;
 const _terser = terser as RollupPlugin;
 
-export const swcPlugin = _swc({ swc: swcOptions });
+export const swcPlugin = _swc({swc: swcOptions});
 export const terserPlugin = _terser();
 
 export function aliasPlugin(rootDir: string) {
@@ -47,9 +47,7 @@ export function aliasPlugin(rootDir: string) {
 	});
 }
 
-export function resolvePlugin(browser = true) {
-	return _resolve({ browser, extensions: resolveExtensions });
-}
+export function resolvePlugin(browser = true) { return _resolve({ browser, extensions: resolveExtensions }); }
 
 /** Base plugin chain: alias → resolve → swc. No minification. */
 export function basePlugins(rootDir: string, browser = true) {
@@ -57,6 +55,4 @@ export function basePlugins(rootDir: string, browser = true) {
 }
 
 /** Full plugin chain with terser minification. */
-export function minPlugins(rootDir: string, browser = true) {
-	return [...basePlugins(rootDir, browser), terserPlugin];
-}
+export function minPlugins(rootDir: string, browser = true) { return [...basePlugins(rootDir, browser), terserPlugin]; }

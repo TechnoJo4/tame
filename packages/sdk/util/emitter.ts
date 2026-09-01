@@ -1,15 +1,16 @@
-import { Thread } from "./thread.ts";
+import {Thread} from "./thread.ts";
 
-export const handlerWrapperSkipErrors = <T>(f: (x: T) => Promise<T>): ((x: T) => Promise<T>) => {
-	return async x => {
-		try {
-			return await f(x);
-		} catch (e) {
-			console.error(e);
-			return x;
-		}
-	};
-}
+export const handlerWrapperSkipErrors = <T>(f: (x: T) => Promise<T>):
+    ((x: T) => Promise<T>) => {
+	    return async x => {
+		    try {
+			    return await f(x);
+		    } catch (e) {
+			    console.error(e);
+			    return x;
+		    }
+	    };
+    }
 
 export type HandlerWrapper = <T>(f: (x: T) => Promise<T>) => ((x: T) => Promise<T>);
 
@@ -24,33 +25,23 @@ export class Emitter<Events> {
 	protected onceHandlers = new Map<keyof Events, ((e: never) => unknown)[]>();
 	protected listeners: Listener<Events>[] = [];
 
-	get signal() {
-		return this.thread.signal;
-	}
+	get signal() { return this.thread.signal; }
 
 	/** Promise that resolves on abort. */
 	get aborted() {
-		return new Promise<void>(r => {
-			this.thread.signal?.addEventListener("abort", () => r());
-		});
+		return new Promise<void>(r => { this.thread.signal?.addEventListener("abort", () => r()); });
 	}
 
 	/** Abort processing and clear the queue. */
-	abort() {
-		this.thread.abort();
-	}
+	abort() { this.thread.abort(); }
 
 	/** Add an event onto the queue. */
 	fire<K extends keyof Events>(event: K, data: Events[K]) {
 		this.thread.queue(() => {
 			let p: Promise<Events[K]> = Promise.resolve(data);
-			for (const h of this.onceHandlers.get(event) ?? []) {
-				p = p.then(h as Handler<Events, K>);
-			}
+			for (const h of this.onceHandlers.get(event) ?? []) { p = p.then(h as Handler<Events, K>); }
 			this.onceHandlers.delete(event);
-			for (const h of this.handlers.get(event) ?? []) {
-				p = p.then(h as Handler<Events, K>);
-			}
+			for (const h of this.handlers.get(event) ?? []) { p = p.then(h as Handler<Events, K>); }
 			return p.then(e => this.#runListeners(event, e));
 		});
 	}
@@ -58,41 +49,34 @@ export class Emitter<Events> {
 	/** Run an event, bypassing the queue, and get the processed event data. */
 	doImmediate<K extends keyof Events>(event: K, data: Events[K]): Promise<Events[K]> {
 		let p: Promise<Events[K]> = Promise.resolve(data);
-		for (const h of this.onceHandlers.get(event) ?? []) {
-			p = p.then(h as Handler<Events, K>);
-		}
+		for (const h of this.onceHandlers.get(event) ?? []) { p = p.then(h as Handler<Events, K>); }
 		this.onceHandlers.delete(event);
-		for (const h of this.handlers.get(event) ?? []) {
-			p = p.then(h as Handler<Events, K>);
-		}
+		for (const h of this.handlers.get(event) ?? []) { p = p.then(h as Handler<Events, K>); }
 		return p.then(e => this.#runListeners(event, e))
 	}
 
 	/** Run an event and get the processed event data. */
 	do<K extends keyof Events>(event: K, data: Events[K]): Promise<Events[K]> {
-		return new Promise((resolve, reject) => this.thread.queue(() => {
-			return this.doImmediate(event, data).then(e => resolve(e)).catch(e => reject(e));
-		}));
+		return new Promise(
+		    (resolve, reject) => this.thread.queue(
+		        () => { return this.doImmediate(event, data).then(e => resolve(e)).catch(e => reject(e)); }));
 	}
 
 	/** Add a handler at the start of an event's processing. */
 	before<K extends keyof Events>(event: K, f: Handler<Events, K>) {
-		if (!this.handlers.has(event))
-			this.handlers.set(event, []);
+		if (!this.handlers.has(event)) this.handlers.set(event, []);
 		this.handlers.get(event)!.unshift(this.wrapHandler(f));
 	}
 
 	/** Add a handler at the end of an event's processing. */
 	after<K extends keyof Events>(event: K, f: Handler<Events, K>) {
-		if (!this.handlers.has(event))
-			this.handlers.set(event, []);
+		if (!this.handlers.has(event)) this.handlers.set(event, []);
 		this.handlers.get(event)!.push(this.wrapHandler(f));
 	}
 
 	/** Add a handler for the processing of the single next instance of an event. */
 	once<K extends keyof Events>(event: K, f: Handler<Events, K>) {
-		if (!this.onceHandlers.has(event))
-			this.onceHandlers.set(event, []);
+		if (!this.onceHandlers.has(event)) this.onceHandlers.set(event, []);
 		this.onceHandlers.get(event)!.push(this.wrapHandler(f));
 	}
 
@@ -107,9 +91,7 @@ export class Emitter<Events> {
 	}
 
 	/** Run a callback with final data from all of this emitter's events. */
-	listen(f: Listener<Events>) {
-		this.listeners.push(f);
-	}
+	listen(f: Listener<Events>) { this.listeners.push(f); }
 
 	#runListeners<K extends keyof Events>(event: K, data: Events[K]) {
 		for (const f of this.listeners) f(event, data);

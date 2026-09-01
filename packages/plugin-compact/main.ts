@@ -1,6 +1,7 @@
-import { readTameConfig } from "@tame/sdk";
-import { configSchema, CompactPlugin } from "./index.ts";
+import {readTameConfig} from "@tame/sdk";
 
-export { configSchema } from "./index.ts";
+import {CompactPlugin, configSchema} from "./index.ts";
+
+export {configSchema} from "./index.ts";
 
 export default new CompactPlugin(readTameConfig("compact.json", configSchema));
