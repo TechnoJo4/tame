@@ -150,7 +150,7 @@ if two plugins need to interoperate in the ui, they do it through the shell's pl
 
 ### 8. no framework, no build step for plugin components
 
-plugin components are lit elements. the shell bundles lit, typebox, and the rpc client as pre-built js files served from `/static/`. plugin `.ts` components are transpiled at startup by rollup+swc (see `index.ts:#transpile`). no extra tooling needed -- write a `.ts` file, register it, it gets served.
+plugin components are lit elements. the shell bundles lit, typebox, and the rpc client as pre-built js files served from `/static/`. plugin `.ts` components are transpiled at startup by rollup+swc (see `build.ts:transpileComponents`). no extra tooling needed -- write a `.ts` file, register it, it gets served.
 
 this means plugin components must keep imports minimal. external dependencies beyond lit, typebox, and `@tame/web-sdk` require updating `build-config.ts` and the import map in `index.html`. avoid it unless you have a very good reason.
 

@@ -1,5 +1,5 @@
 // Single source of truth for rollup/swc configuration.
-// Used by build.js (shell bundling) and index.ts (plugin transpilation).
+// Used by build.ts for shell bundling and plugin transpilation.
 // Rollup plugins' types claim they're non-callable (namespace exports);
 // at runtime they're callable default exports. We use .default and cast.
 

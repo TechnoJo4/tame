@@ -1,11 +1,11 @@
-import {resolve, basename} from "@std/path";
+import {basename, resolve} from "@std/path";
 import type {RPCPlugin} from "@tame/plugin-rpc/index";
 import {call} from "@tame/rpc-sdk";
 import {type IAgent, type IHarness, type Plugin, tameMsgMeta,} from "@tame/sdk";
 import type {ComponentDef, Placement} from "@tame/web-sdk/placement";
 import {Type} from "typebox";
 
-import {basePlugins, terserPlugin} from "./build-config.ts";
+import {buildShell, copyStylesheet, transpileComponents,} from "./build.ts";
 import {assistantBlocksToItems, contextToItems, paginateItems,} from "./items.ts";
 import {serve} from "./serve.ts";
 
@@ -48,11 +48,13 @@ export class WebPlugin implements Plugin {
 	#harness: IHarness|undefined;
 	#rpc: RPCPlugin|undefined;
 	#config: WebConfig;
+	#packageDir: string;
 	#buildDir: string;
 	#rootDir: string;
 
 	constructor(config: WebConfig) {
 		this.#config = config;
+		this.#packageDir = resolve(import.meta.dirname!);
 		this.#buildDir = resolve(config.staticDir, "..", ".build");
 		this.#rootDir = resolve(config.staticDir, "..", "..", "..");
 	}
@@ -78,172 +80,44 @@ export class WebPlugin implements Plugin {
 			}
 		}
 
-		if (tsFiles.length > 0) { await this.#transpile(pluginId, tsFiles); }
+		if (tsFiles.length > 0) {
+			const built = await transpileComponents(
+			    this.#buildContext(),
+			    pluginId,
+			    tsFiles,
+			    this.#config.sourceMaps,
+			);
+			for (const component of built) {
+				this.#components.set(component.tag, {
+					src: component.src,
+					url: component.url,
+				});
+			}
+		}
 
 		// copy CSS file to build output so it can be served
-		if (css) {
-			const outDir = `${this.#buildDir}/plugins/${pluginId}`;
-			try {
-				Deno.mkdirSync(outDir, { recursive: true });
-			} catch { /* exists */
-			}
-			const base = basename(css);
-			const outPath = `${outDir}/${base}`;
-			try {
-				Deno.copyFileSync(css, outPath);
-			} catch { /* not found */
-			}
-			this.#stylesheets.set(
-			    pluginId,
-			    `/static/plugins/${pluginId}/${base}`,
-			);
-		}
+		if (css) { this.#stylesheets.set(pluginId, copyStylesheet(this.#buildContext(), pluginId, css)); }
 
 		this.#placements.push(...placements);
 	}
 
-	async #transpile(
-	    pluginId: string,
-	    files: { src: string; tag: string }[],
-	    ): Promise<void> {
-		const outDir = `${this.#buildDir}/plugins/${pluginId}`;
-		try {
-			Deno.mkdirSync(outDir, { recursive: true });
-		} catch { /* exists */
-		}
-
-		const { rollup } = await import("rollup");
-
-		for (const { src, tag } of files) {
-			try {
-				const build = await rollup({
-					input: src,
-					external: [/^lit/, /^@lit\//, /^@tame\/web-sdk/, /^typebox/],
-					plugins: basePlugins(this.#rootDir),
-				});
-				const outName = basename(src).replace(/\.ts$/, ".js");
-				await build.write({
-					file: `${outDir}/${outName}`,
-					format: "esm",
-					plugins: [terserPlugin],
-					sourcemap: this.#config.sourceMaps,
-				});
-				await build.close();
-				const url = `/static/plugins/${pluginId}/${outName}`;
-				this.#components.set(tag, { src: `${outDir}/${outName}`, url });
-			} catch (e) { console.warn(`plugin-web: rollup failed for ${tag} (${src}):`, e); }
-		}
+	#buildContext() {
+		return {
+			rootDir: this.#rootDir,
+			packageDir: this.#packageDir,
+			staticDir: this.#config.staticDir,
+			buildDir: this.#buildDir,
+		};
 	}
 
 	async #buildShell(): Promise<void> {
-		const staticDir = this.#config.staticDir;
-		const webDir = `${staticDir}/../web`;
-		const shellTs = `${webDir}/shell.ts`;
-		const shellJs = `${staticDir}/shell.js`;
-		const litJs = `${staticDir}/lit.js`;
-		const litContextJs = `${staticDir}/lit-context.js`;
-		const webSdkJs = `${staticDir}/web-sdk.js`;
-
 		try {
-			const { rollup } = await import("rollup");
-
-			// if vendor bundles are missing (fresh clone), do a full build
-			try {
-				Deno.statSync(litJs);
-				Deno.statSync(litContextJs);
-				Deno.statSync(webSdkJs);
-			} catch { await this.#buildVendorBundles(rollup, staticDir); }
-
-			const build = await rollup({
-				input: shellTs,
-				external: [
-					"lit",
-					"lit/decorators.js",
-					"lit/directive.js",
-					"lit/async-directive.js",
-					"@lit/context",
-					/^@tame\/rpc-client/,
-					/^@tame\/web-sdk/,
-					"typebox",
-					"typebox/compile",
-				],
-				plugins: basePlugins(this.#rootDir),
-			});
-			await build.write({
-				file: shellJs,
-				format: "esm",
-				inlineDynamicImports: true,
-				plugins: [terserPlugin],
-				sourcemap: this.#config.sourceMaps,
-			});
-			await build.close();
+			await buildShell(this.#buildContext(), this.#config.sourceMaps);
 		} catch (e) {
 			console.warn(
 			    "plugin-web: shell rebuild failed, using existing shell.js:",
 			    e,
 			);
-		}
-	}
-
-	async #buildVendorBundles(rollup: any, staticDir: string): Promise<void> {
-		// write entry files, bundle, then clean up. mirrors build.js.
-		const entry = (name: string,
-		               content: string) => { Deno.writeTextFileSync(`${this.#buildDir}/${name}.entry.ts`, content); };
-		entry(
-		    "lit",
-		    `export * from "lit";\nexport * from "lit/decorators.js";\nexport * from "lit/directive.js";\nexport * from "lit/async-directive.js";\n`,
-		);
-		entry(
-		    "typebox",
-		    `export * from "typebox";\nexport { default } from "typebox";\n` +
-		        `export { Compile, Code, Validator } from "typebox/compile";\n` +
-		        `export { default as compileDefault } from "typebox/compile";\n`,
-		);
-		entry(
-		    "tame-rpc-client",
-		    `export { RPCClient } from "@tame/rpc-client";\n` +
-		        `export { wsToStream } from "@tame/rpc-client/stream";\n`,
-		);
-		entry(
-		    "lit-context",
-		    `export { createContext, ContextProvider, ContextConsumer, ContextEvent, provide, consume } from "@lit/context";\n`,
-		);
-		entry(
-		    "web-sdk",
-		    `export { agentIdContext, rpcClientContext, registryContext, settingsStoreContext, settingsPluginIdContext } from "@tame/web-sdk";\nexport { setting, settingBool, settingWhen } from "@tame/web-sdk/setting-directives";\n`,
-		);
-
-		const bundle = async (
-		    name: string,
-		    externals: string[] = [],
-		    noMinify = false,
-		    ) => {
-			const b = await rollup({
-				input: `${this.#buildDir}/${name}.entry.ts`,
-				external: externals,
-				plugins: basePlugins(this.#rootDir),
-			});
-			await b.write({
-				file: `${staticDir}/${name}.js`,
-				format: "esm",
-				plugins: (externals.length === 0 || noMinify) ? [] : [terserPlugin],
-				sourcemap: this.#config.sourceMaps,
-			});
-			await b.close();
-		};
-
-		await bundle("lit");
-		await bundle("typebox");
-		await bundle("tame-rpc-client", ["typebox", "typebox/compile"]);
-		await bundle("lit-context", ["lit"], true);
-		await bundle("web-sdk", ["lit", "@lit/context"]);
-
-		// cleanup entry files
-		for (const name of ["lit", "typebox", "tame-rpc-client", "lit-context", "web-sdk", ]) {
-			try {
-				Deno.removeSync(`${this.#buildDir}/${name}.entry.ts`);
-			} catch { /* */
-			}
 		}
 	}
 
