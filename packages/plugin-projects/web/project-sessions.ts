@@ -140,18 +140,14 @@ export class TameProjectSessions extends LitElement {
 			<details ?open=${!this.#collapsed.has(key)} @toggle=${(e: Event) => this.#toggle(key, e)}>
 				<summary>
 					<span data-role="label">${project}</span>
-					<button ?disabled=${this.#pending.has(project)} @click=${
-			(
-				e: Event,
-				) => {
-			    e.preventDefault();
-			    e.stopPropagation();
-			    this.#newAgent(project);
-			}} title="new ${project} agent">+</button>
+					<button ?disabled=${this.#pending.has(project)} @click=${(e: Event) => {
+			e.preventDefault();
+			e.stopPropagation();
+			this.#newAgent(project);
+		}} title="new ${project} agent">+</button>
 				</summary>
 				${this.#renderSessions(sessions, `no ${project} sessions yet`)}
-			</details>
-		`;
+			</details>`;
 	}
 
 	#renderOther() {
@@ -161,8 +157,7 @@ export class TameProjectSessions extends LitElement {
 			<details ?open=${!this.#collapsed.has("other")} @toggle=${(e: Event) => this.#toggle("other", e)}>
 				<summary><span data-role="label">other</span></summary>
 				${this.#renderSessions(sessions, "no other sessions yet")}
-			</details>
-		`;
+			</details>`;
 	}
 
 	#renderSessions(sessions: SessionInfo[], empty: string) {
@@ -178,8 +173,7 @@ export class TameProjectSessions extends LitElement {
 							${session.title || session.id.slice(0, 8)}
 						</button>
 					`)}
-			</div>
-		`;
+			</div>`;
 	}
 }
 

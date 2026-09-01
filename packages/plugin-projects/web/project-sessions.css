@@ -1,70 +1,35 @@
-tame-project-sessions {
-	display: block;
-}
-tame-project-sessions > div[data-state="error"] {
-	color: var(--tame-danger);
-}
+tame-project-sessions { display: block; }
+tame-project-sessions > div[data-state="error"] { font-size: 12px; color: var(--tame-danger); }
+tame-project-sessions > details { margin: 0; }
 tame-project-sessions > details > summary {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	cursor: pointer;
-	list-style: none;
+	display: flex; align-items: center; justify-content: space-between;
+	cursor: pointer; list-style: none;
 }
-tame-project-sessions > details > summary::-webkit-details-marker {
-	display: none;
-}
-tame-project-sessions > details > summary::marker {
-	display: none;
-	content: "";
-}
-tame-project-sessions > details > summary > span[data-role="label"] {
-	color: var(--tame-text-muted);
-	text-transform: uppercase;
+tame-project-sessions > details > summary::-webkit-details-marker { display: none; }
+tame-project-sessions > details > summary::marker { display: none; content: ""; }
+tame-project-sessions > details > summary > span {
+	font-size: 11px; color: var(--tame-text-muted); text-transform: uppercase; letter-spacing: 0.5px;
 }
 tame-project-sessions > details > summary > button {
-	border: 1px solid var(--tame-border-light);
-	background: none;
-	color: var(--tame-text-muted);
-	cursor: pointer;
+	width: 20px; height: 20px; border: 1px solid var(--tame-border-light); border-radius: 3px;
+	background: none; color: var(--tame-text-muted); cursor: pointer; font-size: 14px; line-height: 1;
 }
-tame-project-sessions > details > summary > button:hover {
-	color: var(--tame-text);
-	border-color: var(--tame-text-muted);
+tame-project-sessions > details > summary > button:hover { color: var(--tame-text); border-color: var(--tame-text-muted); }
+tame-project-sessions > details > div[data-state="loading"],
+tame-project-sessions > details > div[data-state="empty"] { font-size: 12px; color: var(--tame-text-dim); }
+tame-project-sessions > details > div[data-state="error"] { font-size: 12px; color: var(--tame-danger); }
+tame-project-sessions > details > div[data-state="list"] { display: flex; flex-direction: column; gap: 2px; }
+tame-project-sessions > details > div[data-state="list"] > button {
+	display: block; width: 100%; padding: 4px 6px; border: none; border-radius: 3px;
+	background: none; color: var(--tame-text-secondary); font-size: 12px; text-align: left; cursor: pointer;
+	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+tame-project-sessions > details > div[data-state="list"] > button:hover { background: var(--tame-surface); }
+tame-project-sessions > details > div[data-state="list"] > button[data-active] { background: var(--tame-surface); color: var(--tame-text); }
+
+/* ---- projects-only states ---- */
 tame-project-sessions > details > summary > button:disabled,
 tame-project-sessions > details > div[data-state="list"] > button:disabled {
 	opacity: 0.5;
 	cursor: wait;
-}
-tame-project-sessions > details > div[data-state="loading"],
-tame-project-sessions > details > div[data-state="empty"],
-tame-project-sessions > details > div[data-state="error"] {
-	color: var(--tame-text-dim);
-}
-tame-project-sessions > details > div[data-state="error"] {
-	color: var(--tame-danger);
-}
-tame-project-sessions > details > div[data-state="list"] {
-	display: flex;
-	flex-direction: column;
-}
-tame-project-sessions > details > div[data-state="list"] > button {
-	display: block;
-	width: 100%;
-	border: none;
-	background: none;
-	color: var(--tame-text-secondary);
-	text-align: left;
-	cursor: pointer;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-tame-project-sessions > details > div[data-state="list"] > button:hover,
-tame-project-sessions > details > div[data-state="list"] > button[data-active] {
-	background: var(--tame-surface);
-}
-tame-project-sessions > details > div[data-state="list"] > button[data-active] {
-	color: var(--tame-text);
 }
