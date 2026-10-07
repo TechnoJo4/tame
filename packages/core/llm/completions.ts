@@ -334,7 +334,7 @@ export class CompletionsProvider implements InferenceProvider {
 
 		const res = await fetch(this.#url, {
 			method: "POST",
-			headers: this.#headers,
+			headers: {...this.#headers, ...req.headers },
 			body: JSON.stringify(body),
 			signal,
 		});

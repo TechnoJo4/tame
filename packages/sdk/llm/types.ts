@@ -112,6 +112,7 @@ export interface ApiTool {
 
 export interface MessageRequest {
 	model?: string;
+	headers?: Record<string, string>;
 	max_tokens: number;
 	system: string;
 	tools?: ApiTool[];
