@@ -1,6 +1,7 @@
 import {type InferenceProvider, StringEnum} from "@tame/sdk";
 import {type Static, Type} from "typebox";
 
+import {AdapterProvider} from "../llm/adapter.ts";
 import {CompletionsProvider} from "../llm/completions.ts";
 import {ExtraDataProvider} from "../llm/extra-data.ts";
 import {AnthropicMessagesProvider} from "../llm/messages.ts";
@@ -92,9 +93,11 @@ export const llmConfig = Type.Union([
 export type LLMConfig = Static<typeof llmConfig>;
 
 type ProviderType = "anthropic-messages"|"openai-completions";
+type ProviderAdapter = "opencode";
 
 type ProviderInfo = {
 	type: ProviderType; url: string; envKey: string;
+	adapter?: ProviderAdapter;
 };
 
 export const knownProviders: Record<KnownProvider, ProviderInfo> = {
@@ -112,16 +115,19 @@ export const knownProviders: Record<KnownProvider, ProviderInfo> = {
 		type: "anthropic-messages",
 		url: "https://opencode.ai/zen/v1/messages",
 		envKey: "OPENCODE_API_KEY",
+		adapter: "opencode",
 	},
 	"opencode-go-messages": {
 		type: "anthropic-messages",
 		url: "https://opencode.ai/zen/go/v1/messages",
 		envKey: "OPENCODE_API_KEY",
+		adapter: "opencode",
 	},
 	"opencode-go-completions": {
 		type: "openai-completions",
 		url: "https://opencode.ai/zen/go/v1/chat/completions",
 		envKey: "OPENCODE_API_KEY",
+		adapter: "opencode",
 	},
 };
 
@@ -142,6 +148,18 @@ export function parseExtra(provider: InferenceProvider, extra: ProviderExtraConf
 	return provider;
 }
 
+export function parseAdapter(provider: InferenceProvider, adapter: ProviderAdapter|undefined): InferenceProvider {
+	switch (adapter) {
+	case "opencode":
+		return new AdapterProvider(provider, req => req.session_id === undefined ? req : {
+			...req,
+			headers: {...req.headers, "x-opencode-session": req.session_id },
+		});
+	default:
+		return provider;
+	}
+}
+
 export const parseKnownProvider = (o: KnownProviderConfig&ProviderExtraConfig): InferenceProvider => {
 	const p = knownProviders[o.provider];
 	const key = o.apiKey ?? Deno.env.get(p.envKey);
@@ -149,9 +167,11 @@ export const parseKnownProvider = (o: KnownProviderConfig&ProviderExtraConfig): 
 
 	switch (p.type) {
 	case "anthropic-messages":
-		return new AnthropicMessagesProvider(p.url, key, o.headers as Record<string, string>, o.model);
+		return parseAdapter(new AnthropicMessagesProvider(p.url, key, o.headers as Record<string, string>, o.model),
+		                    p.adapter);
 	case "openai-completions":
-		return new CompletionsProvider(p.url, key, o.headers as Record<string, string>, o.model);
+		return parseAdapter(new CompletionsProvider(p.url, key, o.headers as Record<string, string>, o.model),
+		                    p.adapter);
 	}
 };
 
