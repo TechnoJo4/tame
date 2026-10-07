@@ -128,6 +128,7 @@ export class ProjectsPlugin implements Plugin {
 		this.setProject(agent, name);
 		this.#applyOpsWorkdir(agent, name);
 		const env = this.#ops.getEnv(agent);
+		const workdir = this.#ops.getWorkdir(agent);
 		const files = await this.#readFiles(env, project, project.workdir);
 		for (const [path, content] of files) {
 			agent.context.push({
@@ -139,6 +140,11 @@ export class ProjectsPlugin implements Plugin {
 				[tameMsgMeta]: { automated: true, noCompact: true },
 			});
 		}
+		agent.context.push({
+			role: "user",
+			content: [{ type: "text", text: `Working directory: ${workdir}` }],
+			[tameMsgMeta]: { automated: true, noCompact: true },
+		});
 		return agent;
 	}
 
