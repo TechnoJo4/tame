@@ -181,19 +181,8 @@ export class WebPlugin implements Plugin {
 		// register web's own settings component at the settings modal placement
 		const dir = import.meta.dirname!;
 		await this.register("web",
-		                    [
-			                    {
-				                    tag: "tame-web-settings",
-				                    src: this.resolve(dir, "./web/components/web-settings.ts"),
-			                    },
-		                    ],
-		                    [
-			                    {
-				                    location: "modal:settings",
-				                    tag: "tame-web-settings",
-				                    props: { pluginId: "web" },
-			                    },
-		                    ]);
+		                    [{ tag: "tame-web-settings", src: this.resolve(dir, "./web/components/web-settings.ts") }],
+		                    [{ location: "modal:settings", tag: "tame-web-settings", props: { pluginId: "web" } }]);
 
 		serve(this.#config, this.#components, this.#stylesheets, rpc);
 	}

@@ -125,24 +125,22 @@ export const knownProviders: Record<KnownProvider, ProviderInfo> = {
 	},
 };
 
-export const parseLimiter = (o: RatelimiterConfig):
-    Ratelimiter => {
-	    switch (o.type) {
-	    case "serial":
-		    return new SerialRatelimiter(o);
-	    case "bucket":
-		    return new TokenBucketRatelimiter(o);
-	    case "backoff-only":
-		    return new BackoffOnlyRatelimiter(o);
-	    }
-    }
+export function parseLimiter(o: RatelimiterConfig): Ratelimiter {
+	switch (o.type) {
+	case "serial":
+		return new SerialRatelimiter(o);
+	case "bucket":
+		return new TokenBucketRatelimiter(o);
+	case "backoff-only":
+		return new BackoffOnlyRatelimiter(o);
+	}
+}
 
-export const parseExtra = (provider: InferenceProvider, extra: ProviderExtraConfig):
-    InferenceProvider => {
-	    if (extra.limiter) provider = new RatelimitedProvider(provider, parseLimiter(extra.limiter));
-	    if (extra.extra) provider = new ExtraDataProvider(provider, extra.extra);
-	    return provider;
-    }
+export function parseExtra(provider: InferenceProvider, extra: ProviderExtraConfig): InferenceProvider {
+	if (extra.limiter) provider = new RatelimitedProvider(provider, parseLimiter(extra.limiter));
+	if (extra.extra) provider = new ExtraDataProvider(provider, extra.extra);
+	return provider;
+}
 
 export const parseKnownProvider = (o: KnownProviderConfig&ProviderExtraConfig): InferenceProvider => {
 	const p = knownProviders[o.provider];
