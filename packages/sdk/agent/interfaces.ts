@@ -66,7 +66,6 @@ export interface NewAgentOptions {
 	id?: string;
 	plugins?: string[];
 }
-;
 
 export interface IHarness {
 	getPlugin<T extends Plugin>(id: T["id"]): T|undefined;
