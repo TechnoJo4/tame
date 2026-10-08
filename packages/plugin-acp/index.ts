@@ -48,11 +48,7 @@ export class ACPAdapter implements acp.Agent {
 	#sessions = new Map<string, IAgent>();
 	#clientCaps: acp.ClientCapabilities = {};
 
-	constructor(
-	    harness: IHarness,
-	    connection: acp.AgentSideConnection,
-	    config: Config,
-	) {
+	constructor(harness: IHarness, connection: acp.AgentSideConnection, config: Config) {
 		this.#harness = harness;
 		this.#connection = connection;
 		this.#config = config;
@@ -60,9 +56,7 @@ export class ACPAdapter implements acp.Agent {
 		this.#commands = this.#harness.getPlugin<CommandsPlugin>("commands");
 	}
 
-	async initialize(
-	    params: acp.InitializeRequest,
-	    ): Promise<acp.InitializeResponse> {
+	async initialize(params: acp.InitializeRequest): Promise<acp.InitializeResponse> {
 		if (params.clientCapabilities) { this.#clientCaps = params.clientCapabilities; }
 
 		return {
@@ -76,17 +70,13 @@ export class ACPAdapter implements acp.Agent {
 		};
 	}
 
-	async newSession(
-	    _params: acp.NewSessionRequest,
-	    ): Promise<acp.NewSessionResponse> {
+	async newSession(_params: acp.NewSessionRequest): Promise<acp.NewSessionResponse> {
 		const agent = this.#harness.newAgent();
 		this.#setupAgent(agent);
 		return { sessionId: agent.id };
 	}
 
-	async loadSession(
-	    params: acp.LoadSessionRequest,
-	    ): Promise<acp.LoadSessionResponse> {
+	async loadSession(params: acp.LoadSessionRequest): Promise<acp.LoadSessionResponse> {
 		let agent = this.#sessions.get(params.sessionId);
 		if (!agent) { agent = this.#harness.getAgent(params.sessionId); }
 		if (!agent) { agent = await this.#history!.loadAgent(params.sessionId); }
@@ -101,9 +91,7 @@ export class ACPAdapter implements acp.Agent {
 		return {};
 	}
 
-	async listSessions(
-	    _params: acp.ListSessionsRequest,
-	    ): Promise<acp.ListSessionsResponse> {
+	async listSessions(_params: acp.ListSessionsRequest): Promise<acp.ListSessionsResponse> {
 		const sessions: acp.SessionInfo[] = [];
 		for (const sess of await this.#history!.list()) {
 			const agent = this.#sessions.get(sess.id);
@@ -125,11 +113,7 @@ export class ACPAdapter implements acp.Agent {
 		return { sessions };
 	}
 
-	async authenticate(
-	    _params: acp.AuthenticateRequest,
-	    ): Promise<acp.AuthenticateResponse|void> {
-		return {};
-	}
+	async authenticate(_params: acp.AuthenticateRequest): Promise<acp.AuthenticateResponse|void> { return {}; }
 
 	async prompt(params: acp.PromptRequest): Promise<acp.PromptResponse> {
 		const agent = this.#sessions.get(params.sessionId);
@@ -321,11 +305,7 @@ export class ACPAdapter implements acp.Agent {
 		});
 	}
 
-	#sendMessage(
-	    sessionId: string,
-	    msg: InputMessage,
-	    noToolResult: boolean = false,
-	) {
+	#sendMessage(sessionId: string, msg: InputMessage, noToolResult: boolean = false) {
 		for (const block of msg.content) {
 			switch (block.type) {
 			case "thinking":
@@ -409,10 +389,7 @@ export class ACPPlugin implements Plugin {
 		for await (const conn of listener) {
 			if ("setKeepAlive" in conn) conn.setKeepAlive(true);
 			const stream = acp.ndJsonStream(conn.writable, conn.readable);
-			new acp.AgentSideConnection(
-			    (conn) => new ACPAdapter(harness, conn, this.#config),
-			    stream,
-			);
+			new acp.AgentSideConnection((conn) => new ACPAdapter(harness, conn, this.#config), stream);
 		}
 	}
 }

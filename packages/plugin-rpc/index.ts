@@ -1,4 +1,4 @@
-import {baseRouteSchemas, call, type CallDescription, type CallMessage, type EventMessage, type RPCMessage, rpcMsgSchema, type Stream, type SubscriptionMessage,} from "@tame/rpc-sdk";
+import {baseRouteSchemas, call, type CallDescription, type CallMessage, type EventMessage, type RPCMessage, rpcMsgSchema, type Stream, type SubscriptionMessage} from "@tame/rpc-sdk";
 import {assertSchema, type IAgent, type IHarness, type Plugin, type ToolUse} from "@tame/sdk";
 import {Compile, type Validator} from "typebox/compile";
 
@@ -26,17 +26,18 @@ const emptySubscriptions = (): Subscriptions => ({ all_events: emptySubscription
 
 const rpcMsgValidator = Compile(rpcMsgSchema);
 
+interface CallValidators {
+	input: Validator<any>;
+	output: Validator<any>;
+}
+
 export class RPCPlugin implements Plugin {
 	id = "rpc" as const;
 
 	#connections = new Set<Connection>();
 	#baseRoutes = new Map<string, CallDescription<any, any>>();
 	#rpc = new Map<string, Map<string, CallDescription<any, any>>>();
-	#validators = new Map < CallDescription<any, any>, {
-		input: Validator<any>;
-		output: Validator<any>
-	}
-	>();
+	#validators = new Map<CallDescription<any, any>, CallValidators>();
 	#harness?: IHarness;
 
 	init(harness: IHarness) {
