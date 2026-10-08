@@ -282,16 +282,16 @@ export class SubagentsPlugin implements Plugin {
 					    parentAgent.signal?.removeEventListener("abort", onParentAbort);
 
 					    if (idle.stopReason === "error") {
-						    this.#notify(parentAgent.id, args.description, "failed",
-						                 "LLM error or max retries exceeded.");
+						    this.#notify(
+						        parentAgent.id, args.description, "failed", "LLM error or max retries exceeded.");
 					    } else if (idle.stopReason === "aborted") {
 						    this.#notify(parentAgent.id, args.description, "failed", "Subagent was aborted.");
 					    } else if (idle.stopReason === "refusal") {
 						    this.#notify(parentAgent.id, args.description, "failed",
-						                 assistantTexts.join("\n\n") || "Subagent refused the task.");
+						        assistantTexts.join("\n\n") || "Subagent refused the task.");
 					    } else if (idle.stopReason !== "end_turn" && idle.stopReason !== "tool_use") {
 						    this.#notify(parentAgent.id, args.description, "failed",
-						                 `Subagent stopped unexpectedly: ${idle.stopReason}.`);
+						        `Subagent stopped unexpectedly: ${idle.stopReason}.`);
 					    } else {
 						    const toolCalls =
 						        this.#collectToolCalls(subagent.context, this.#config.maxToolResultLength);

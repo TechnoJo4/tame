@@ -33,8 +33,8 @@ export const web_fetch = tool({
 			kind: "fetch",
 			title: `Fetch ${url}`,
 			content: result && !result.is_error
-				         ? [{"type": "content", "content": {"type": "text", "text": result.content}}]
-				         : []
+				? [{"type": "content", "content": {"type": "text", "text": result.content}}]
+				: []
 		})
 	}
 });

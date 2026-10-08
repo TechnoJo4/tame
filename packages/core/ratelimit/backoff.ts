@@ -41,8 +41,8 @@ export class BackoffOnlyRatelimiter implements Ratelimiter {
 	delay(): number {
 		const retryDelay = Math.max(0, this.#retryAfterTime - Date.now());
 		if (this.#errors === 0) return retryDelay;
-		const errorDelay = Math.min(this.#options.errorMax,
-		                            Math.pow(this.#options.errorExp, this.#errors - 1) * this.#options.errorMin);
+		const errorDelay = Math.min(
+		    this.#options.errorMax, Math.pow(this.#options.errorExp, this.#errors - 1) * this.#options.errorMin);
 		return Math.max(retryDelay, errorDelay);
 	}
 

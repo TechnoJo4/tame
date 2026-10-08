@@ -109,7 +109,7 @@ export class RPCPlugin implements Plugin {
 
 	/** Listen to an emitter to automatically send events to subscribers. */
 	hookEmitter<T>(emitter: { listen(f: (type: keyof T, data: T[typeof type]) => void): void },
-	               translate: (event: keyof T, data: T[typeof event]) => EventMessage) {
+	    translate: (event: keyof T, data: T[typeof event]) => EventMessage) {
 		emitter.listen((event, data) => this.emit(translate(event, data)));
 	}
 
@@ -251,11 +251,11 @@ export class RPCPlugin implements Plugin {
 		    .then(result => {
 			    try {
 				    const validated = assertSchema(result, method.output, `invalid result from ${source} ${call}:`,
-						                           validators.output) as object;
+						                  validators.output) as object;
 				    this.#write(conn, { type: "result", id: msg.id, result: validated });
 			    } catch (e) {
-				    this.#write(conn,
-				                { type: "result", id: msg.id, error: e instanceof Error ? e.message : String(e) });
+				    this.#write(
+				        conn, { type: "result", id: msg.id, error: e instanceof Error ? e.message : String(e) });
 			    }
 		    })
 		    .catch(e => {

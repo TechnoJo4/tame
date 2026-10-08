@@ -44,9 +44,9 @@ export class TameMarkdown extends LitElement {
 		if (changed.has("text")) {
 			try {
 				const root = fromMarkdown(this.text ?? "", {
-					             extensions: [gfmTable()],
-					             mdastExtensions: [gfmTableFromMarkdown()],
-				             }) as unknown as MdNode;
+					extensions: [gfmTable()],
+					mdastExtensions: [gfmTableFromMarkdown()],
+				}) as unknown as MdNode;
 				this.#annotateTables(root);
 				this.#root = root;
 			} catch {

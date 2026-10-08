@@ -167,11 +167,11 @@ export const parseKnownProvider = (o: KnownProviderConfig&ProviderExtraConfig): 
 
 	switch (p.type) {
 	case "anthropic-messages":
-		return parseAdapter(new AnthropicMessagesProvider(p.url, key, o.headers as Record<string, string>, o.model),
-		                    p.adapter);
+		return parseAdapter(
+		    new AnthropicMessagesProvider(p.url, key, o.headers as Record<string, string>, o.model), p.adapter);
 	case "openai-completions":
-		return parseAdapter(new CompletionsProvider(p.url, key, o.headers as Record<string, string>, o.model),
-		                    p.adapter);
+		return parseAdapter(
+		    new CompletionsProvider(p.url, key, o.headers as Record<string, string>, o.model), p.adapter);
 	}
 };
 

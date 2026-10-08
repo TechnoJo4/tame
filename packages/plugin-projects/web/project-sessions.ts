@@ -61,7 +61,7 @@ export class TameProjectSessions extends LitElement {
 		try {
 			const result = await this.client.call("projects", "listSessions", {});
 			this.sessions = ((result as { sessions?: SessionInfo[] }).sessions ??
-			                 []).sort((a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0));
+			    []).sort((a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0));
 			this.error = null;
 		} catch (e) { this.error = e instanceof Error ? e.message : String(e); } finally {
 			this.loading = false;

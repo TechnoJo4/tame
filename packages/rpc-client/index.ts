@@ -63,8 +63,8 @@ export class RPCClient {
 	 *  Without codegen, use string literals and `unknown` types.
 	 *  With codegen, the RPCRegistry overload provides typed args/return.
 	 */
-	call<P extends PluginName, M extends MethodName<P>>(plugin: P, method: M,
-	                                                    args: RPCInput<P, M>): Promise<RPCOutput<P, M>>;
+	call<P extends PluginName, M extends MethodName<P>>(
+	    plugin: P, method: M, args: RPCInput<P, M>): Promise<RPCOutput<P, M>>;
 	call(plugin: string, method: string, args: Record<string, unknown>): Promise<Record<string, unknown>>;
 	call(plugin: string, method: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
 		const id = nextId();

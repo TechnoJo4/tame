@@ -17,12 +17,12 @@ export const configSchema = Type.Object({
 	localEnv: Type.Object({
 		workdir: Type.String({default: "."}),
 	},
-	                      {default: {}}),
+	    {default: {}}),
 	env: Type.Object({
 		static: Type.Object({}, {additionalProperties: Type.String(), default: {}}),
 		dynamic: Type.Object({}, {additionalProperties: dynamicEnvKey, default: {}}),
 	},
-	                 {default: {}}),
+	    {default: {}}),
 	tools: Type.Object({
 		read: Type.Boolean({default: true}),
 		write: Type.Boolean({default: true}),
@@ -30,7 +30,7 @@ export const configSchema = Type.Object({
 		exec: Type.Boolean({default: false}),
 		bash: Type.Boolean({default: true}),
 	},
-	                   {default: {}}),
+	    {default: {}}),
 });
 
 export type OpsConfig = Static<typeof configSchema>;

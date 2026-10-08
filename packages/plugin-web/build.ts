@@ -33,15 +33,15 @@ const vendorEntries: Record<string, string> = {
 	lit:
 	    `export * from "lit";\nexport * from "lit/decorators.js";\nexport * from "lit/directive.js";\nexport * from "lit/async-directive.js";\n`,
 	typebox: `export * from "typebox";\nexport { default } from "typebox";\n` +
-	             `export { Compile, Code, Validator } from "typebox/compile";\n` +
-	             `export { default as compileDefault } from "typebox/compile";\n`,
+	    `export { Compile, Code, Validator } from "typebox/compile";\n` +
+	    `export { default as compileDefault } from "typebox/compile";\n`,
 	"tame-rpc-client": `export { RPCClient } from "@tame/rpc-client";\n` +
-	                       `export { wsToStream } from "@tame/rpc-client/stream";\n`,
+	    `export { wsToStream } from "@tame/rpc-client/stream";\n`,
 	"lit-context":
 	    `export { createContext, ContextProvider, ContextConsumer, ContextEvent, provide, consume } from "@lit/context";\n`,
 	"web-sdk":
 	    `export { agentIdContext, rpcClientContext, registryContext, settingsStoreContext, settingsPluginIdContext } from "@tame/web-sdk";\n` +
-	        `export { setting, settingBool, settingWhen } from "@tame/web-sdk/setting-directives";\n`,
+	    `export { setting, settingBool, settingWhen } from "@tame/web-sdk/setting-directives";\n`,
 };
 
 const shellExternals = [
@@ -65,8 +65,8 @@ const componentExternals = [
 
 function ensureDir(path: string): void { Deno.mkdirSync(path, { recursive: true }); }
 
-async function bundle(context: BuildContext, input: string, output: string,
-                      options: BundleOptions = {}): Promise<void> {
+async function bundle(
+    context: BuildContext, input: string, output: string, options: BundleOptions = {}): Promise<void> {
 	const externals = options.externals ?? [];
 	const build = await rollup({
 		input,
@@ -127,7 +127,7 @@ export async function buildVendorBundles(context: BuildContext, sourceMaps: bool
 	try {
 		for (const name of names) {
 			await bundle(context, join(context.buildDir, `${name}.entry.ts`), join(context.staticDir, `${name}.js`),
-					     {...vendorOptions(name), sourceMaps });
+				{...vendorOptions(name), sourceMaps });
 		}
 	} finally { removeVendorEntries(context, names); }
 }
@@ -160,8 +160,8 @@ export async function buildAll(context: BuildContext, sourceMaps: boolean): Prom
 	await buildShellBundle(context, sourceMaps);
 }
 
-export async function transpileComponents(context: BuildContext, pluginId: string, files: ComponentInput[],
-                                          sourceMaps: boolean): Promise<BuiltComponent[]> {
+export async function transpileComponents(
+    context: BuildContext, pluginId: string, files: ComponentInput[], sourceMaps: boolean): Promise<BuiltComponent[]> {
 	const outDir = join(context.buildDir, "plugins", pluginId);
 	ensureDir(outDir);
 	const result: BuiltComponent[] = [];

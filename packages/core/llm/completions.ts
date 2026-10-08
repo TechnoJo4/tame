@@ -118,13 +118,13 @@ export class CompletionsProvider implements InferenceProvider {
 	#convertTools(tools: MessageRequest["tools"]): StringRecord[]|undefined {
 		if (!tools || tools.length === 0) return undefined;
 		return tools.map((t) => ({
-			                 type: "function" as const,
-			                 function: {
-				                 name: t.name,
-				                 description: t.description,
-				                 parameters: t.input_schema,
-			                 },
-		                 }));
+			type: "function" as const,
+			function: {
+				name: t.name,
+				description: t.description,
+				parameters: t.input_schema,
+			},
+		}));
 	}
 
 	#convertMessages(messages: InputMessage[], system?: string): StringRecord[] {
@@ -238,9 +238,9 @@ export class CompletionsProvider implements InferenceProvider {
 				};
 				if (rd["index"] !== undefined) meta.reasoningIndex = rd["index"] as number;
 
-				const thinkingText = detailType === "reasoning.text"      ? (rd["text"] as string)
-				                     : detailType === "reasoning.summary" ? (rd["summary"] as string)
-				                                                          : undefined;
+				const thinkingText = detailType === "reasoning.text" ? (rd["text"] as string)
+				    : detailType === "reasoning.summary"             ? (rd["summary"] as string)
+				                                                     : undefined;
 				if (thinkingText) {
 					content.unshift({
 						type: "thinking",

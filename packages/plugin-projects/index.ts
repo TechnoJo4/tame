@@ -96,18 +96,18 @@ export class ProjectsPlugin implements Plugin {
 		if (web) {
 			const dir = import.meta.dirname!;
 			await web.register("projects", [{
-					               tag: "tame-project-sessions",
-					               src: web.resolve(dir, "./web/project-sessions.ts"),
-				               }],
-			                   [{
-					               location: "panel:sidebar",
-					               tag: "tame-project-sessions",
-					               props: {
-						               projects: this.listProjects().map((project) => project.name),
-						               hasHistory: history !== undefined,
-					               },
-				               }],
-			                   web.resolve(dir, "./web/project-sessions.css"));
+				tag: "tame-project-sessions",
+				src: web.resolve(dir, "./web/project-sessions.ts"),
+			}],
+			    [{
+					location: "panel:sidebar",
+					tag: "tame-project-sessions",
+					props: {
+						projects: this.listProjects().map((project) => project.name),
+						hasHistory: history !== undefined,
+					},
+				}],
+			    web.resolve(dir, "./web/project-sessions.css"));
 		}
 	}
 
@@ -161,8 +161,8 @@ export class ProjectsPlugin implements Plugin {
 				const data = history.extra.projects;
 				const project =
 				    data && typeof data === "object" && "project" in data && typeof data.project === "string"
-				        ? data.project
-				        : undefined;
+				    ? data.project
+				    : undefined;
 				return {...session, project };
 			} catch (e) {
 				console.warn(`plugin-projects: skipping unreadable session ${session.id}:`, e);
@@ -184,8 +184,8 @@ export class ProjectsPlugin implements Plugin {
 				});
 				if (content !== undefined) { files.push([env.contractPath(path), content]); }
 			} catch (e) {
-				throw new Error(`project "${project.name}" file ${env.contractPath(path)}: access failed`,
-						        { cause: e });
+				throw new Error(
+				    `project "${project.name}" file ${env.contractPath(path)}: access failed`, { cause: e });
 			}
 		}
 		return files;

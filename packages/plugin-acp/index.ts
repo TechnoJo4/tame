@@ -267,9 +267,9 @@ export class ACPAdapter implements acp.Agent {
 				update: {
 					sessionUpdate: "available_commands_update",
 					availableCommands: [...this.#commands.list()].map((c) => ({
-						                                                  name: c.name,
-						                                                  description: c.description,
-					                                                  })),
+						name: c.name,
+						description: c.description,
+					})),
 				},
 			});
 		}

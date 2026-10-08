@@ -27,14 +27,14 @@ export class RPCWSPlugin implements Plugin {
 			hostname: this.#config.listen.hostname,
 			port: this.#config.listen.port,
 		},
-		           (request) => {
-			           if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") {
-				           return new Response("expected websocket", { status: 400 });
-			           }
-			           const { socket, response } = Deno.upgradeWebSocket(request);
-			           const stream = wsToStream(socket);
-			           rpc.connect(stream);
-			           return response;
-		           });
+		    (request) => {
+			    if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") {
+				    return new Response("expected websocket", { status: 400 });
+			    }
+			    const { socket, response } = Deno.upgradeWebSocket(request);
+			    const stream = wsToStream(socket);
+			    rpc.connect(stream);
+			    return response;
+		    });
 	}
 }

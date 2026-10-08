@@ -174,7 +174,7 @@ export class TameThread extends LitElement {
 
 		const on = (event: string, handler: (data: any) => void) => {
 			this.#unsubs.push(this.client!.subscribe({ agent_id: this.agentId!, plugin: "web", event },
-			                                         (msg) => handler(msg.data as Record<string, unknown>)));
+			    (msg) => handler(msg.data as Record<string, unknown>)));
 		};
 
 		on("userMessage", (d) => {

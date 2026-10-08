@@ -46,7 +46,7 @@ export class TameHistorySessionTitle extends LitElement {
 		if (!this.client) return;
 		this.#unsub?.();
 		this.#unsub = this.client.subscribe({ plugin: "history", event: "sessionsChanged" },
-		                                    (msg: any) => { this.sessions = (msg.data as any)?.sessions ?? []; });
+		    (msg: any) => { this.sessions = (msg.data as any)?.sessions ?? []; });
 	}
 
 	async #fetch() {

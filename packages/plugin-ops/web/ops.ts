@@ -105,12 +105,12 @@ export class TameOpsRead extends OpsView {
 
 	override render() {
 		const range = this.offset || this.limit
-		                  ? ` [${this.offset ? `L${this.offset}` : ""}${this.limit ? `+${this.limit}` : ""}]`
-						  : "";
+		    ? ` [${this.offset ? `L${this.offset}` : ""}${this.limit ? `+${this.limit}` : ""}]`
+			: "";
 		const label = html`read ${this.path}${range}`;
 		const body = this.result !== null && this.result !== undefined
-		                 ? html`<pre ?data-error="${this.isError}">${this.result}</pre>`
-				         : html``;
+		    ? html`<pre ?data-error="${this.isError}">${this.result}</pre>`
+			: html``;
 		return this.wrap(label, body);
 	}
 }
@@ -139,8 +139,8 @@ export class TameOpsWrite extends OpsView {
 		const label = html`write ${this.path}`;
 		const content = this.content ? html`<pre>${truncate(this.content, 1000)}</pre>` : html``;
 		const result = this.result !== null && this.result !== undefined
-		                   ? html`<span data-status ?data-error="${this.isError}">${this.result}</span>`
-				           : html``;
+		    ? html`<span data-status ?data-error="${this.isError}">${this.result}</span>`
+			: html``;
 		const body = html`${content}${result}`;
 		return this.wrap(label, body);
 	}
@@ -177,8 +177,8 @@ export class TameOpsEdit extends OpsView {
 			changes = html`<div><del>− ${oldText}</del><ins>+ ${newText}</ins></div>`;
 		}
 		const result = this.result !== null && this.result !== undefined
-		                   ? html`<span data-status ?data-error="${this.isError}">${this.result}</span>`
-				           : html``;
+		    ? html`<span data-status ?data-error="${this.isError}">${this.result}</span>`
+			: html``;
 		const body = html`${changes}${result}`;
 		return this.wrap(label, body);
 	}
@@ -207,8 +207,8 @@ export class TameOpsExec extends OpsView {
 	override render() {
 		const label = html`exec <code>${this.command ?? "?"}</code>${this.workdir ? ` in ${this.workdir}` : ""}`;
 		const body = this.result !== null && this.result !== undefined
-		                 ? html`<pre ?data-error="${this.isError}">${this.result}</pre>`
-				         : html``;
+		    ? html`<pre ?data-error="${this.isError}">${this.result}</pre>`
+			: html``;
 		return this.wrap(label, body);
 	}
 }

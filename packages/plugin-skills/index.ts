@@ -82,7 +82,7 @@ const buildCatalog = (skills: Map<string, Skill>): string => {
 	for (const [name, skill] of skills) { catalog += `\n- **${name}**: ${skill.description}`; }
 
 	return catalog +
-	       "\n\nWhen a task matches a skill's description, call activate_skill with the skill's name to load its full instructions.";
+	    "\n\nWhen a task matches a skill's description, call activate_skill with the skill's name to load its full instructions.";
 };
 
 const buildActivationResult = (skill: Skill, args?: Record<string, string>): string => {

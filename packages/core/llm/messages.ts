@@ -47,12 +47,12 @@ export class AnthropicMessagesProvider implements InferenceProvider {
 				res.push({
 					role: "user",
 					content: calls.map(c => ({
-						                   type: "tool_result",
-						                   tool_use_id: c.id,
-						                   is_error: c.result!.is_error,
-						                   content: c.result!.content,
-						                   ...c.result![tameContentMeta]?.providerData
-					                   }))
+						type: "tool_result",
+						tool_use_id: c.id,
+						is_error: c.result!.is_error,
+						content: c.result!.content,
+						...c.result![tameContentMeta]?.providerData
+					}))
 				});
 		}
 		return res;

@@ -7,7 +7,7 @@ import {createContext} from "@lit/context";
 export interface RPCClientLike {
 	call(plugin: string, method: string, args: Record<string, unknown>): Promise<Record<string, unknown>>;
 	subscribe(filter: { agent_id?: string; plugin?: string; event?: string },
-	          callback: (msg: { data: object }) => void): () => void;
+	    callback: (msg: { data: object }) => void): () => void;
 	emit(agentId: string, event: string, data: Record<string, unknown>): void;
 }
 

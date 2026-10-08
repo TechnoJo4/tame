@@ -38,8 +38,8 @@ export class SerialRatelimiter implements Ratelimiter {
 
 	error() {
 		this.#errors++;
-		this.#schedule(Math.min(this.#options.errorMax,
-		                        Math.pow(this.#options.errorExp, this.#errors - 1) * this.#options.errorMin));
+		this.#schedule(Math.min(
+		    this.#options.errorMax, Math.pow(this.#options.errorExp, this.#errors - 1) * this.#options.errorMin));
 	}
 
 	success() {

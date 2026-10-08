@@ -98,8 +98,8 @@ export function contextToItems(agent: IAgent): ThreadItem[] {
  * Convert a single assistant message's content blocks to items with pre-resolved views.
  *  Used for live assistantMessage events.
  */
-export function assistantBlocksToItems(blocks: InputMessage["content"], agent: IAgent,
-                                       automated = false): ThreadItem[] {
+export function assistantBlocksToItems(
+    blocks: InputMessage["content"], agent: IAgent, automated = false): ThreadItem[] {
 	const items: ThreadItem[] = [];
 	const textBlocks: TextOrThinking[] = [];
 	const role: MessageItem["role"] = automated ? "tame" : "assistant";

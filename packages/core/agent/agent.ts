@@ -31,8 +31,7 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 		this.wrapHandler = handlerWrapperSkipErrors;
 		this.llm = llm;
 		this.system = system;
-		this.#id =
-		    id ??
+		this.#id = id ??
 		    Array.from(crypto.getRandomValues(new Uint8Array(16))).map((b) => b.toString(16).padStart(2, "0")).join("");
 
 		this.after("userMessage", async (e: UserMessageEvent) => {
@@ -127,8 +126,8 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 						session_id: this.id,
 						messages: structuredClone(this.context),
 						tools: this.tools.values()
-						           .map(t => ({ name: t.name, description: t.desc, input_schema: t.args }))
-						           .toArray()
+						    .map(t => ({ name: t.name, description: t.desc, input_schema: t.args }))
+						    .toArray()
 					}
 				});
 			});
@@ -173,8 +172,7 @@ export class Agent extends Emitter<AgentEvents> implements IAgent {
 
 			this.fire("toolResult", { toolUse: call.id, error: false, result: res as string, meta, messageIdx });
 		} catch (e) {
-			this.fire(
-			    "toolResult",
+			this.fire("toolResult",
 			    { toolUse: call.id, error: true, result: e instanceof Error ? e.message : e as string, messageIdx });
 		}
 	}

@@ -58,11 +58,11 @@ Deno.test("live automated messages become tame without metadata serialization", 
 		key: "msg-live-t",
 	});
 	assertEquals(messageRole({
-		             role: "user",
-		             content: [],
-		             [tameMsgMeta]: { automated: true },
-	             }),
-	             "tame");
+		role: "user",
+		content: [],
+		[tameMsgMeta]: { automated: true },
+	}),
+	    "tame");
 });
 
 Deno.test("automated assistant tool calls retain tame visibility metadata", () => {

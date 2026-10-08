@@ -43,7 +43,7 @@ const formatExecResult = (res: ExecResult): string => {
 	return [status, res.stdout ? `stdout:\n${res.stdout}` : "", res.stderr ? `stderr:\n${res.stderr}` : ""]
 			   .filter((s) => s !== "")
 			   .join("\n\n") ||
-		   "ok";
+		"ok";
 };
 
 export class OpsPlugin implements Plugin {
@@ -116,7 +116,7 @@ export class OpsPlugin implements Plugin {
 	}
 
 	async #runExec(agent: IAgent, command: string[],
-	               opts: Pick<ExecOpts, "workdir"|"timeout">): Promise<ToolExecResult<ExecViewMeta>> {
+	    opts: Pick<ExecOpts, "workdir"|"timeout">): Promise<ToolExecResult<ExecViewMeta>> {
 		const env = this.getEnv(agent);
 		const workdir = opts.workdir ? this.#resolvePath(agent, opts.workdir) : this.getWorkdir(agent);
 
@@ -408,20 +408,20 @@ export class OpsPlugin implements Plugin {
 		if (web) {
 			const dir = import.meta.dirname!;
 			web.register("ops",
-			             [
-				             { tag: "tame-ops-read", src: web.resolve(dir, "./web/ops.ts") },
-				             { tag: "tame-ops-write", src: web.resolve(dir, "./web/ops.ts") },
-				             { tag: "tame-ops-edit", src: web.resolve(dir, "./web/ops.ts") },
-				             { tag: "tame-ops-exec", src: web.resolve(dir, "./web/ops.ts") },
-				             {
-					             tag: "tame-ops-settings",
-					             src: web.resolve(dir, "./web/ops-settings.ts"),
-				             },
-			             ],
-			             [
-				             { location: "modal:settings", tag: "tame-ops-settings" },
-			             ],
-			             web.resolve(dir, "./web/ops.css"));
+			    [
+				    { tag: "tame-ops-read", src: web.resolve(dir, "./web/ops.ts") },
+				    { tag: "tame-ops-write", src: web.resolve(dir, "./web/ops.ts") },
+				    { tag: "tame-ops-edit", src: web.resolve(dir, "./web/ops.ts") },
+				    { tag: "tame-ops-exec", src: web.resolve(dir, "./web/ops.ts") },
+				    {
+					    tag: "tame-ops-settings",
+					    src: web.resolve(dir, "./web/ops-settings.ts"),
+				    },
+			    ],
+			    [
+				    { location: "modal:settings", tag: "tame-ops-settings" },
+			    ],
+			    web.resolve(dir, "./web/ops.css"));
 		}
 	}
 

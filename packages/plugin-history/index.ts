@@ -132,18 +132,18 @@ export class HistoryPlugin implements Plugin {
 		if (web) {
 			const dir = import.meta.dirname!;
 			web.register("history",
-			             [
-				             { tag: "tame-history", src: web.resolve(dir, "./web/history.ts") },
-				             {
-					             tag: "tame-history-session-title",
-					             src: web.resolve(dir, "./web/session-title.ts"),
-				             },
-			             ],
-			             [
-				             ...(this.#config.sidebar ? [{ location: "panel:sidebar", tag: "tame-history" }] : []),
-				             { location: "topbar:center", tag: "tame-history-session-title" },
-			             ],
-			             web.resolve(dir, "./web/history.css"));
+			    [
+				    { tag: "tame-history", src: web.resolve(dir, "./web/history.ts") },
+				    {
+					    tag: "tame-history-session-title",
+					    src: web.resolve(dir, "./web/session-title.ts"),
+				    },
+			    ],
+			    [
+				    ...(this.#config.sidebar ? [{ location: "panel:sidebar", tag: "tame-history" }] : []),
+				    { location: "topbar:center", tag: "tame-history-session-title" },
+			    ],
+			    web.resolve(dir, "./web/history.css"));
 		}
 
 		setInterval(() => {

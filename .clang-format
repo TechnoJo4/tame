@@ -4,6 +4,8 @@ BasedOnStyle: Microsoft
 IndentWidth: 4
 ---
 Language: JavaScript
+AlignAfterOpenBracket: false
+AlignOperands: DontAlign
 AllowShortBlocksOnASingleLine: Always
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: WithoutElse

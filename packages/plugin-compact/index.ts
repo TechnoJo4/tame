@@ -79,7 +79,7 @@ export class CompactPlugin implements Plugin {
 			const lastUsage = agent.context[lastUsageIdx] as AssistantMessage;
 
 			let tokenCount = lastUsage.usage.input_tokens + lastUsage.usage.cache_read_input_tokens +
-			                 lastUsage.usage.cache_creation_input_tokens;
+			    lastUsage.usage.cache_creation_input_tokens;
 			if (tokenCount < this.#config.maxTokens) {
 				const messagesWithoutUsage = agent.context.slice(lastUsageIdx + 1);
 				for (const m of messagesWithoutUsage) tokenCount += this.estimateMessageTokens(m);
