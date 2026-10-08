@@ -33,25 +33,13 @@ function parseVisibility(raw: string|null): Visibility {
 function withVisibility(label: TemplateResult, body: TemplateResult, v: Visibility): TemplateResult {
 	switch (v) {
 	case "hidden":
-		return html`
-				<span data-label>${label}</span>
-			`;
+		return html`<span data-label>${label}</span>`;
 	case "shown":
-		return html`
-				<span data-label>${label}</span>${body}
-			`;
+		return html`<span data-label>${label}</span>${body}`;
 	case "collapsable":
-		return html`
-				<details open>
-					<summary><span data-label>${label}</span></summary>${body}
-				</details>
-			`;
+		return html`<details open><summary><span data-label>${label}</span></summary>${body}</details>`;
 	case "collapsed":
-		return html`
-				<details>
-					<summary><span data-label>${label}</span></summary>${body}
-				</details>
-			`;
+		return html`<details><summary><span data-label>${label}</span></summary>${body}</details>`;
 	}
 }
 
@@ -119,15 +107,10 @@ export class TameOpsRead extends OpsView {
 		const range = this.offset || this.limit
 		                  ? ` [${this.offset ? `L${this.offset}` : ""}${this.limit ? `+${this.limit}` : ""}]`
 						  : "";
-		const label = html`
-			read ${this.path}${range}
-		`;
-		const body = this.result !== null && this.result !== undefined ? html`
-				<pre ?data-error="${this.isError}">${this.result}</pre>
-			`
-				                                                       : html`
-
-			`;
+		const label = html`read ${this.path}${range}`;
+		const body = this.result !== null && this.result !== undefined
+		                 ? html`<pre ?data-error="${this.isError}">${this.result}</pre>`
+				         : html``;
 		return this.wrap(label, body);
 	}
 }
@@ -153,24 +136,12 @@ export class TameOpsWrite extends OpsView {
 	get visibilityKey() { return "writeVisibility"; }
 
 	override render() {
-		const label = html`
-			write ${this.path}
-		`;
-		const body = html`
-			${
-			this.content ? html`
-					<pre>${truncate(this.content, 1000)}</pre>
-				`
-				         : html`
-
-				`} ${
-			this.result !== null && this.result !== undefined ? html`
-					<span data-status ?data-error="${this.isError}">${this.result}</span>
-				`
-							                                  : html`
-
-				`}
-		`;
+		const label = html`write ${this.path}`;
+		const content = this.content ? html`<pre>${truncate(this.content, 1000)}</pre>` : html``;
+		const result = this.result !== null && this.result !== undefined
+		                   ? html`<span data-status ?data-error="${this.isError}">${this.result}</span>`
+				           : html``;
+		const body = html`${content}${result}`;
 		return this.wrap(label, body);
 	}
 }
@@ -198,27 +169,17 @@ export class TameOpsEdit extends OpsView {
 	get visibilityKey() { return "editVisibility"; }
 
 	override render() {
-		const label = html`
-			edit ${this.path}
-		`;
-		const body = html`
-			${
-			this.oldString ? html`
-					<div>
-						<del>− ${truncate(this.oldString, 200)}</del>
-						<ins>+ ${truncate(this.newString, 200)}</ins>
-					</div>
-				`
-					       : html`
-
-				`} ${
-			this.result !== null && this.result !== undefined ? html`
-					<span data-status ?data-error="${this.isError}">${this.result}</span>
-				`
-								                              : html`
-
-				`}
-		`;
+		const label = html`edit ${this.path}`;
+		let changes = html``;
+		if (this.oldString) {
+			const oldText = truncate(this.oldString, 200);
+			const newText = truncate(this.newString, 200);
+			changes = html`<div><del>− ${oldText}</del><ins>+ ${newText}</ins></div>`;
+		}
+		const result = this.result !== null && this.result !== undefined
+		                   ? html`<span data-status ?data-error="${this.isError}">${this.result}</span>`
+				           : html``;
+		const body = html`${changes}${result}`;
 		return this.wrap(label, body);
 	}
 }
@@ -244,15 +205,10 @@ export class TameOpsExec extends OpsView {
 	get visibilityKey() { return "execVisibility"; }
 
 	override render() {
-		const label = html`
-			exec <code>${this.command ?? "?"}</code>${this.workdir ? ` in ${this.workdir}` : ""}
-		`;
-		const body = this.result !== null && this.result !== undefined ? html`
-				<pre ?data-error="${this.isError}">${this.result}</pre>
-			`
-				                                                       : html`
-
-			`;
+		const label = html`exec <code>${this.command ?? "?"}</code>${this.workdir ? ` in ${this.workdir}` : ""}`;
+		const body = this.result !== null && this.result !== undefined
+		                 ? html`<pre ?data-error="${this.isError}">${this.result}</pre>`
+				         : html``;
 		return this.wrap(label, body);
 	}
 }
