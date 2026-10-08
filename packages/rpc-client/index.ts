@@ -131,7 +131,8 @@ export class RPCClient {
 		this.#closed = true;
 		try {
 			this.#writer.close();
-		} catch { /* already closed */
+		} catch {
+			// already closed
 		}
 		for (const { reject } of this.#pending.values()) { reject(new Error("RPC client closed")); }
 		this.#pending.clear();
@@ -182,7 +183,8 @@ export class RPCClient {
 			if (this.#matchesFilter(msg, sub.filter)) {
 				try {
 					sub.callback(msg);
-				} catch { /* don't let one callback break others */
+				} catch {
+					// don't let one callback break others
 				}
 			}
 		}

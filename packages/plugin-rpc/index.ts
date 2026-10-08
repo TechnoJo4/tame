@@ -272,11 +272,13 @@ export class RPCPlugin implements Plugin {
 		this.#connections.delete(conn);
 		try {
 			conn.writer.releaseLock();
-		} catch { /* already released */
+		} catch {
+			// already released
 		}
 		try {
 			conn.reader.cancel();
-		} catch { /* ignore */
+		} catch {
+			// ignore
 		}
 	}
 

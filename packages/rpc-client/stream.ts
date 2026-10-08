@@ -23,7 +23,8 @@ export function wsToStream(socket: WebSocket): Stream {
 		    socket.addEventListener("close", () => {
 			    try {
 				    controller.close();
-			    } catch { /* already closed */
+			    } catch {
+				    // already closed
 			    }
 		    });
 		    socket.addEventListener("error", () => { console.error("websocket error"); });
@@ -31,7 +32,8 @@ export function wsToStream(socket: WebSocket): Stream {
 		cancel() {
 		    try {
 			    socket.close();
-		    } catch { /* already closed */
+		    } catch {
+			    // already closed
 		    }
 		},
 	});
@@ -44,7 +46,8 @@ export function wsToStream(socket: WebSocket): Stream {
 		close() {
 		    try {
 			    socket.close();
-		    } catch { /* already closed */
+		    } catch {
+			    // already closed
 		    }
 		},
 	});

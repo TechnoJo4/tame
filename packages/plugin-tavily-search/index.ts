@@ -35,7 +35,8 @@ export const web_search = tool({
 			                                  `${i + 1}. **[${r.title}](${r.url})** — ${r.content?.slice(0, 200)}`)
 							         .join("\n\n");
 			        content.push({ "type": "content", "content": { "type": "text", "text": text || "(no results)" } });
-		        } catch { /* skip malformed result */
+		        } catch {
+			        // skip malformed result
 		        }
 	        }
 	        return { kind: "search", title: `Search: ${query}`, content };

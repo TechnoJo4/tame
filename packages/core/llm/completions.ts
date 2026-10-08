@@ -265,7 +265,8 @@ export class CompletionsProvider implements InferenceProvider {
 				const fn = tc["function"] as StringRecord | undefined;
 				try {
 					input = JSON.parse((fn?.["arguments"] as string) ?? "{}");
-				} catch { /* keep empty on parse failure */
+				} catch {
+					// keep empty on parse failure
 				}
 
 				// capture unknown tool_call-level fields for round-tripping
