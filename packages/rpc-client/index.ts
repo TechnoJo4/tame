@@ -1,4 +1,4 @@
-import type {CallMessage, CallResultMessage, EventMessage, RPCMessage, Stream, SubscriptionMessage,} from "@tame/rpc-sdk";
+import type {CallMessage, CallResultMessage, EventMessage, RPCMessage, Stream, SubscriptionMessage} from "@tame/rpc-sdk";
 
 /**
  * Registry that plugins augment via codegen to add typed RPC methods.
@@ -22,10 +22,25 @@ export interface RPCRegistry {
 
 type SubscriptionCallback = (msg: EventMessage) => void;
 
+type SubscriptionFilter = Omit<SubscriptionMessage, "type">;
+
 interface SubscriptionEntry {
-	filter: Omit<SubscriptionMessage, "type">;
+	filter: SubscriptionFilter;
 	callback: SubscriptionCallback;
 }
+
+interface PendingCall {
+	resolve: (v: Record<string, unknown>) => void;
+	reject: (e: Error) => void;
+}
+
+type PluginName = keyof RPCRegistry;
+type MethodName<P extends PluginName> = string&keyof RPCRegistry[P];
+
+type RPCInput<P extends PluginName, M extends MethodName<P>> = RPCRegistry[P][M] extends { input: infer I } ? I : never;
+
+type RPCOutput<P extends PluginName, M extends MethodName<P>> =
+    RPCRegistry[P][M] extends { output: infer O } ? O : never;
 
 const nextId = (() => {
 	let n = 0;
@@ -34,11 +49,7 @@ const nextId = (() => {
 
 export class RPCClient {
 	#writer: WritableStreamDefaultWriter<RPCMessage>;
-	#pending = new Map < string, {
-		resolve: (v: Record<string, unknown>) => void;
-		reject: (e: Error) => void
-	}
-	>();
+	#pending = new Map<string, PendingCall>();
 	#subscriptions: SubscriptionEntry[] = [];
 	#closed = false;
 
@@ -52,9 +63,8 @@ export class RPCClient {
 	 *  Without codegen, use string literals and `unknown` types.
 	 *  With codegen, the RPCRegistry overload provides typed args/return.
 	 */
-	call<P extends keyof RPCRegistry, M extends string&keyof RPCRegistry[P]>(
-	    plugin: P, method: M, args: RPCRegistry[P][M] extends { input: infer I }? I: never,
-	    ): Promise<RPCRegistry[P][M] extends { output: infer O }? O : never>;
+	call<P extends PluginName, M extends MethodName<P>>(plugin: P, method: M,
+	                                                    args: RPCInput<P, M>): Promise<RPCOutput<P, M>>;
 	call(plugin: string, method: string, args: Record<string, unknown>): Promise<Record<string, unknown>>;
 	call(plugin: string, method: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
 		const id = nextId();
@@ -101,10 +111,7 @@ export class RPCClient {
 	 * Subscribe to events matching the filter. Returns an unsubscribe function.
 	 *  The server does coarse filtering; the client routes to matching callbacks.
 	 */
-	subscribe(
-	    filter: { agent_id?: string; plugin?: string; event?: string },
-	    callback: SubscriptionCallback,
-	    ): () => void {
+	subscribe(filter: SubscriptionFilter, callback: SubscriptionCallback): () => void {
 		const entry: SubscriptionEntry = { filter: {...filter }, callback };
 		this.#subscriptions.push(entry);
 

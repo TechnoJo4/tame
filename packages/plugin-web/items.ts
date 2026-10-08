@@ -1,5 +1,5 @@
 import {type IAgent, type InputMessage, tameMsgMeta} from "@tame/sdk";
-import type {MessageItem, TextOrThinking, ThreadItem, ToolCallItem,} from "@tame/web-sdk";
+import type {MessageItem, TextOrThinking, ThreadItem, ToolCallItem} from "@tame/web-sdk";
 
 export function messageRole(msg: InputMessage): MessageItem["role"] {
 	return msg[tameMsgMeta]?.automated ? "tame" : msg.role;
@@ -98,11 +98,8 @@ export function contextToItems(agent: IAgent): ThreadItem[] {
  * Convert a single assistant message's content blocks to items with pre-resolved views.
  *  Used for live assistantMessage events.
  */
-export function assistantBlocksToItems(
-    blocks: InputMessage["content"],
-    agent: IAgent,
-    automated = false,
-    ): ThreadItem[] {
+export function assistantBlocksToItems(blocks: InputMessage["content"], agent: IAgent,
+                                       automated = false): ThreadItem[] {
 	const items: ThreadItem[] = [];
 	const textBlocks: TextOrThinking[] = [];
 	const role: MessageItem["role"] = automated ? "tame" : "assistant";
@@ -154,11 +151,7 @@ export function assistantBlocksToItems(
 }
 
 /** Paginate items with 0 = most recent. Returns chronological order (oldest first). */
-export function paginateItems(
-    items: ThreadItem[],
-    offset: number,
-    limit: number,
-    ): ThreadItem[] {
+export function paginateItems(items: ThreadItem[], offset: number, limit: number): ThreadItem[] {
 	const start = Math.max(0, items.length - offset - limit);
 	const end = items.length - offset;
 	return items.slice(start, end);

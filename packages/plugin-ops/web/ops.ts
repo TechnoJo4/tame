@@ -30,11 +30,7 @@ function parseVisibility(raw: string|null): Visibility {
  *  - shown: label + body, flat
  *  - collapsable / collapsed: <details> with label in <summary>
  */
-function withVisibility(
-    label: TemplateResult,
-    body: TemplateResult,
-    v: Visibility,
-    ): TemplateResult {
+function withVisibility(label: TemplateResult, body: TemplateResult, v: Visibility): TemplateResult {
 	switch (v) {
 	case "hidden":
 		return html`
@@ -88,11 +84,7 @@ abstract class OpsView extends LitElement {
 	#subscribe() {
 		if (!this.store || !this.visibilityKey) return;
 		this.#unsub?.();
-		this.#unsub = this.store.onChange(
-		    "ops",
-		    this.visibilityKey,
-		    () => this.requestUpdate(),
-		);
+		this.#unsub = this.store.onChange("ops", this.visibilityKey, () => this.requestUpdate());
 	}
 
 	#getVisibility(): Visibility { return parseVisibility(this.store?.get("ops", this.visibilityKey) ?? null); }

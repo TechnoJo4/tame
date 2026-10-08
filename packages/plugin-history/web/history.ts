@@ -68,10 +68,9 @@ export class TameHistory extends LitElement {
 	#subscribe() {
 		if (!this.client) return;
 		this.#unsub?.();
-		this.#unsub = this.client.subscribe(
-		    { plugin: "history", event: "sessionsChanged" },
-		    (msg: any) => { this.sessions = this.#sort((msg.data as any)?.sessions ?? []); },
-		);
+		this.#unsub =
+		    this.client.subscribe({ plugin: "history", event: "sessionsChanged" },
+		                          (msg: any) => { this.sessions = this.#sort((msg.data as any)?.sessions ?? []); });
 	}
 
 	async #fetch() {

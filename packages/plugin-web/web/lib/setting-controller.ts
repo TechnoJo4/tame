@@ -17,12 +17,7 @@ export class SettingController implements ReactiveController {
 	#store: SettingsStore|null = null;
 	#unsub: (() => void)|null = null;
 
-	constructor(
-	    host: ReactiveControllerHost&HTMLElement,
-	    pluginId: string,
-	    key: string,
-	    defaultValue: string,
-	) {
+	constructor(host: ReactiveControllerHost&HTMLElement, pluginId: string, key: string, defaultValue: string) {
 		this.#host = host;
 		this.#pluginId = pluginId;
 		this.#key = key;
@@ -32,20 +27,10 @@ export class SettingController implements ReactiveController {
 
 	hostConnected() {
 		// Request the store from context
-		this.#host.dispatchEvent(
-		    new ContextEvent(
-		        settingsStoreContext,
-		        this.#host,
-		        (store: SettingsStore) => {
-			        this.#store = store;
-			        this.#unsub = store.onChange(
-			            this.#pluginId,
-			            this.#key,
-			            () => this.#host.requestUpdate(),
-			        );
-		        },
-		        ),
-		);
+		this.#host.dispatchEvent(new ContextEvent(settingsStoreContext, this.#host, (store: SettingsStore) => {
+			this.#store = store;
+			this.#unsub = store.onChange(this.#pluginId, this.#key, () => this.#host.requestUpdate());
+		}));
 	}
 
 	hostDisconnected() {
@@ -68,13 +53,7 @@ export class SettingController implements ReactiveController {
 			return JSON.parse(raw) === true;
 		} catch { return this.#defaultValue === "true"; }
 	}
-	set bool(v: boolean) {
-		this.#store?.set(
-		    this.#pluginId,
-		    this.#key,
-		    JSON.stringify(v),
-		);
-	}
+	set bool(v: boolean) { this.#store?.set(this.#pluginId, this.#key, JSON.stringify(v)); }
 	toggle(): void { this.bool = !this.bool; }
 
 	// ---- number accessors ----

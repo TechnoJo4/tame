@@ -8,12 +8,8 @@ interface RegistryEntry {
 	url: string; // served URL
 }
 
-export function serve(
-    config: WebConfig,
-    components: Map<string, RegistryEntry>,
-    stylesheets: Map<string, string>,
-    rpc: RPCPlugin,
-    ): void {
+export function serve(config: WebConfig, components: Map<string, RegistryEntry>, stylesheets: Map<string, string>,
+                      rpc: RPCPlugin): void {
 	Deno.serve({ hostname: config.listen.hostname, port: config.listen.port }, (request) => {
 		const url = new URL(request.url);
 
@@ -33,12 +29,8 @@ export function serve(
 	});
 }
 
-function serveStatic(
-    pathname: string,
-    staticDir: string,
-    components: Map<string, RegistryEntry>,
-    stylesheets: Map<string, string>,
-    ): Response {
+function serveStatic(pathname: string, staticDir: string, components: Map<string, RegistryEntry>,
+                     stylesheets: Map<string, string>): Response {
 	// Check registered plugin components first
 	for (const [, entry] of components) {
 		if (pathname === entry.url) { return serveFile(entry.src, "application/javascript"); }

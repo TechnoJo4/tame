@@ -4,7 +4,7 @@ import type {MessageItem, SettingsStore, TextOrThinking} from "@tame/web-sdk";
 import {html, LitElement} from "lit";
 import {property} from "lit/decorators.js";
 
-import {AUTOMATED_VISIBILITY_KEY, type MessageVisibility, parseMessageVisibility,} from "../lib/message-visibility.ts";
+import {AUTOMATED_VISIBILITY_KEY, type MessageVisibility, parseMessageVisibility} from "../lib/message-visibility.ts";
 import {settingsStoreContext} from "../lib/settings-context.ts";
 
 const SETTINGS_PLUGIN = "web";
@@ -53,11 +53,7 @@ export class TameMessage extends LitElement {
 		if (!this.store) return;
 		this.#formatUnsub?.();
 		const key = FORMAT_KEYS[this.item.role] ?? "assistantFormat";
-		this.#formatUnsub = this.store.onChange(
-		    SETTINGS_PLUGIN,
-		    key,
-		    () => this.requestUpdate(),
-		);
+		this.#formatUnsub = this.store.onChange(SETTINGS_PLUGIN, key, () => this.requestUpdate());
 	}
 
 	#formatForRole(): string {
@@ -69,17 +65,12 @@ export class TameMessage extends LitElement {
 		this.#visibilityUnsub?.();
 		this.#visibilityUnsub = null;
 		if (!this.store || this.item.role !== "tame") return;
-		this.#visibilityUnsub = this.store.onChange(
-		    SETTINGS_PLUGIN,
-		    AUTOMATED_VISIBILITY_KEY,
-		    () => this.requestUpdate(),
-		);
+		this.#visibilityUnsub =
+		    this.store.onChange(SETTINGS_PLUGIN, AUTOMATED_VISIBILITY_KEY, () => this.requestUpdate());
 	}
 
 	#visibility(): MessageVisibility {
-		return parseMessageVisibility(
-		    this.store?.get(SETTINGS_PLUGIN, AUTOMATED_VISIBILITY_KEY) ?? null,
-		);
+		return parseMessageVisibility(this.store?.get(SETTINGS_PLUGIN, AUTOMATED_VISIBILITY_KEY) ?? null);
 	}
 
 	override render() {

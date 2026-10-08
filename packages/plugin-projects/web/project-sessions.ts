@@ -1,6 +1,6 @@
 import {consume} from "@lit/context";
 import {agentIdContext} from "@tame/web-sdk";
-import {rpcClientContext, type RPCClientLike,} from "@tame/web-sdk/rpc-client-context";
+import {rpcClientContext, type RPCClientLike} from "@tame/web-sdk/rpc-client-context";
 import {html, LitElement} from "lit";
 import {property, state} from "lit/decorators.js";
 
@@ -49,10 +49,7 @@ export class TameProjectSessions extends LitElement {
 	#subscribe() {
 		if (!this.client || !this.hasHistory) return;
 		this.#unsub?.();
-		this.#unsub = this.client.subscribe(
-		    { plugin: "projects", event: "sessionsChanged" },
-		    () => this.#fetch(),
-		);
+		this.#unsub = this.client.subscribe({ plugin: "projects", event: "sessionsChanged" }, () => this.#fetch());
 	}
 
 	async #fetch() {
@@ -106,13 +103,11 @@ export class TameProjectSessions extends LitElement {
 	}
 
 	#switchTo(id: string) {
-		this.dispatchEvent(
-		    new CustomEvent("web:switch-agent", {
-			    detail: { id },
-			    bubbles: true,
-			    composed: true,
-		    }),
-		);
+		this.dispatchEvent(new CustomEvent("web:switch-agent", {
+			detail: { id },
+			bubbles: true,
+			composed: true,
+		}));
 	}
 
 	#toggle(name: string, event: Event) {

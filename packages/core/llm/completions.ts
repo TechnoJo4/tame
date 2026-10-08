@@ -1,4 +1,4 @@
-import {type AssistantMessage, type Content, type InferenceProvider, type InputMessage, type MessageRequest, type StopReason, tameContentMeta, type TameContentMeta, tameMsgMeta, type ToolUse, type Usage,} from "@tame/sdk";
+import {type AssistantMessage, type Content, type InferenceProvider, type InputMessage, type MessageRequest, type StopReason, tameContentMeta, type TameContentMeta, tameMsgMeta, type ToolUse, type Usage} from "@tame/sdk";
 
 import {InferenceError} from "./error.ts";
 
@@ -264,9 +264,7 @@ export class CompletionsProvider implements InferenceProvider {
 				let input: StringRecord = {};
 				const fn = tc["function"] as StringRecord | undefined;
 				try {
-					input = JSON.parse(
-					    (fn?.["arguments"] as string) ?? "{}",
-					);
+					input = JSON.parse((fn?.["arguments"] as string) ?? "{}");
 				} catch { /* keep empty on parse failure */
 				}
 
@@ -314,9 +312,7 @@ export class CompletionsProvider implements InferenceProvider {
 		return {
 			role: "assistant",
 			content,
-			stop_reason: this.#mapStopReason(
-			    (choice["finish_reason"] as string) ?? "stop",
-			    ),
+			stop_reason: this.#mapStopReason((choice["finish_reason"] as string) ?? "stop"),
 			model: (data["model"] as string) ?? "",
 			usage: tameUsage,
 			[tameMsgMeta]: Object.keys(msgProviderData).length > 0 ? { providerData: msgProviderData } : undefined,

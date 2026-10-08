@@ -25,12 +25,7 @@ export class TameSettingNumber extends LitElement {
 
 	override willUpdate(_changed: Map<string, unknown>) {
 		if (!this.#setting && this.store && this.pluginId && this.key) {
-			this.#setting = new SettingController(
-			    this,
-			    this.pluginId,
-			    this.key,
-			    this.default,
-			);
+			this.#setting = new SettingController(this, this.pluginId, this.key, this.default);
 		}
 	}
 

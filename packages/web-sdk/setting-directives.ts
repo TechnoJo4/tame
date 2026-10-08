@@ -18,11 +18,7 @@ abstract class SettingDirective<T> extends AsyncDirective {
 	 * Called by subclasses in render(). Dispatches a context request
 	 *  to resolve the store, subscribes, and returns the coerced value.
 	 */
-	protected resolve(
-	    pluginId: string,
-	    key: string,
-	    defaultValue: string,
-	    ): T {
+	protected resolve(pluginId: string, key: string, defaultValue: string): T {
 		if (this.#store === null) {
 			this.#pluginId = pluginId;
 			this.#key = key;
@@ -31,20 +27,10 @@ abstract class SettingDirective<T> extends AsyncDirective {
 			// part is set by lit before render() is called
 			const el = (this as unknown as { part?: { options?: { host: HTMLElement } } }).part?.options?.host;
 			if (el) {
-				el.dispatchEvent(
-				    new ContextEvent(
-				        settingsStoreContext,
-				        el,
-				        (store: SettingsStore) => {
-					        this.#store = store;
-					        this.#unsub = store.onChange(
-					            this.#pluginId,
-					            this.#key,
-					            () => this.setValue(this.#coerce()),
-					        );
-				        },
-				        ),
-				);
+				el.dispatchEvent(new ContextEvent(settingsStoreContext, el, (store: SettingsStore) => {
+					this.#store = store;
+					this.#unsub = store.onChange(this.#pluginId, this.#key, () => this.setValue(this.#coerce()));
+				}));
 			}
 		}
 
@@ -104,12 +90,7 @@ class SettingBool extends SettingDirective<boolean> {
 class SettingWhen extends SettingDirective<unknown> {
 	#renderFn: ((value: string) => unknown)|null = null;
 
-	render(
-	    pluginId: string,
-	    key: string,
-	    defaultValue: string,
-	    renderFn: (value: string) => unknown,
-	    ): unknown {
+	render(pluginId: string, key: string, defaultValue: string, renderFn: (value: string) => unknown): unknown {
 		this.#renderFn = renderFn;
 		return this.resolve(pluginId, key, defaultValue);
 	}

@@ -7,10 +7,12 @@ import type {IAgent} from "./interfaces.ts";
 export {Type} from "typebox";
 export {StringEnum} from "../util/string-enum.ts";
 
-export type ToolExecResult<T> = string|{
+export interface ToolExecOutput<T> {
 	content: string;
-	meta?: T
+	meta?: T;
 }
+
+export type ToolExecResult<T> = string|ToolExecOutput<T>;
 
 export interface Tool<TArgs extends TSchema, TMeta = unknown> {
 	/** Name for the tool */

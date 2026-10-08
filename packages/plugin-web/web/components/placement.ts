@@ -21,10 +21,7 @@ class TamePlacement extends LitElement {
 	override createRenderRoot() { return this; }
 
 	override render() {
-		const placements = this.registry?.placements?.filter(
-		                       (p) => p.location === this.location,
-		                       ) ??
-		                   [];
+		const placements = this.registry?.placements?.filter((p) => p.location === this.location) ?? [];
 		return placements.map((p) => {
 			const src = this.registry?.getComponentSrc(p.tag);
 			if (!src) return html``;

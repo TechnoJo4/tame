@@ -10,10 +10,7 @@ export interface TokenStatsSnapshot {
 	/** Raw usage from the last assistant message, null if no completions yet. */
 	context: Usage|null;
 	/** Running session aggregate. */
-	session: {
-		turnCount: number; inputTokens: number; outputTokens: number; cacheCreationInputTokens: number;
-		cacheReadInputTokens: number;
-	};
+	session: TokenStatsSaved;
 }
 
 /** Persisted alongside history so sessions survive restarts. */

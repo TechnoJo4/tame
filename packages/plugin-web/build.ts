@@ -107,10 +107,7 @@ async function writeVendorEntries(context: BuildContext): Promise<string[]> {
 	ensureDir(context.buildDir);
 	const names = Object.keys(vendorEntries);
 	for (const name of names) {
-		await Deno.writeTextFile(
-		    join(context.buildDir, `${name}.entry.ts`),
-			vendorEntries[name],
-		);
+		await Deno.writeTextFile(join(context.buildDir, `${name}.entry.ts`), vendorEntries[name]);
 	}
 	return names;
 }
@@ -129,28 +126,19 @@ export async function buildVendorBundles(context: BuildContext, sourceMaps: bool
 	const names = await writeVendorEntries(context);
 	try {
 		for (const name of names) {
-			await bundle(
-			    context,
-			    join(context.buildDir, `${name}.entry.ts`),
-				join(context.staticDir, `${name}.js`),
-				{...vendorOptions(name), sourceMaps },
-			);
+			await bundle(context, join(context.buildDir, `${name}.entry.ts`), join(context.staticDir, `${name}.js`),
+					     {...vendorOptions(name), sourceMaps });
 		}
 	} finally { removeVendorEntries(context, names); }
 }
 
 async function buildShellBundle(context: BuildContext, sourceMaps: boolean): Promise<void> {
-	await bundle(
-	    context,
-	    join(context.packageDir, "web", "shell.ts"),
-	    join(context.staticDir, "shell.js"),
-	    {
-		    externals: shellExternals,
-		    inlineDynamicImports: true,
-		    minifyOutput: true,
-		    sourceMaps,
-	    },
-	);
+	await bundle(context, join(context.packageDir, "web", "shell.ts"), join(context.staticDir, "shell.js"), {
+		externals: shellExternals,
+		inlineDynamicImports: true,
+		minifyOutput: true,
+		sourceMaps,
+	});
 }
 
 function vendorBundlesExist(context: BuildContext): boolean {

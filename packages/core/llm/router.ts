@@ -1,4 +1,4 @@
-import type {AssistantMessage, InferenceProvider, MessageRequest,} from "@tame/sdk";
+import type {AssistantMessage, InferenceProvider, MessageRequest} from "@tame/sdk";
 
 import type {RatelimitedProvider} from "./ratelimited.ts";
 

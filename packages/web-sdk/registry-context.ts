@@ -12,6 +12,4 @@ export interface Registry {
 	getComponentSrc(tag: string): string|undefined;
 }
 
-export const registryContext = createContext<Registry|null>(
-    Symbol("registry"),
-);
+export const registryContext = createContext<Registry|null>(Symbol("registry"));

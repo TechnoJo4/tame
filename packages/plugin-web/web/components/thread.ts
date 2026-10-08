@@ -5,11 +5,11 @@ import {RangeChangedEvent} from "@lit-labs/virtualizer/events.js";
 import {consume} from "@lit/context";
 import {agentIdContext} from "@tame/web-sdk";
 import type {MessageItem, SettingsStore, ThreadItem, ToolCallItem} from "@tame/web-sdk";
-import {rpcClientContext, type RPCClientLike,} from "@tame/web-sdk/rpc-client-context";
+import {rpcClientContext, type RPCClientLike} from "@tame/web-sdk/rpc-client-context";
 import {html, LitElement} from "lit";
 import {property} from "lit/decorators.js";
 
-import {AUTOMATED_VISIBILITY_KEY, parseMessageVisibility,} from "../lib/message-visibility.ts";
+import {AUTOMATED_VISIBILITY_KEY, parseMessageVisibility} from "../lib/message-visibility.ts";
 import {settingsStoreContext} from "../lib/settings-context.ts";
 
 const PAGE_SIZE = 50;
@@ -145,18 +145,12 @@ export class TameThread extends LitElement {
 
 	#subscribeVisibility() {
 		this.#visibilityUnsub?.();
-		this.#visibilityUnsub = this.store?.onChange(
-		                            "web",
-		                            AUTOMATED_VISIBILITY_KEY,
-		                            () => this.requestUpdate(),
-		                            ) ??
-		                        null;
+		this.#visibilityUnsub =
+		    this.store?.onChange("web", AUTOMATED_VISIBILITY_KEY, () => this.requestUpdate()) ?? null;
 	}
 
 	#visibleItems(): ThreadItem[] {
-		const visibility = parseMessageVisibility(
-		    this.store?.get("web", AUTOMATED_VISIBILITY_KEY) ?? null,
-		);
+		const visibility = parseMessageVisibility(this.store?.get("web", AUTOMATED_VISIBILITY_KEY) ?? null);
 		if (visibility !== "hidden") return this.items;
 		return this.items.filter((item) => item.role !== "tame");
 	}
@@ -179,12 +173,8 @@ export class TameThread extends LitElement {
 		this.#unsubscribeAll();
 
 		const on = (event: string, handler: (data: any) => void) => {
-			this.#unsubs.push(
-			    this.client!.subscribe(
-			        { agent_id: this.agentId!, plugin: "web", event },
-			        (msg) => handler(msg.data as Record<string, unknown>),
-			        ),
-			);
+			this.#unsubs.push(this.client!.subscribe({ agent_id: this.agentId!, plugin: "web", event },
+			                                         (msg) => handler(msg.data as Record<string, unknown>)));
 		};
 
 		on("userMessage", (d) => {
@@ -266,9 +256,7 @@ export class TameThread extends LitElement {
 		if (item.type === "tool_call") {
 			const ti = item as ToolCallItem;
 			if (ti.role !== "tame") return this.#renderToolView(ti);
-			switch (parseMessageVisibility(
-			    this.store?.get("web", AUTOMATED_VISIBILITY_KEY) ?? null,
-			    )) {
+			switch (parseMessageVisibility(this.store?.get("web", AUTOMATED_VISIBILITY_KEY) ?? null)) {
 			case "hidden":
 				return html``;
 			case "collapsable":

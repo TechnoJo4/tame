@@ -1,16 +1,15 @@
 import {Thread} from "./thread.ts";
 
-export const handlerWrapperSkipErrors = <T>(f: (x: T) => Promise<T>):
-    ((x: T) => Promise<T>) => {
-	    return async x => {
-		    try {
-			    return await f(x);
-		    } catch (e) {
-			    console.error(e);
-			    return x;
-		    }
-	    };
-    }
+export const handlerWrapperSkipErrors: HandlerWrapper = f => {
+	return async x => {
+		try {
+			return await f(x);
+		} catch (e) {
+			console.error(e);
+			return x;
+		}
+	};
+};
 
 export type HandlerWrapper = <T>(f: (x: T) => Promise<T>) => ((x: T) => Promise<T>);
 

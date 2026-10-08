@@ -2,7 +2,7 @@ import {baseRouteSchemas, call, type CallDescription, type CallMessage, type Eve
 import {assertSchema, type IAgent, type IHarness, type Plugin, type ToolUse} from "@tame/sdk";
 import {Compile, type Validator} from "typebox/compile";
 
-export {baseRouteSchemas, call, type CallDescription, type CallMessage, type CallResultMessage, callResultSchema, callSchema, type EventMessage, eventSchema, messagesSchema, type RPCMessage, rpcMsgSchema, type Stream, type SubscriptionMessage, subscriptionSchema,} from "@tame/rpc-sdk";
+export {baseRouteSchemas, call, type CallDescription, type CallMessage, type CallResultMessage, callResultSchema, callSchema, type EventMessage, eventSchema, messagesSchema, type RPCMessage, rpcMsgSchema, type Stream, type SubscriptionMessage, subscriptionSchema} from "@tame/rpc-sdk";
 
 interface Subscription {
 	all_agents: boolean;

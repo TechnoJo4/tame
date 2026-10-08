@@ -27,9 +27,7 @@ export class LocalSettingsStore implements SettingsStore {
 				key: decoded.key,
 				value: e.newValue !== null ? JSON.parse(e.newValue) : null,
 			};
-			document.dispatchEvent(
-			    new CustomEvent(EVENT, { detail }),
-			);
+			document.dispatchEvent(new CustomEvent(EVENT, { detail }));
 		});
 	}
 
@@ -46,16 +44,10 @@ export class LocalSettingsStore implements SettingsStore {
 		const encoded = JSON.stringify(value);
 		localStorage.setItem(encodeKey(pluginId, key), encoded);
 		const detail = { pluginId, key, value };
-		document.dispatchEvent(
-		    new CustomEvent(EVENT, { detail }),
-		);
+		document.dispatchEvent(new CustomEvent(EVENT, { detail }));
 	}
 
-	onChange(
-	    pluginId: string,
-	    key: string,
-	    callback: (value: string|null) => void,
-	    ): () => void {
+	onChange(pluginId: string, key: string, callback: (value: string|null) => void): () => void {
 		const handler = (e: Event) => {
 			const detail = (e as CustomEvent).detail as {
 				pluginId: string;

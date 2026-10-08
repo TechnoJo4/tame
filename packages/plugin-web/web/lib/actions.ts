@@ -22,10 +22,7 @@ export function queueCompletion(client: RPCClientLike, agentId: string): void {
 }
 
 /** Create a fresh agent and return its id. */
-export async function newAgent(
-    client: RPCClientLike,
-    system?: string,
-    ): Promise<string> {
+export async function newAgent(client: RPCClientLike, system?: string): Promise<string> {
 	const result = await client.call("@tame", "newAgent", { system: system ?? null } as any);
 	return (result as any).id as string;
 }

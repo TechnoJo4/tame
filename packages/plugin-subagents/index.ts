@@ -60,6 +60,30 @@ interface AsyncTask {
 	description: string;
 }
 
+interface SubagentArgs {
+	description: string;
+	prompt: string;
+	subagent_type?: string;
+}
+
+interface SubagentSession {
+	subagent: IAgent;
+	assistantTexts: string[];
+}
+
+interface SubagentError {
+	status: "error";
+	error: string;
+}
+
+type SubagentSetup = SubagentSession|SubagentError;
+
+interface ToolCallSummary {
+	name: string;
+	result: string;
+	error: boolean;
+}
+
 // ---- plugin ----
 
 export class SubagentsPlugin implements Plugin {
@@ -115,15 +139,7 @@ export class SubagentsPlugin implements Plugin {
 
 	// ---- shared subagent setup ----
 
-	#setupSubagent(
-	    harness: IHarness,
-	    parentAgent: IAgent,
-	    args: { description: string; prompt: string; subagent_type?: string },
-	    ): { subagent: IAgent; assistantTexts: string[] }|{
-		status: "error";
-		error: string
-	}
-	{
+	#setupSubagent(harness: IHarness, parentAgent: IAgent, args: SubagentArgs): SubagentSetup {
 		const depth = (parentAgent.pluginData.get(depthKey) as number) ?? 0;
 		if (depth >= this.#config.maxDepth) {
 			return { status: "error", error: `Max subagent depth (${this.#config.maxDepth}) reached.` };
@@ -174,11 +190,8 @@ export class SubagentsPlugin implements Plugin {
 	}
 
 	/** Collect tool call summary from context. */
-	#collectToolCalls(
-	    context: IAgent["context"],
-	    maxLen: number,
-	    ): { name: string; result: string; error: boolean }[] {
-		const toolCalls: { name: string; result: string; error: boolean }[] = [];
+	#collectToolCalls(context: IAgent["context"], maxLen: number): ToolCallSummary[] {
+		const toolCalls: ToolCallSummary[] = [];
 		for (const msg of context) {
 			if (msg.role !== "assistant") continue;
 			for (const c of msg.content) {
@@ -228,18 +241,14 @@ export class SubagentsPlugin implements Plugin {
 					description:
 					    "The task for the subagent to perform. Include all necessary context — the subagent starts fresh.",
 				}),
-				subagent_type: Type.Optional(
-				    Type.String({
-					    description: "Type of agent to use. Omit for general-purpose.",
-				    }),
-				    ),
-				run_in_background: Type.Optional(
-				    Type.Boolean({
-					    default: false,
-					    description:
-					        "Run asynchronously. Returns immediately with agentId; a notification is injected when the subagent finishes.",
-				    }),
-				    ),
+				subagent_type: Type.Optional(Type.String({
+					description: "Type of agent to use. Omit for general-purpose.",
+				})),
+				run_in_background: Type.Optional(Type.Boolean({
+					default: false,
+					description:
+					    "Run asynchronously. Returns immediately with agentId; a notification is injected when the subagent finishes.",
+				})),
 			}),
 			exec: async (args, parentAgent) => {
 			    const setup = this.#setupSubagent(harness, parentAgent, args);
@@ -284,10 +293,8 @@ export class SubagentsPlugin implements Plugin {
 						    this.#notify(parentAgent.id, args.description, "failed",
 						                 `Subagent stopped unexpectedly: ${idle.stopReason}.`);
 					    } else {
-						    const toolCalls = this.#collectToolCalls(
-						        subagent.context,
-						        this.#config.maxToolResultLength,
-						    );
+						    const toolCalls =
+						        this.#collectToolCalls(subagent.context, this.#config.maxToolResultLength);
 						    const result = assistantTexts.join("\n\n") || "(no output)";
 						    let text = result;
 						    if (toolCalls.length) {
@@ -346,10 +353,7 @@ export class SubagentsPlugin implements Plugin {
 						};
 				    }
 
-				    const toolCalls = this.#collectToolCalls(
-				        subagent.context,
-				        this.#config.maxToolResultLength,
-				    );
+				    const toolCalls = this.#collectToolCalls(subagent.context, this.#config.maxToolResultLength);
 
 				    return {
 					    status: "completed",

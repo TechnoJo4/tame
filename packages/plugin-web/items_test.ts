@@ -1,7 +1,7 @@
 import {assertEquals} from "@std/assert";
 import {type IAgent, type InputMessage, tameMsgMeta} from "@tame/sdk";
 
-import {assistantBlocksToItems, contextToItems, messageRole,} from "./items.ts";
+import {assistantBlocksToItems, contextToItems, messageRole} from "./items.ts";
 
 const agent = (context: InputMessage[]): IAgent => ({
 	context,
@@ -49,11 +49,7 @@ Deno.test("automated context messages become tame web messages", () => {
 
 Deno.test("live automated messages become tame without metadata serialization", () => {
 	const context: InputMessage[] = [];
-	const items = assistantBlocksToItems(
-	    [{ type: "text", text: "summary" }],
-	    agent(context),
-	    true,
-	);
+	const items = assistantBlocksToItems([{ type: "text", text: "summary" }], agent(context), true);
 
 	assertEquals(items[0], {
 		type: "message",
@@ -61,14 +57,12 @@ Deno.test("live automated messages become tame without metadata serialization", 
 		content: [{ type: "text", text: "summary" }],
 		key: "msg-live-t",
 	});
-	assertEquals(
-	    messageRole({
-		    role: "user",
-		    content: [],
-		    [tameMsgMeta]: { automated: true },
-	    }),
-	    "tame",
-	);
+	assertEquals(messageRole({
+		             role: "user",
+		             content: [],
+		             [tameMsgMeta]: { automated: true },
+	             }),
+	             "tame");
 });
 
 Deno.test("automated assistant tool calls retain tame visibility metadata", () => {

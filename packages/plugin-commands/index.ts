@@ -24,10 +24,7 @@ export class CommandsPlugin implements Plugin {
 
 	async dispatch(agent: IAgent, text: string): Promise<string|void> {
 		const i = text.indexOf(" ");
-		const name = text.substring(
-		    text.at(0) === "/" ? 1 : 0,
-		    i !== -1 ? i : undefined,
-		);
+		const name = text.substring(text.at(0) === "/" ? 1 : 0, i !== -1 ? i : undefined);
 		const cmd = this.#registry.get(name);
 		if (!cmd) throw new Error(`no command '${name}'`);
 		return await cmd.run(agent, i !== -1 ? text.substring(i + 1) : undefined);

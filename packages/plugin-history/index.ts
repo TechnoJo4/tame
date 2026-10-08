@@ -3,7 +3,7 @@ import {resolve} from "@std/path";
 import type {RPCPlugin} from "@tame/plugin-rpc/index";
 import type {WebPlugin} from "@tame/plugin-web/index";
 import {call} from "@tame/rpc-sdk";
-import {type IAgent, type IHarness, type InputMessage, type Plugin, tameDataFolder, type TameMessageMeta, tameMsgMeta, Thread, type ToolUse,} from "@tame/sdk";
+import {type IAgent, type IHarness, type InputMessage, type Plugin, tameDataFolder, type TameMessageMeta, tameMsgMeta, Thread, type ToolUse} from "@tame/sdk";
 import {promises as fs} from "node:fs";
 
 import type {HistoryConfig} from "./config.ts";
@@ -224,9 +224,7 @@ export class HistoryPlugin implements Plugin {
 				system: agent.system,
 				context: agent.context.map(messageToPersisted),
 				history: data.history.map(messageToPersisted),
-				extra: Object.fromEntries(
-				    this.#hooks.entries().map(([k, v]) => [k, v.save(agent)]),
-				    ),
+				extra: Object.fromEntries(this.#hooks.entries().map(([k, v]) => [k, v.save(agent)])),
 				lastMessageAt: now,
 			};
 			console.log(`saving agent ${agent.id}`);
@@ -323,9 +321,7 @@ export class HistoryPlugin implements Plugin {
 		for (const [k, v] of Object.entries(history.extra ?? {})) {
 			const hook = this.#hooks.get(k);
 			if (!hook) {
-				console.warn(
-				    `extra data '${k}' in history for agent but hook not found`,
-				);
+				console.warn(`extra data '${k}' in history for agent but hook not found`);
 				continue;
 			}
 			hook.load(agent, v);

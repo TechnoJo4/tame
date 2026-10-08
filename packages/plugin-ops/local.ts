@@ -62,8 +62,7 @@ export default class LocalEnv implements Env {
 			    } catch { throw new Error(`${resolved}: access failed`); }
 			    if (stat.size > this.config.maxReadBytes) {
 				    throw new Error(
-				        `${resolved}: file too large (${stat.size} bytes, max ${this.config.maxReadBytes})`,
-					);
+				        `${resolved}: file too large (${stat.size} bytes, max ${this.config.maxReadBytes})`);
 			    }
 			    return new Uint8Array(await fs.readFile(resolved));
 			},

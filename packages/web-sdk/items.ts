@@ -12,14 +12,17 @@ export interface MessageItem {
 	key: string;
 }
 
-export type TextOrThinking =|{
+export interface TextItem {
 	type: "text";
-	text: string
+	text: string;
 }
-|{
+
+export interface ThinkingItem {
 	type: "thinking";
-	thinking: string
-};
+	thinking: string;
+}
+
+export type TextOrThinking = TextItem|ThinkingItem;
 
 export interface ToolCallItem {
 	type: "tool_call";

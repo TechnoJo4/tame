@@ -1,11 +1,14 @@
-export type Content =|{
+export interface TextContent {
 	type: "text";
-	text: string
+	text: string;
 }
-|{
+
+export interface BytesContent {
 	type: "bytes";
-	data: Uint8Array
-};
+	data: Uint8Array;
+}
+
+export type Content = TextContent|BytesContent;
 
 export interface ExecOpts {
 	workdir?: string;

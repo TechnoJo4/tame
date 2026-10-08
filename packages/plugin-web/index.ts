@@ -1,12 +1,12 @@
 import {basename, resolve} from "@std/path";
 import type {RPCPlugin} from "@tame/plugin-rpc/index";
 import {call} from "@tame/rpc-sdk";
-import {type IAgent, type IHarness, type Plugin, tameMsgMeta,} from "@tame/sdk";
+import {type IAgent, type IHarness, type Plugin, tameMsgMeta} from "@tame/sdk";
 import type {ComponentDef, Placement} from "@tame/web-sdk/placement";
 import {Type} from "typebox";
 
-import {buildShell, copyStylesheet, transpileComponents,} from "./build.ts";
-import {assistantBlocksToItems, contextToItems, paginateItems,} from "./items.ts";
+import {buildShell, type ComponentInput, copyStylesheet, transpileComponents} from "./build.ts";
+import {assistantBlocksToItems, contextToItems, paginateItems} from "./items.ts";
 import {serve} from "./serve.ts";
 
 export type {ComponentDef, Placement} from "@tame/web-sdk/placement";
@@ -63,13 +63,8 @@ export class WebPlugin implements Plugin {
 	resolve(dirname: string, relative: string): string { return resolve(dirname, relative); }
 
 	/** Register components and placements for a plugin. Called during init(). */
-	async register(
-	    pluginId: string,
-	    components: ComponentDef[],
-	    placements: Placement[],
-	    css?: string,
-	    ): Promise<void> {
-		const tsFiles: { src: string; tag: string }[] = [];
+	async register(pluginId: string, components: ComponentDef[], placements: Placement[], css?: string): Promise<void> {
+		const tsFiles: ComponentInput[] = [];
 
 		for (const c of components) {
 			if (c.src.endsWith(".ts")) {
@@ -81,12 +76,7 @@ export class WebPlugin implements Plugin {
 		}
 
 		if (tsFiles.length > 0) {
-			const built = await transpileComponents(
-			    this.#buildContext(),
-			    pluginId,
-			    tsFiles,
-			    this.#config.sourceMaps,
-			);
+			const built = await transpileComponents(this.#buildContext(), pluginId, tsFiles, this.#config.sourceMaps);
 			for (const component of built) {
 				this.#components.set(component.tag, {
 					src: component.src,
@@ -113,12 +103,7 @@ export class WebPlugin implements Plugin {
 	async #buildShell(): Promise<void> {
 		try {
 			await buildShell(this.#buildContext(), this.#config.sourceMaps);
-		} catch (e) {
-			console.warn(
-			    "plugin-web: shell rebuild failed, using existing shell.js:",
-			    e,
-			);
-		}
+		} catch (e) { console.warn("plugin-web: shell rebuild failed, using existing shell.js:", e); }
 	}
 
 	async init(harness: IHarness) {
@@ -134,16 +119,11 @@ export class WebPlugin implements Plugin {
 			getRegistry: call({
 				input: Type.Object({}),
 				output: Type.Object({
-					components: Type.Record(
-					    Type.String(),
-					    Type.Object({ src: Type.String() }),
-					    ),
+					components: Type.Record(Type.String(), Type.Object({ src: Type.String() })),
 					placements: Type.Array(Type.Object({
 						location: Type.String(),
 						tag: Type.String(),
-						props: Type.Optional(
-						    Type.Object({}, { additionalProperties: true }),
-						    ),
+						props: Type.Optional(Type.Object({}, { additionalProperties: true })),
 					})),
 					stylesheets: Type.Record(Type.String(), Type.String()),
 				}),
@@ -217,11 +197,7 @@ export class WebPlugin implements Plugin {
 		});
 
 		agent.after("assistantMessage", async (e) => {
-			const items = assistantBlocksToItems(
-			    e.msg.content,
-			    agent,
-			    e.msg[tameMsgMeta]?.automated === true,
-			);
+			const items = assistantBlocksToItems(e.msg.content, agent, e.msg[tameMsgMeta]?.automated === true);
 			if (items.length === 0) return e;
 			emit("assistantMessage", { items });
 			return e;

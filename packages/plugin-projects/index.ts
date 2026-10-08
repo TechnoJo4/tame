@@ -3,7 +3,7 @@ import type {Env, OpsPlugin} from "@tame/plugin-ops/index";
 import type {RPCPlugin} from "@tame/plugin-rpc/index";
 import type {WebPlugin} from "@tame/plugin-web/index";
 import {call} from "@tame/rpc-sdk";
-import {type IAgent, type IHarness, type Plugin, tameMsgMeta,} from "@tame/sdk";
+import {type IAgent, type IHarness, type Plugin, tameMsgMeta} from "@tame/sdk";
 
 import type {ProjectConfig, ProjectsConfig} from "./config.ts";
 import {rpcSchema} from "./rpc-schema.ts";
@@ -79,21 +79,18 @@ export class ProjectsPlugin implements Plugin {
 			event: "sessionsChanged",
 			data: {},
 		}));
-		history?.addHook<ProjectAgentData|null>(
-		    "projects",
-		    {
-			    save: (agent) => {
-			        const project = this.#getProject(agent);
-			        return project ? { project } : null;
-			    },
-			    load: (agent, data) => {
-			        if (data?.project) {
-				        this.setProject(agent, data.project);
-				        this.#applyOpsWorkdir(agent, data.project);
-			        }
-			    },
-		    } satisfies HistoryHook<ProjectAgentData|null>,
-		);
+		history?.addHook<ProjectAgentData|null>("projects", {
+			save: (agent) => {
+			    const project = this.#getProject(agent);
+			    return project ? { project } : null;
+			},
+			load: (agent, data) => {
+			    if (data?.project) {
+				    this.setProject(agent, data.project);
+				    this.#applyOpsWorkdir(agent, data.project);
+			    }
+			},
+		} satisfies HistoryHook<ProjectAgentData|null>);
 
 		const web = harness.getPlugin<WebPlugin>("web");
 		if (web) {
@@ -168,10 +165,7 @@ export class ProjectsPlugin implements Plugin {
 				        : undefined;
 				return {...session, project };
 			} catch (e) {
-				console.warn(
-				    `plugin-projects: skipping unreadable session ${session.id}:`,
-					e,
-				);
+				console.warn(`plugin-projects: skipping unreadable session ${session.id}:`, e);
 				return null;
 			}
 		}));

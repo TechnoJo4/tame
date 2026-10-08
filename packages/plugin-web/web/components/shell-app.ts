@@ -156,12 +156,8 @@ export class TameShell extends LitElement {
 		this.#unsubscribeAll();
 
 		const on = (event: string, handler: (data: object) => void) => {
-			this.#unsubs.push(
-			    this.#client!.subscribe(
-			        { agent_id: agentId, plugin: "web", event },
-			        (msg) => handler(msg.data as Record<string, unknown>),
-			        ),
-			);
+			this.#unsubs.push(this.#client!.subscribe({ agent_id: agentId, plugin: "web", event },
+			                                          (msg) => handler(msg.data as Record<string, unknown>)));
 		};
 
 		on("idle", () => {

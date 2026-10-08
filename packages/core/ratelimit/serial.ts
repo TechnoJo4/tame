@@ -49,9 +49,7 @@ export class SerialRatelimiter implements Ratelimiter {
 
 	retryAfter(date: string) {
 		const n = parseInt(date);
-		this.#schedule(
-		    isNaN(n) ? new Date(date).getTime() - Date.now() : n * 1000,
-		);
+		this.#schedule(isNaN(n) ? new Date(date).getTime() - Date.now() : n * 1000);
 	}
 
 	delay(): number { return Math.max(0, this.#nextReq - Date.now()); }
@@ -63,11 +61,7 @@ export class SerialRatelimiter implements Ratelimiter {
 			await p.promise;
 		} else {
 			this.#shouldQueue = true;
-			if (this.#nextReq > Date.now()) {
-				await new Promise(
-				    (r) => setTimeout(r, this.#nextReq - Date.now()),
-				);
-			}
+			if (this.#nextReq > Date.now()) { await new Promise((r) => setTimeout(r, this.#nextReq - Date.now())); }
 		}
 	}
 }

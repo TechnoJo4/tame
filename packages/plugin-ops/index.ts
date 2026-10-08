@@ -1,9 +1,9 @@
 import type {CommandsPlugin} from "@tame/plugin-commands/index";
 import type {WebPlugin} from "@tame/plugin-web/index";
-import {type IAgent, type IHarness, key, type Plugin, tool, type ToolExecResult, Type,} from "@tame/sdk";
+import {type IAgent, type IHarness, key, type Plugin, tool, type ToolExecResult, Type} from "@tame/sdk";
 
 import type {OpsConfig} from "./config.ts";
-import type {Env} from "./env.ts";
+import type {Env, ExecOpts, ExecResult} from "./env.ts";
 import LocalEnv from "./local.ts";
 
 export {configSchema} from "./config.ts";
@@ -37,16 +37,14 @@ const getExecName = (args: string[]): string => {
 	return s === -1 ? a[0] : a[0].slice(0, s);
 };
 
-const formatExecResult =
-    (
-        res: { stdout: string; stderr: string; exit: "timeout" | "abort" | number },
-        ): string => [res.exit !== 0
-                          ? typeof res.exit === "string" ? `killed by ${res.exit}.` : `exited with code ${res.exit}.`
-		                  : "",
-		              res.stdout ? `stdout:\n${res.stdout}` : "",
-			          res.stderr ? `stderr:\n${res.stderr}` : "",
-].filter((s) => s !== "").join("\n\n") ||
-				     "ok";
+const formatExecResult = (res: ExecResult): string => {
+	const status =
+	    res.exit !== 0 ? typeof res.exit === "string" ? `killed by ${res.exit}.` : `exited with code ${res.exit}.` : "";
+	return [status, res.stdout ? `stdout:\n${res.stdout}` : "", res.stderr ? `stderr:\n${res.stderr}` : ""]
+			   .filter((s) => s !== "")
+			   .join("\n\n") ||
+		   "ok";
+};
 
 export class OpsPlugin implements Plugin {
 	id = "ops" as const;
@@ -81,11 +79,7 @@ export class OpsPlugin implements Plugin {
 		return env;
 	}
 
-	async edit(
-	    agent: IAgent,
-	    path: string,
-	    fn: (content: string) => string,
-	    ): Promise<ToolExecResult<ViewMeta>> {
+	async edit(agent: IAgent, path: string, fn: (content: string) => string): Promise<ToolExecResult<ViewMeta>> {
 		const env = this.getEnv(agent);
 		const resolved = this.#resolvePath(agent, path);
 		return await env.lock(resolved, async (f) => {
@@ -121,11 +115,8 @@ export class OpsPlugin implements Plugin {
 		return env.resolvePath(this.getWorkdir(agent), path);
 	}
 
-	async #runExec(
-	    agent: IAgent,
-	    command: string[],
-	    opts: { workdir?: string; timeout: number },
-	    ): Promise<ToolExecResult<ExecViewMeta>> {
+	async #runExec(agent: IAgent, command: string[],
+	               opts: Pick<ExecOpts, "workdir"|"timeout">): Promise<ToolExecResult<ExecViewMeta>> {
 		const env = this.getEnv(agent);
 		const workdir = opts.workdir ? this.#resolvePath(agent, opts.workdir) : this.getWorkdir(agent);
 
@@ -154,17 +145,17 @@ export class OpsPlugin implements Plugin {
 				offset: Type.Optional(
 					Type.Number({
 						description: "Line number to start reading from (1-indexed)",
-					}),
+					})
 				),
 				limit: Type.Optional(
-					Type.Number({ description: "Max number of lines to read" }),
+					Type.Number({ description: "Max number of lines to read" })
 				),
 			}),
 			exec: async (args, agent) => {
 				const env = this.getEnv(agent);
 				const { data, path } = await env.lock(
 					this.#resolvePath(agent, args.path),
-					async (env) => ({ data: await env.read(), path: env.path }),
+					async (env) => ({ data: await env.read(), path: env.path })
 				);
 				let text: string;
 				try {
@@ -176,7 +167,7 @@ export class OpsPlugin implements Plugin {
 				const lines = text.split("\n");
 				const numLines = Math.min(
 					args.limit ?? this.config.defaultLines,
-					this.config.maxLines,
+					this.config.maxLines
 				);
 				const startLine = args.offset ? Math.max(0, args.offset - 1) : 0;
 				const endLine = Math.min(startLine + numLines, lines.length);
@@ -238,7 +229,7 @@ export class OpsPlugin implements Plugin {
 					async (env) => {
 						await env.write({ type: "text", text: args.content });
 						return env.path;
-					},
+					}
 				);
 				return { content: "ok", meta: { path: env.contractPath(path) } }; //existed ? "ok" : `${args.path}: successfully created.`;
 			},
@@ -286,14 +277,14 @@ export class OpsPlugin implements Plugin {
 					}
 					if (count === 0) {
 						throw new Error(
-							`${args.path} does not contain ${JSON.stringify(args.oldString)}`,
+							`${args.path} does not contain ${JSON.stringify(args.oldString)}`
 						);
 					}
 					if (count > 1) {
 						throw new Error(
 							`${args.path} contains ${
 								JSON.stringify(args.oldString)
-							} more than once (${count} occurrences)`,
+							} more than once (${count} occurrences)`
 						);
 					}
 					return content.replace(args.oldString, args.newString);
@@ -328,7 +319,7 @@ export class OpsPlugin implements Plugin {
 				workdir: Type.Optional(
 					Type.String({
 						description: "Working directory to execute the command in",
-					}),
+					})
 				),
 				timeout: Type.Number({
 					description: "Timeout for the command in milliseconds",
@@ -362,7 +353,7 @@ export class OpsPlugin implements Plugin {
 				workdir: Type.Optional(
 					Type.String({
 						description: "Working directory to execute the command in",
-					}),
+					})
 				),
 				timeout: Type.Number({
 					description: "Timeout for the command in milliseconds",

@@ -1,7 +1,7 @@
 import * as acp from "@agentclientprotocol/sdk";
 import type {CommandsPlugin} from "@tame/plugin-commands/index";
-import {getAgentHistory, type HistoryPlugin,} from "@tame/plugin-history/index";
-import type {AgentStopReason, IAgent, IHarness, InputContent, InputMessage, Plugin, ToolUse,} from "@tame/sdk";
+import {getAgentHistory, type HistoryPlugin} from "@tame/plugin-history/index";
+import type {AgentStopReason, IAgent, IHarness, InputContent, InputMessage, Plugin, ToolUse} from "@tame/sdk";
 import {tool} from "@tame/sdk";
 import {type Static, Type} from "typebox";
 
@@ -90,11 +90,7 @@ export class ACPAdapter implements acp.Agent {
 		let agent = this.#sessions.get(params.sessionId);
 		if (!agent) { agent = this.#harness.getAgent(params.sessionId); }
 		if (!agent) { agent = await this.#history!.loadAgent(params.sessionId); }
-		if (!agent) {
-			throw new Error(
-			    `could not find or load agent with id '${params.sessionId}'`,
-			);
-		}
+		if (!agent) { throw new Error(`could not find or load agent with id '${params.sessionId}'`); }
 		this.#setupAgent(agent);
 
 		const hist = getAgentHistory(agent);
@@ -229,14 +225,10 @@ export class ACPAdapter implements acp.Agent {
 						path: Type.String({
 							description: "Absolute path to the file to read",
 						}),
-						offset: Type.Optional(
-						    Type.Number({
-							    description: "Line number to start reading from (1-based)",
-						    }),
-						    ),
-						limit: Type.Optional(
-						    Type.Number({ description: "Maximum number of lines to read" }),
-						    ),
+						offset: Type.Optional(Type.Number({
+							description: "Line number to start reading from (1-based)",
+						})),
+						limit: Type.Optional(Type.Number({ description: "Maximum number of lines to read" })),
 					}),
 					exec: async (args) => {
 					    const res = await this.#connection.readTextFile({
